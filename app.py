@@ -16,9 +16,30 @@ st.markdown("""
     .total-box { background-color: #1e3d59; color: white; padding: 35px; border-radius: 8px; box-shadow: 0 4px 15px rgba(30,61,89,0.3); text-align: center; margin-top: 25px; }
     .total-box h1 { color: #ffc13b !important; margin: 15px 0 0 0; font-size: 46px; font-weight: bold; }
     
+    /* Stile per il pulsante di stampa speciale HTML */
+    .print-button {
+        display: block;
+        width: 100%;
+        text-align: center;
+        background-color: #ffffff;
+        color: #1e3d59;
+        padding: 12px;
+        border: 2px solid #1e3d59;
+        border-radius: 8px;
+        font-weight: bold;
+        text-decoration: none;
+        font-size: 16px;
+        transition: 0.3s;
+    }
+    .print-button:hover {
+        background-color: #1e3d59;
+        color: white;
+        text-decoration: none;
+    }
+
     /* Stile per nascondere i controlli di Streamlit durante la stampa */
     @media print {
-        header, [data-testid="stSidebar"], .stButton, button {
+        header, [data-testid="stSidebar"], .stButton, button, .print-button-container {
             display: none !important;
         }
         .main .block-container {
@@ -136,8 +157,13 @@ with col2:
     
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 🖨️ Opzioni Documento")
-    if st.button("📄 Stampa o Salva in PDF", use_container_width=True):
-        st.markdown("<script>window.print();</script>", unsafe_allow_html=True)
+    
+    # NUOVO PULSANTE DI STAMPA DIRETTO IN HTML (Risolve il blocco del browser)
+    st.markdown("""
+        <div class="print-button-container">
+            <a href="#" class="print-button" onclick="window.print(); return false;">📄 Stampa o Salva in PDF</a>
+        </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("---")
 st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo al netto di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine o varianti fuori sagoma, vi preghiamo di contattare i nostri uffici.")
