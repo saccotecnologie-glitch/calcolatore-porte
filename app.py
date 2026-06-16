@@ -1,4 +1,4 @@
-import streamlit as st
+  import streamlit as st
 
 st.set_page_config(
     page_title="Preventivatore SA-TEC | Porte Automatiche",
@@ -35,12 +35,15 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CARICAMENTO NATIVO DEL LOGO IN PRIMA PAGINA ---
+# --- CARICAMENTO DIRETTO E SICURO DEL LOGO IN PRIMA PAGINA ---
+# Utilizza l'URL Raw assoluto convertito per evitare blocchi del server di Streamlit
+URL_LOGO_WEB = "https://raw.githubusercontent.com/tonysacco05/calcolatore-porte/main/logo%20satec.jpg"
+
 try:
-    st.image("logo satec.jpg", use_container_width=True)
+    st.image(URL_LOGO_WEB, use_container_width=True)
 except Exception:
     try:
-        st.image("logo satec.JPEG", use_container_width=True)
+        st.image("logo satec.jpg", use_container_width=True)
     except Exception:
         st.title("🚪 SA-TEC S.R.L.s")
 
@@ -143,7 +146,7 @@ with col2:
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 💾 Salva o Stampa Documento")
     
-    # --- COSTRUZIONE SICURA DEL TESTO PREVENTIVO (Nessun rischio di righe spezzate) ---
+    # --- COSTRUZIONE SICURA DEL TESTO PREVENTIVO ---
     linee = [
         "======================================================================",
         "                         SA-TEC S.R.L.s                         ",
