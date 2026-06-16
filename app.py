@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 
 st.set_page_config(
     page_title="Preventivatore SA-TEC | Porte Automatiche",
@@ -36,11 +36,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- CARICAMENTO NATIVO DEL LOGO ---
-# Questo comando obbliga il sistema a cercare il file "logo satec.jpg" caricato sul tuo GitHub
 try:
     st.image("logo satec.jpg", use_container_width=True)
 except Exception:
-    # Sistema di sicurezza: se il nome del file ha estensioni diverse (es. .jpeg o maiuscole), prova a caricarlo comunque
     try:
         st.image("logo satec.JPEG", use_container_width=True)
     except Exception:
@@ -93,4 +91,41 @@ materiali_selezionati.append("Cinghia dentata rinforzata ad alta resistenza")
 # 2. Carrelli
 moltiplicatore_ante = 1 if num_ante == "1 Anta" else 2
 totale_imponibile += moltiplicatore_ante * 48.00
-materiali_selez
+materiali_selezionati.append(f"Kit carrelli di sospensione e attacchi strutturali per {num_ante}")
+
+# 3. Accessori opzionali
+if include_selettore: 
+    totale_imponibile += 75.00
+    materiali_selezionati.append("ICON – Selettore Funzioni Touch screen con 3 tessere Tag incluse")
+if include_batterie: 
+    totale_imponibile += 89.00
+    materiali_selezionati.append("Gruppo batterie d'emergenza a scarica controllata")
+if elettroblocco: 
+    totale_imponibile += 145.00
+    materiali_selezionati.append("Elettroblocco di bloccaggio meccanico motorizzato con sblocco manuale")
+if radar_aggiuntivi > 0:
+    totale_imponibile += radar_aggiuntivi * 168.00
+    materiali_selezionati.append(f"n. {radar_aggiuntivi} Radar volumetrico combinato apertura/sicurezza EN16005 aggiuntivo")
+
+# 4. Maggiorazione ridondante
+if tipo_porta == "Ridondante": 
+    totale_imponibile += 1250.00
+    materiali_selezionati.append("Sistema a doppio motore con scheda ridondante di sicurezza integrata")
+
+# 5. Costo manodopera (Incluso silenziosamente nel prezzo finale)
+totale_imponibile += 4 * 55.00  
+
+# Prezzo finale espresso come IMPONIBILE (+ IVA)
+prezzo_esposto = totale_imponibile
+
+# --- INTERFACCIA UTENTE ---
+col1, col2 = st.columns([5, 4])
+
+with col1:
+    st.markdown("### 📝 Specifiche Configurate")
+    st.markdown(f"""
+        <div class="price-box">
+            <p style="font-size: 16px; margin: 0 0 10px 0; color: #333;"><strong>Tipologia:</strong> Automazione {tipo_porta} ({num_ante})</p>
+            <p style="font-size: 16px; margin: 0 0 10px 0; color: #333;"><strong>Vano Luce:</strong> {passaggio_luce_cm} x {altezza_luce_cm} cm</p>
+            <p style="font-size: 16px; margin: 0 0 10px 0; color: #333;"><strong>Finitura Profili:</strong> {colore_profili}</p>
+            <p style="font-size: 16px; margin: 0; color: #333;"><strong>Ingombro Totale Macchina 
