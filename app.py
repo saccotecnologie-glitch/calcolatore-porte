@@ -7,7 +7,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Stile grafico aziendale - Ottimizzato anche per la stampa pulita
+# Stile grafico aziendale - Ottimizzato al massimo per la stampa pulita
 st.markdown("""
     <style>
     .main { background-color: #f4f6f9; }
@@ -30,6 +30,7 @@ st.markdown("""
         text-decoration: none;
         font-size: 16px;
         transition: 0.3s;
+        cursor: pointer;
     }
     .print-button:hover {
         background-color: #1e3d59;
@@ -37,13 +38,37 @@ st.markdown("""
         text-decoration: none;
     }
 
-    /* Stile per nascondere i controlli di Streamlit durante la stampa */
+    /* REGOLE CRUCIALI PER LA STAMPA: Nasconde tutto ciò che non serve */
     @media print {
-        header, [data-testid="stSidebar"], .stButton, button, .print-button-container {
+        header, 
+        [data-testid="stSidebar"], 
+        .stButton, 
+        button, 
+        .print-button-container,
+        iframe,
+        footer,
+        [data-testid="stToolbar"] {
             display: none !important;
         }
         .main .block-container {
             padding: 0 !important;
+            margin: 0 !important;
+        }
+        body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+        .price-box {
+            box-shadow: none !important;
+            border-left: 3px solid #1e3d59 !important;
+            background-color: #ffffff !important;
+        }
+        .total-box {
+            box-shadow: none !important;
+            background-color: #1e3d59 !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact; /* Forza il browser a stampare lo sfondo blu */
+            print-color-adjust: exact;
         }
     }
     </style>
@@ -156,12 +181,19 @@ with col2:
     """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 🖨️ Opzioni Documento")
     
-    # NUOVO PULSANTE DI STAMPA DIRETTO IN HTML (Risolve il blocco del browser)
+    # PULSANTE E ISTRUZIONI DI EMERGENZA PER IL CLIENTE
     st.markdown("""
-        <div class="print-button-container">
-            <a href="#" class="print-button" onclick="window.print(); return false;">📄 Stampa o Salva in PDF</a>
+        <div class="print-button-container" style="background-color: #ffffff; padding: 15px; border-radius: 8px; border: 1px dashed #1e3d59; text-align: center;">
+            <p style="margin: 0 0 10px 0; font-size: 14px; color: #555;">Puoi salvare o stampare questa pagina:</p>
+            <a href="#" class="print-button" onclick="window.print(); return false;">🖨️ Prova a stampare da qui</a>
+            <p style="margin: 12px 0 0 0; font-size: 13px; color: #666; line-height: 1.4;">
+                💡 <b>Se il pulsante sopra viene bloccato dal tuo browser:</b><br>
+                Usa direttamente la funzione del tuo dispositivo premendo:<br>
+                • Su PC: <b>CTRL + P</b><br>
+                • Su Mac: <b>CMD + P</b><br>
+                • Su Telefono: Condividi ➔ <b>Stampa / Salva in PDF</b>
+            </p>
         </div>
     """, unsafe_allow_html=True)
 
