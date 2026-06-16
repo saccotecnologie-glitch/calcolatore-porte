@@ -1,4 +1,6 @@
 import streamlit as st
+import os
+from PIL import Image
 
 st.set_page_config(
     page_title="Preventivatore SA-TEC | Porte Automatiche",
@@ -7,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Stile grafico aziendale isolato in modo sicuro
+# Stile grafico aziendale
 st.markdown("""
     <style>
     .main { background-color: #f4f6f9; }
@@ -35,16 +37,27 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CARICAMENTO DEL LOGO DA LINK ESTERNO DI SICUREZZA O LOCALE ---
-URL_LOGO_WEB = "https://raw.githubusercontent.com/tonysacco05/calcolatore-porte/main/logo%20satec.jpg"
+# --- CARICAMENTO LOCALE FORMATTATO DEL LOGO ---
+# Cerca il file direttamente nella cartella di lavoro principale di GitHub
+file_logo = "logo satec.jpg"
 
-try:
-    st.image(URL_LOGO_WEB, use_container_width=True)
-except Exception:
+if os.path.exists(file_logo):
     try:
-        st.image("logo satec.jpg", use_container_width=True)
+        img = Image.open(file_logo)
+        st.image(img, use_container_width=True)
     except Exception:
         st.title("🚪 SA-TEC S.R.L.s")
+else:
+    # Se il file ha l'estensione in maiuscolo (.JPG) tenta il secondo caricamento
+    try:
+        img = Image.open("logo satec.JPG")
+        st.image(img, use_container_width=True)
+    except Exception:
+        # Se fallisce anche questo, prova dal link web di riserva
+        try:
+            st.image("https://raw.githubusercontent.com/tonysacco05/calcolatore-porte/main/logo%20satec.jpg", use_container_width=True)
+        except Exception:
+            st.title("🚪 SA-TEC S.R.L.s")
 
 st.subheader("Configuratore Professionale — Automazione PW100")
 st.markdown("Seleziona i parametri del vano luce e gli accessori per generare il preventivo ufficiale.")
@@ -205,4 +218,4 @@ with col2:
     st.markdown('<a href="#" class="print-button" onclick="window.print(); return false;">🖨️ Stampa Alternativa della Pagina</a>', unsafe_allow_html=True)
 
 st.markdown("---")
-st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo al netto di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine, varianti fuori sagoma o sopralluoghi tecnici, vi preghiamo di contattare i nostri uffici.")
+st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo al netto di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine, varianti fuori sagoma o soprall
