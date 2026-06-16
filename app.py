@@ -1,5 +1,4 @@
 import streamlit as st
-import os
 
 st.set_page_config(
     page_title="Preventivatore SA-TEC | Porte Automatiche",
@@ -36,14 +35,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- INTESTAZIONE GRAFICA CON LOGO AZIENDALE ---
-# Caricamento sicuro del file locale "logo satec.jpg"
-logo_path = "logo satec.jpg"
-if os.path.exists(logo_path):
-    st.image(logo_path, width=500)
-else:
-    # Se il file non viene trovato temporaneamente, mostra il nome testuale senza far crashare il sito
-    st.title("🚪 SA-TEC S.R.L.s")
+# --- LOGO AZIENDALE IN CIMA ALLA PAGINA PRINCIPALE ---
+# Indirizzo "Raw" pubblico per caricare l'immagine senza errori di crash
+st.image("https://raw.githubusercontent.com/tonysacco05/calcolatore-porte/main/logo%20satec.jpg", use_container_width=True)
 
 st.subheader("Configuratore Professionale — Automazione PW100")
 st.markdown("Seleziona i parametri del vano luce e gli accessori per generare il preventivo ufficiale.")
@@ -177,39 +171,4 @@ CONFIGURAZIONE PORTA AUTOMATICA SELEZIONATA:
 - Numero Ante: {num_ante}
 - Larghezza Passaggio Luce (L): {passaggio_luce_cm} cm
 - Altezza Passaggio Luce (H): {altezza_luce_cm} cm
-- Ingombro Totale Macchina (T): {lunghezza_t_cm} cm
-- Finitura e Colore Profili: {colore_profili}
-
-ELENCO COMPONENTI E ACCESSORI INCLUSI DALLA FABBRICA:
-----------------------------------------------------------------------
-"""
-    for mat in materiali_selezionati:
-        testo_preventivo += f"- {mat}\n"
-        
-    testo_preventivo += f"""
-----------------------------------------------------------------------
-RIEPILOGO ECONOMICO:
-PREZZO TOTALE FORNITURA: EUR {prezzo_esposto:,.2f} (+ IVA)
-
-* Nota: Al prezzo indicato andrà applicata l'IVA di legge in fattura.
-* Il presente modulo genera un preventivo indicativo ufficiale basato sui listini SA-TEC PW100.
-======================================================================
-Grazie per aver scelto i servizi e le tecnologie di SA-TEC S.R.L.s
-"""
-
-    # PULSANTE DI DOWNLOAD DIRETTO (Sicuro al 100%)
-    st.download_button(
-        label="📥 Scarica Preventivo Ufficiale (Con Dati Aziendali)",
-        data=testo_preventivo,
-        file_name=f"Preventivo_SATEC_Ufficiale_{passaggio_luce_cm}x{altezza_luce_cm}.txt",
-        mime="text/plain",
-        use_container_width=True
-    )
-    
-    # Pulsante alternativo per tentare la stampa browser diretta
-    st.markdown("""
-        <a href="#" class="print-button" onclick="window.print(); return false;">🖨️ Stampa Alternativa della Pagina</a>
-    """, unsafe_allow_html=True)
-
-st.markdown("---")
-st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo al netto di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine, varianti fuori sagoma o sopralluoghi tecnici, vi preghiamo di contattare i nostri uffici.")
+- Ingombro Totale Macchina (T): {lunghezza_
