@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 
 st.set_page_config(
     page_title="Preventivatore SA-TEC | Porte Automatiche",
@@ -16,7 +17,6 @@ st.markdown("""
     .total-box { background-color: #1e3d59; color: white; padding: 35px; border-radius: 8px; box-shadow: 0 4px 15px rgba(30,61,89,0.3); text-align: center; margin-top: 25px; }
     .total-box h1 { color: #ffc13b !important; margin: 15px 0 0 0; font-size: 46px; font-weight: bold; }
     
-    /* Stile per pulsante di stampa alternativo se supportato */
     .print-button {
         display: block;
         width: 100%;
@@ -37,8 +37,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- INTESTAZIONE GRAFICA CON LOGO AZIENDALE ---
-# Utilizziamo l'immagine caricata direttamente per mostrare il logo in cima al configuratore
-st.image("https://raw.githubusercontent.com/tonysacco05/calcolatore-porte/main/logo%20satec.jpg", width=500)
+# Caricamento sicuro del file locale "logo satec.jpg"
+logo_path = "logo satec.jpg"
+if os.path.exists(logo_path):
+    st.image(logo_path, width=500)
+else:
+    # Se il file non viene trovato temporaneamente, mostra il nome testuale senza far crashare il sito
+    st.title("🚪 SA-TEC S.R.L.s")
+
 st.subheader("Configuratore Professionale — Automazione PW100")
 st.markdown("Seleziona i parametri del vano luce e gli accessori per generare il preventivo ufficiale.")
 st.markdown("---")
@@ -160,4 +166,50 @@ Codice Univoco: M5UXCR1 | E-mail: sacco.tecnologie@gmail.com
 Telefono: 0968-036797
 ----------------------------------------------------------------------
 Coordinate Bancarie per il saldo:
-IBAN: IT30S082584284100700
+IBAN: IT30S0825842841007000002877
+======================================================================
+                      DOCUMENTO DI PREVENTIVO                         
+======================================================================
+
+CONFIGURAZIONE PORTA AUTOMATICA SELEZIONATA:
+----------------------------------------------------------------------
+- Modello Automazione: {tipo_porta}
+- Numero Ante: {num_ante}
+- Larghezza Passaggio Luce (L): {passaggio_luce_cm} cm
+- Altezza Passaggio Luce (H): {altezza_luce_cm} cm
+- Ingombro Totale Macchina (T): {lunghezza_t_cm} cm
+- Finitura e Colore Profili: {colore_profili}
+
+ELENCO COMPONENTI E ACCESSORI INCLUSI DALLA FABBRICA:
+----------------------------------------------------------------------
+"""
+    for mat in materiali_selezionati:
+        testo_preventivo += f"- {mat}\n"
+        
+    testo_preventivo += f"""
+----------------------------------------------------------------------
+RIEPILOGO ECONOMICO:
+PREZZO TOTALE FORNITURA: EUR {prezzo_esposto:,.2f} (+ IVA)
+
+* Nota: Al prezzo indicato andrà applicata l'IVA di legge in fattura.
+* Il presente modulo genera un preventivo indicativo ufficiale basato sui listini SA-TEC PW100.
+======================================================================
+Grazie per aver scelto i servizi e le tecnologie di SA-TEC S.R.L.s
+"""
+
+    # PULSANTE DI DOWNLOAD DIRETTO (Sicuro al 100%)
+    st.download_button(
+        label="📥 Scarica Preventivo Ufficiale (Con Dati Aziendali)",
+        data=testo_preventivo,
+        file_name=f"Preventivo_SATEC_Ufficiale_{passaggio_luce_cm}x{altezza_luce_cm}.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
+    
+    # Pulsante alternativo per tentare la stampa browser diretta
+    st.markdown("""
+        <a href="#" class="print-button" onclick="window.print(); return false;">🖨️ Stampa Alternativa della Pagina</a>
+    """, unsafe_allow_html=True)
+
+st.markdown("---")
+st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo al netto di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine, varianti fuori sagoma o sopralluoghi tecnici, vi preghiamo di contattare i nostri uffici.")
