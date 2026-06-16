@@ -117,8 +117,6 @@ col1, col2 = st.columns([5, 4])
 
 with col1:
     st.markdown("### 📝 Specifiche Configurate")
-    
-    # Visualizzazione pulita senza f-string nidificate complesse
     st.markdown(f"""
         <div class="price-box">
             <b>Tipologia:</b> Automazione {tipo_porta} ({num_ante})<br>
@@ -145,17 +143,64 @@ with col2:
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### 💾 Salva o Stampa Documento")
     
-    # --- COSTRUZIONE TESTO PREVENTIVO SCARICABILE ---
-    testo_preventivo = f"======================================================================\n"
-    testo_preventivo += f"                         SA-TEC S.R.L.s                         \n"
-    testo_preventivo += f"                    Tecnologia in movimento                     \n"
-    testo_preventivo += f"======================================================================\n"
-    testo_preventivo += f"SA-TEC S.R.L.s \n"
-    testo_preventivo += f"Sede Legale: VIA L. SETTEMBRINI 84 – 88046 LAMEZIA TERME (CZ)\n"
-    testo_preventivo += f"P.IVA: 04009610793 - C.F.: SCCDNC05R27M208J\n"
-    testo_preventivo += f"REA: CZ-228835 | PEC: sa-tec@pec.it\n"
-    testo_preventivo += f"Codice Univoco: M5UXCR1 | E-mail: sacco.tecnologie@gmail.com\n"
-    testo_preventivo += f"Telefono: 0968-036797\n"
-    testo_preventivo += f"----------------------------------------------------------------------\n"
-    testo_preventivo += f"Coordinate Bancarie per il saldo:\n"
-    testo_preventivo += f"IBAN: IT
+    # --- COSTRUZIONE SICURA DEL TESTO PREVENTIVO (Nessun rischio di righe spezzate) ---
+    linee = [
+        "======================================================================",
+        "                         SA-TEC S.R.L.s                         ",
+        "                    Tecnologia in movimento                     ",
+        "======================================================================",
+        "SA-TEC S.R.L.s",
+        "Sede Legale: VIA L. SETTEMBRINI 84 – 88046 LAMEZIA TERME (CZ)",
+        "P.IVA: 04009610793 - C.F.: SCCDNC05R27M208J",
+        "REA: CZ-228835 | PEC: sa-tec@pec.it",
+        "Codice Univoco: M5UXCR1 | E-mail: sacco.tecnologie@gmail.com",
+        "Telefono: 0968-036797",
+        "----------------------------------------------------------------------",
+        "Coordinate Bancarie per il saldo:",
+        "IBAN: IT30S0825842841007000002877",
+        "======================================================================",
+        "                      DOCUMENTO DI PREVENTIVO                         ",
+        "======================================================================",
+        "",
+        "CONFIGURAZIONE PORTA AUTOMATICA SELEZIONATA:",
+        "----------------------------------------------------------------------",
+        f"- Modello Automazione: {tipo_porta}",
+        f"- Numero Ante: {num_ante}",
+        f"- Larghezza Passaggio Luce (L): {passaggio_luce_cm} cm",
+        f"- Altezza Passaggio Luce (H): {altezza_luce_cm} cm",
+        f"- Ingombro Totale Macchina (T): {lunghezza_t_cm} cm",
+        f"- Finitura e Colore Profili: {colore_profili}",
+        "",
+        "ELENCO COMPONENTI E ACCESSORI INCLUSI DALLA FABBRICA:",
+        "----------------------------------------------------------------------"
+    ]
+    
+    for mat in materiali_selezionati:
+        linee.append(f"- {mat}")
+        
+    linee.extend([
+        "",
+        "----------------------------------------------------------------------",
+        "RIEPILOGO ECONOMICO:",
+        f"PREZZO TOTALE FORNITURA: EUR {prezzo_esposto:,.2f} (+ IVA)",
+        "",
+        "* Nota: Al prezzo indicato andrà applicata l'IVA di legge in fattura.",
+        "* Il presente modulo genera un preventivo indicativo ufficiale basato sui listini SA-TEC PW100.",
+        "======================================================================",
+        "Grazie per aver scelto i servizi e le tecnologie di SA-TEC S.R.L.s"
+    ])
+    
+    testo_preventivo = "\n".join(linee)
+
+    st.download_button(
+        label="📥 Scarica Preventivo Ufficiale (Con Dati Aziendali)",
+        data=testo_preventivo,
+        file_name=f"Preventivo_SATEC_Ufficiale_{passaggio_luce_cm}x{altezza_luce_cm}.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
+    
+    st.markdown('<a href="#" class="print-button" onclick="window.print(); return false;">🖨️ Stampa Alternativa della Pagina</a>', unsafe_allow_html=True)
+
+st.markdown("---")
+st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo al netto di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine, varianti fuori sagoma o sopralluoghi tecnici, vi preghiamo di contattare i nostri uffici.")
