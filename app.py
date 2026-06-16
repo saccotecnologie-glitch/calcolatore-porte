@@ -7,7 +7,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Stile grafico aziendale - Ottimizzato al massimo per la stampa pulita
+# Stile grafico aziendale
 st.markdown("""
     <style>
     .main { background-color: #f4f6f9; }
@@ -15,62 +15,6 @@ st.markdown("""
     .price-box { background-color: #ffffff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 5px solid #1e3d59; margin-bottom: 20px; }
     .total-box { background-color: #1e3d59; color: white; padding: 35px; border-radius: 8px; box-shadow: 0 4px 15px rgba(30,61,89,0.3); text-align: center; margin-top: 25px; }
     .total-box h1 { color: #ffc13b !important; margin: 15px 0 0 0; font-size: 46px; font-weight: bold; }
-    
-    /* Stile per il pulsante di stampa speciale HTML sbloccato */
-    .print-button {
-        display: block;
-        width: 100%;
-        text-align: center;
-        background-color: #ffffff;
-        color: #1e3d59;
-        padding: 14px;
-        border: 2px solid #1e3d59;
-        border-radius: 8px;
-        font-weight: bold;
-        text-decoration: none;
-        font-size: 16px;
-        transition: 0.3s;
-        cursor: pointer;
-    }
-    .print-button:hover {
-        background-color: #1e3d59;
-        color: white;
-        text-decoration: none;
-    }
-
-    /* REGOLE CRUCIALI PER LA STAMPA: Nasconde la colonna di sinistra, i menu del sito e lascia solo il foglio pulito */
-    @media print {
-        header, 
-        [data-testid="stSidebar"], 
-        .stButton, 
-        button, 
-        .print-section,
-        iframe,
-        footer,
-        [data-testid="stToolbar"] {
-            display: none !important;
-        }
-        .main .block-container {
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-        body {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }
-        .price-box {
-            box-shadow: none !important;
-            border-left: 3px solid #1e3d59 !important;
-            background-color: #ffffff !important;
-        }
-        .total-box {
-            box-shadow: none !important;
-            background-color: #1e3d59 !important;
-            color: white !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -174,4 +118,54 @@ with col2:
     st.markdown("### 🧾 Preventivo Economico")
     st.markdown(f"""
         <div class="total-box">
-            <span style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; font-weight: bold;">Prezzo Totale (+ IVA)
+            <span style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; font-weight: bold;">Prezzo Totale (+ IVA)</span>
+            <h1>€ {prezzo_esposto:,.2f}</h1>
+            <span style="font-size: 13px; opacity: 0.8; display: block; margin-top: 10px;">* Al prezzo indicato andrà applicata l'IVA di legge in fattura</span>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### 💾 Salva Documento")
+    
+    # CREAZIONE DEL TESTO DEL PREVENTIVO SCARICABILE
+    testo_preventivo = f"""==================================================
+           SA-TEC S.R.L.s - PREVENTIVO ONLINE            
+==================================================
+
+CONFIGURAZIONE PORTA AUTOMATICA:
+--------------------------------------------------
+- Modello Automazione: {tipo_porta}
+- Numero Ante: {num_ante}
+- Larghezza Passaggio Luce (L): {passaggio_luce_cm} cm
+- Altezza Passaggio Luce (H): {altezza_luce_cm} cm
+- Ingombro Totale Macchina (T): {lunghezza_t_cm} cm
+- Finitura Profili: {colore_profili}
+
+COMPONENETI ED ACCESSORI INCLUSI:
+--------------------------------------------------
+"""
+    for mat in materiali_selezionati:
+        testo_preventivo += f"- {mat}\n"
+        
+    testo_preventivo += f"""
+--------------------------------------------------
+RIEPILOGO ECONOMICO:
+PREZZO TOTALE FORNITURA: EUR {prezzo_esposto:,.2f} (+ IVA)
+
+* Nota: Al prezzo indicato andrà applicata l'IVA di legge in fattura.
+* Il presente modulo genera un preventivo indicativo basato sui listini ufficiali SA-TEC.
+==================================================
+Grazie per aver scelto SA-TEC S.R.L.s
+"""
+
+    # PULSANTE DI DOWNLOAD DIRETTO NATIVO (SBLOCCATO E SICURO AL 100%)
+    st.download_button(
+        label="📥 Scarica Preventivo in Formato Testo",
+        data=testo_preventivo,
+        file_name=f"Preventivo_SATEC_{passaggio_luce_cm}x{altezza_luce_cm}.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
+
+st.markdown("---")
+st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo al netto di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine o varianti fuori sagoma, vi preghiamo di contattare i nostri uffici.")
