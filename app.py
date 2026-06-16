@@ -119,7 +119,6 @@ with col1:
     """, unsafe_allow_html=True)
     
     st.markdown("### 📦 Elenco Componenti Inclusi")
-    # Genera la lista dei materiali puntata in HTML senza mostrare prezzi
     html_lista = "<div style='background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'><ul style='margin: 0; padding-left: 20px;'>"
     for mat in materiali_selezionati:
         html_lista += f"<li style='font-size: 15px; color: #444; margin-bottom: 8px;'>{mat}</li>"
@@ -130,17 +129,16 @@ with col2:
     st.markdown("### 🧾 Preventivo Economico")
     st.markdown(f"""
         <div class="total-box">
-            <span style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; font-weight: bold;">Prezzo Totale Chiavi in Mano</span>
+            <span style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; font-weight: bold;">Prezzo Totale (IVA Inclusa)</span>
             <h1>€ {prezzo_finito:,.2f}</h1>
-            <span style="font-size: 12px; opacity: 0.8; display: block; margin-top: 10px;">* IVA di legge inclusa nel prezzo complessivo</span>
+            <span style="font-size: 12px; opacity: 0.8; display: block; margin-top: 10px;">* Il prezzo visualizzato comprende l'IVA di legge e la configurazione completa</span>
         </div>
     """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
-    # Pulsante nativo per attivare la funzione di stampa del browser
     st.markdown("### 🖨️ Opzioni Documento")
     if st.button("📄 Stampa o Salva in PDF", use_container_width=True):
         st.markdown("<script>window.print();</script>", unsafe_allow_html=True)
 
 st.markdown("---")
-st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo automatizzato basato sui listini ufficiali SA-TEC. Per conferme d'ordine o varianti fuori sagoma, vi preghiamo di contattare i nostri uffici.")
+st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo automatico comprensivo di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine o varianti fuori sagoma, vi preghiamo di contattare i nostri uffici.")
