@@ -16,14 +16,14 @@ st.markdown("""
     .total-box { background-color: #1e3d59; color: white; padding: 35px; border-radius: 8px; box-shadow: 0 4px 15px rgba(30,61,89,0.3); text-align: center; margin-top: 25px; }
     .total-box h1 { color: #ffc13b !important; margin: 15px 0 0 0; font-size: 46px; font-weight: bold; }
     
-    /* Stile per il pulsante di stampa speciale HTML */
+    /* Stile per il pulsante di stampa speciale HTML sbloccato */
     .print-button {
         display: block;
         width: 100%;
         text-align: center;
         background-color: #ffffff;
         color: #1e3d59;
-        padding: 12px;
+        padding: 14px;
         border: 2px solid #1e3d59;
         border-radius: 8px;
         font-weight: bold;
@@ -38,13 +38,13 @@ st.markdown("""
         text-decoration: none;
     }
 
-    /* REGOLE CRUCIALI PER LA STAMPA: Nasconde tutto ciò che non serve */
+    /* REGOLE CRUCIALI PER LA STAMPA: Nasconde la colonna di sinistra, i menu del sito e lascia solo il foglio pulito */
     @media print {
         header, 
         [data-testid="stSidebar"], 
         .stButton, 
         button, 
-        .print-button-container,
+        .print-section,
         iframe,
         footer,
         [data-testid="stToolbar"] {
@@ -67,7 +67,7 @@ st.markdown("""
             box-shadow: none !important;
             background-color: #1e3d59 !important;
             color: white !important;
-            -webkit-print-color-adjust: exact; /* Forza il browser a stampare lo sfondo blu */
+            -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
     }
@@ -174,28 +174,4 @@ with col2:
     st.markdown("### 🧾 Preventivo Economico")
     st.markdown(f"""
         <div class="total-box">
-            <span style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; font-weight: bold;">Prezzo Totale (+ IVA)</span>
-            <h1>€ {prezzo_esposto:,.2f}</h1>
-            <span style="font-size: 13px; opacity: 0.8; display: block; margin-top: 10px;">* Al prezzo indicato andrà applicata l'IVA di legge in fattura</span>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # PULSANTE E ISTRUZIONI DI EMERGENZA PER IL CLIENTE
-    st.markdown("""
-        <div class="print-button-container" style="background-color: #ffffff; padding: 15px; border-radius: 8px; border: 1px dashed #1e3d59; text-align: center;">
-            <p style="margin: 0 0 10px 0; font-size: 14px; color: #555;">Puoi salvare o stampare questa pagina:</p>
-            <a href="#" class="print-button" onclick="window.print(); return false;">🖨️ Prova a stampare da qui</a>
-            <p style="margin: 12px 0 0 0; font-size: 13px; color: #666; line-height: 1.4;">
-                💡 <b>Se il pulsante sopra viene bloccato dal tuo browser:</b><br>
-                Usa direttamente la funzione del tuo dispositivo premendo:<br>
-                • Su PC: <b>CTRL + P</b><br>
-                • Su Mac: <b>CMD + P</b><br>
-                • Su Telefono: Condividi ➔ <b>Stampa / Salva in PDF</b>
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
-
-st.markdown("---")
-st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo al netto di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine o varianti fuori sagoma, vi preghiamo di contattare i nostri uffici.")
+            <span style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; font-weight: bold;">Prezzo Totale (+ IVA)
