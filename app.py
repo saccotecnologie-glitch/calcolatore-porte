@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 
 st.set_page_config(
     page_title="Preventivatore SA-TEC | Porte Automatiche",
@@ -35,12 +35,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CARICAMENTO DIRETTO DEL LOGO CON CORREZIONE SPAZI ---
-# Usiamo la codifica %20 per dire al browser di leggere correttamente lo spazio nel nome del file
-URL_LOGO_CORRETTO = "https://raw.githubusercontent.com/tonysacco05/calcolatore-porte/main/logo%20satec.jpg"
+# --- CARICAMENTO DEL LOGO DA LINK ESTERNO DI SICUREZZA O LOCALE ---
+URL_LOGO_WEB = "https://raw.githubusercontent.com/tonysacco05/calcolatore-porte/main/logo%20satec.jpg"
 
 try:
-    st.image(URL_LOGO_CORRETTO, use_container_width=True)
+    st.image(URL_LOGO_WEB, use_container_width=True)
 except Exception:
     try:
         st.image("logo satec.jpg", use_container_width=True)
