@@ -58,7 +58,6 @@ else:
     lunghezza_t_cm = (passaggio_luce_cm * 2) + 20
 
 lunghezza_t_m = lunghezza_t_cm / 100.0
-iva_aliquota = 0.22
 totale_imponibile = 0.0
 
 # Elenco dei materiali per la visualizzazione pulita (senza prezzi)
@@ -101,8 +100,8 @@ if tipo_porta == "Ridondante":
 # 5. Costo manodopera (Incluso silenziosamente nel prezzo finale)
 totale_imponibile += 4 * 55.00  
 
-# Calcolo prezzo finale ivato
-prezzo_finito = totale_imponibile * (1 + iva_aliquota)
+# Prezzo finale espresso come IMPONIBILE (+ IVA)
+prezzo_esposto = totale_imponibile
 
 # --- INTERFACCIA UTENTE ---
 col1, col2 = st.columns([5, 4])
@@ -129,9 +128,9 @@ with col2:
     st.markdown("### 🧾 Preventivo Economico")
     st.markdown(f"""
         <div class="total-box">
-            <span style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; font-weight: bold;">Prezzo Totale (IVA Inclusa)</span>
-            <h1>€ {prezzo_finito:,.2f}</h1>
-            <span style="font-size: 12px; opacity: 0.8; display: block; margin-top: 10px;">* Il prezzo visualizzato comprende l'IVA di legge e la configurazione completa</span>
+            <span style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; font-weight: bold;">Prezzo Totale (+ IVA)</span>
+            <h1>€ {prezzo_esposto:,.2f}</h1>
+            <span style="font-size: 13px; opacity: 0.8; display: block; margin-top: 10px;">* Al prezzo indicato andrà applicata l'IVA di legge in fattura</span>
         </div>
     """, unsafe_allow_html=True)
     
@@ -141,4 +140,4 @@ with col2:
         st.markdown("<script>window.print();</script>", unsafe_allow_html=True)
 
 st.markdown("---")
-st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo automatico comprensivo di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine o varianti fuori sagoma, vi preghiamo di contattare i nostri uffici.")
+st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo al netto di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine o varianti fuori sagoma, vi preghiamo di contattare i nostri uffici.")
