@@ -15,12 +15,32 @@ st.markdown("""
     .price-box { background-color: #ffffff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 5px solid #1e3d59; margin-bottom: 20px; }
     .total-box { background-color: #1e3d59; color: white; padding: 35px; border-radius: 8px; box-shadow: 0 4px 15px rgba(30,61,89,0.3); text-align: center; margin-top: 25px; }
     .total-box h1 { color: #ffc13b !important; margin: 15px 0 0 0; font-size: 46px; font-weight: bold; }
+    
+    /* Stile per pulsante di stampa alternativo se supportato */
+    .print-button {
+        display: block;
+        width: 100%;
+        text-align: center;
+        background-color: #ffffff;
+        color: #1e3d59;
+        padding: 10px;
+        border: 1px solid #1e3d59;
+        border-radius: 6px;
+        font-weight: bold;
+        text-decoration: none;
+        font-size: 14px;
+        margin-top: 10px;
+        cursor: pointer;
+    }
+    .print-button:hover { background-color: #1e3d59; color: white; text-decoration: none; }
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🚪 SA-TEC S.R.L.s")
-st.subheader("Calcolo Preventivo Istantaneo — Automazione PW100")
-st.markdown("Configura le caratteristiche della porta nel pannello laterale per visualizzare il preventivo.")
+# --- INTESTAZIONE GRAFICA CON LOGO AZIENDALE ---
+# Utilizziamo l'immagine caricata direttamente per mostrare il logo in cima al configuratore
+st.image("https://raw.githubusercontent.com/tonysacco05/calcolatore-porte/main/logo%20satec.jpg", width=500)
+st.subheader("Configuratore Professionale — Automazione PW100")
+st.markdown("Seleziona i parametri del vano luce e gli accessori per generare il preventivo ufficiale.")
 st.markdown("---")
 
 # --- PANNELLO LATERALE DI CONFIGURAZIONE ---
@@ -125,47 +145,19 @@ with col2:
     """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 💾 Salva Documento")
+    st.markdown("### 💾 Salva o Stampa Documento")
     
-    # CREAZIONE DEL TESTO DEL PREVENTIVO SCARICABILE
-    testo_preventivo = f"""==================================================
-           SA-TEC S.R.L.s - PREVENTIVO ONLINE            
-==================================================
-
-CONFIGURAZIONE PORTA AUTOMATICA:
---------------------------------------------------
-- Modello Automazione: {tipo_porta}
-- Numero Ante: {num_ante}
-- Larghezza Passaggio Luce (L): {passaggio_luce_cm} cm
-- Altezza Passaggio Luce (H): {altezza_luce_cm} cm
-- Ingombro Totale Macchina (T): {lunghezza_t_cm} cm
-- Finitura Profili: {colore_profili}
-
-COMPONENETI ED ACCESSORI INCLUSI:
---------------------------------------------------
-"""
-    for mat in materiali_selezionati:
-        testo_preventivo += f"- {mat}\n"
-        
-    testo_preventivo += f"""
---------------------------------------------------
-RIEPILOGO ECONOMICO:
-PREZZO TOTALE FORNITURA: EUR {prezzo_esposto:,.2f} (+ IVA)
-
-* Nota: Al prezzo indicato andrà applicata l'IVA di legge in fattura.
-* Il presente modulo genera un preventivo indicativo basato sui listini ufficiali SA-TEC.
-==================================================
-Grazie per aver scelto SA-TEC S.R.L.s
-"""
-
-    # PULSANTE DI DOWNLOAD DIRETTO NATIVO (SBLOCCATO E SICURO AL 100%)
-    st.download_button(
-        label="📥 Scarica Preventivo in Formato Testo",
-        data=testo_preventivo,
-        file_name=f"Preventivo_SATEC_{passaggio_luce_cm}x{altezza_luce_cm}.txt",
-        mime="text/plain",
-        use_container_width=True
-    )
-
-st.markdown("---")
-st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo al netto di IVA basato sui listini ufficiali SA-TEC. Per conferme d'ordine o varianti fuori sagoma, vi preghiamo di contattare i nostri uffici.")
+    # --- CREAZIONE DEL TESTO DEL PREVENTIVO SCARICABILE CON DATI AZIENDALI UFFICIALI ---
+    testo_preventivo = f"""======================================================================
+                         SA-TEC S.R.L.s                         
+                    Tecnologia in movimento                     
+======================================================================
+SA-TEC S.R.L.s 
+Sede Legale: VIA L. SETTEMBRINI 84 – 88046 LAMEZIA TERME (CZ)
+P.IVA: 04009610793 - C.F.: SCCDNC05R27M208J
+REA: CZ-228835 | PEC: sa-tec@pec.it
+Codice Univoco: M5UXCR1 | E-mail: sacco.tecnologie@gmail.com
+Telefono: 0968-036797
+----------------------------------------------------------------------
+Coordinate Bancarie per il saldo:
+IBAN: IT30S082584284100700
