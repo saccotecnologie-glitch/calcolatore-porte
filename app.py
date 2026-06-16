@@ -7,7 +7,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Stile grafico aziendale - Pulito e focalizzato sul prezzo totale
+# Stile grafico aziendale - Ottimizzato anche per la stampa pulita
 st.markdown("""
     <style>
     .main { background-color: #f4f6f9; }
@@ -15,12 +15,22 @@ st.markdown("""
     .price-box { background-color: #ffffff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 5px solid #1e3d59; margin-bottom: 20px; }
     .total-box { background-color: #1e3d59; color: white; padding: 35px; border-radius: 8px; box-shadow: 0 4px 15px rgba(30,61,89,0.3); text-align: center; margin-top: 25px; }
     .total-box h1 { color: #ffc13b !important; margin: 15px 0 0 0; font-size: 46px; font-weight: bold; }
+    
+    /* Stile per nascondere i controlli di Streamlit durante la stampa */
+    @media print {
+        header, [data-testid="stSidebar"], .stButton, button {
+            display: none !important;
+        }
+        .main .block-container {
+            padding: 0 !important;
+        }
+    }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🚪 SA-TEC S.R.L.s")
 st.subheader("Calcolo Preventivo Istantaneo — Automazione PW100")
-st.markdown("Configura le caratteristiche della porta nel pannello laterale per visualizzare il prezzo.")
+st.markdown("Configura le caratteristiche della porta nel pannello laterale per visualizzare il preventivo.")
 st.markdown("---")
 
 # --- PANNELLO LATERALE DI CONFIGURAZIONE ---
@@ -51,30 +61,51 @@ lunghezza_t_m = lunghezza_t_cm / 100.0
 iva_aliquota = 0.22
 totale_imponibile = 0.0
 
-# Calcolo costi materiali
-totale_imponibile += lunghezza_t_m * 35.50  # Profilo cassa
-totale_imponibile += lunghezza_t_m * 22.10  # Profilo coperchio
-totale_imponibile += (lunghezza_t_m * 2.1) * 7.20  # Cinghia
+# Elenco dei materiali per la visualizzazione pulita (senza prezzi)
+materiali_selezionati = []
 
-# Costo carrelli
+# 1. Calcolo costi e lista profili
+totale_imponibile += lunghezza_t_m * 35.50  
+materiali_selezionati.append(f"Profilo cassa in finitura {colore_profili} (Sviluppo: {lunghezza_t_cm} cm)")
+
+totale_imponibile += lunghezza_t_m * 22.10  
+materiali_selezionati.append(f"Profilo coperchio in finitura {colore_profili}")
+
+totale_imponibile += (lunghezza_t_m * 2.1) * 7.20  
+materiali_selezionati.append("Cinghia dentata rinforzata ad alta resistenza")
+
+# 2. Carrelli
 moltiplicatore_ante = 1 if num_ante == "1 Anta" else 2
 totale_imponibile += moltiplicatore_ante * 48.00
+materiali_selezionati.append(f"Kit carrelli di sospensione e attacchi strutturali per {num_ante}")
 
-# Costo accessori
-if include_selettore: totale_imponibile += 75.00
-if include_batterie: totale_imponibile += 89.00
-if elettroblocco: totale_imponibile += 145.00
-totale_imponibile += radar_aggiuntivi * 168.00
+# 3. Accessori opzionali
+if include_selettore: 
+    totale_imponibile += 75.00
+    materiali_selezionati.append("ICON – Selettore Funzioni Touch screen con 3 tessere Tag incluse")
+if include_batterie: 
+    totale_imponibile += 89.00
+    materiali_selezionati.append("Gruppo batterie d'emergenza a scarica controllata")
+if elettroblocco: 
+    totale_imponibile += 145.00
+    materiali_selezionati.append("Elettroblocco di bloccaggio meccanico motorizzato con sblocco manuale")
+if radar_aggiuntivi > 0:
+    totale_imponibile += radar_aggiuntivi * 168.00
+    materiali_selezionati.append(f"n. {radar_aggiuntivi} Radar volumetrico combinato apertura/sicurezza EN16005 aggiuntivo")
 
-# Maggiorazione ridondante e manodopera
-if tipo_porta == "Ridondante": totale_imponibile += 1250.00
-totale_imponibile += 4 * 55.00  # Manodopera
+# 4. Maggiorazione ridondante
+if tipo_porta == "Ridondante": 
+    totale_imponibile += 1250.00
+    materiali_selezionati.append("Sistema a doppio motore con scheda ridondante di sicurezza integrata")
+
+# 5. Costo manodopera (Incluso silenziosamente nel prezzo finale)
+totale_imponibile += 4 * 55.00  
 
 # Calcolo prezzo finale ivato
 prezzo_finito = totale_imponibile * (1 + iva_aliquota)
 
-# --- INTERFACCIA UTENTE (SOLO RIEPILOGO E PREZZO FINALE) ---
-col1, col2 = st.columns([1, 1])
+# --- INTERFACCIA UTENTE ---
+col1, col2 = st.columns([5, 4])
 
 with col1:
     st.markdown("### 📝 Specifiche Configurate")
@@ -86,6 +117,14 @@ with col1:
             <p style="font-size: 16px; margin: 0; color: #333;"><strong>Ingombro Totale Macchina (T):</strong> {lunghezza_t_cm} cm</p>
         </div>
     """, unsafe_allow_html=True)
+    
+    st.markdown("### 📦 Elenco Componenti Inclusi")
+    # Genera la lista dei materiali puntata in HTML senza mostrare prezzi
+    html_lista = "<div style='background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'><ul style='margin: 0; padding-left: 20px;'>"
+    for mat in materiali_selezionati:
+        html_lista += f"<li style='font-size: 15px; color: #444; margin-bottom: 8px;'>{mat}</li>"
+    html_lista += "</ul></div>"
+    st.markdown(html_lista, unsafe_allow_html=True)
 
 with col2:
     st.markdown("### 🧾 Preventivo Economico")
@@ -93,9 +132,15 @@ with col2:
         <div class="total-box">
             <span style="font-size: 16px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; font-weight: bold;">Prezzo Totale Chiavi in Mano</span>
             <h1>€ {prezzo_finito:,.2f}</h1>
-            <span style="font-size: 12px; opacity: 0.8; display: block; margin-top: 10px;">* IVA e manodopera di assemblaggio incluse nel prezzo</span>
+            <span style="font-size: 12px; opacity: 0.8; display: block; margin-top: 10px;">* IVA di legge inclusa nel prezzo complessivo</span>
         </div>
     """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    # Pulsante nativo per attivare la funzione di stampa del browser
+    st.markdown("### 🖨️ Opzioni Documento")
+    if st.button("📄 Stampa o Salva in PDF", use_container_width=True):
+        st.markdown("<script>window.print();</script>", unsafe_allow_html=True)
 
 st.markdown("---")
 st.caption("📝 **Note per il cliente:** Il presente modulo genera un preventivo indicativo automatizzato basato sui listini ufficiali SA-TEC. Per conferme d'ordine o varianti fuori sagoma, vi preghiamo di contattare i nostri uffici.")
