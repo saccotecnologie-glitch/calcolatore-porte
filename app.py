@@ -134,6 +134,17 @@ LISTINI = {
 # =========================
 
 
+
+def tabella_html_sicura(dati):
+    """
+    Mostra tabelle senza usare st.dataframe, evitando errore JSON/NaN di Streamlit.
+    """
+    df = pd.DataFrame(dati)
+    if df.empty:
+        return "<p>Nessun dato disponibile.</p>"
+    df = df.fillna("").astype(str)
+    return df.to_html(index=False, escape=False)
+
 def dataframe_sicuro(dati):
     """
     Evita errore Streamlit con valori NaN nelle tabelle.
@@ -509,6 +520,28 @@ div[data-testid="stCheckbox"] label {color:#06499b!important;font-size:18px!impo
 .stButton>button {background:#06499b;color:white;border-radius:8px;height:48px;font-size:16px;font-weight:900;border:none;}
 .stButton>button:hover {background:#073763;color:white;}
 .admin-box {background:#ffffff;border:2px solid #06499b;border-radius:14px;padding:18px;margin-bottom:18px;}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 14px;
+}
+th {
+    background: #06499b;
+    color: white;
+    padding: 8px;
+    text-align: left;
+}
+td {
+    border: 1px solid #bdd4ef;
+    padding: 8px;
+    color: #111;
+}
+tr:nth-child(even) {
+    background: #f3f7fd;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -586,7 +619,7 @@ if profilo == "SA-TEC":
                     except:
                         pass
                 st.write(f"Valore totale IVA esclusa: **{euro(totale)}**")
-                st.dataframe(dataframe_sicuro(preventivi), use_container_width=True)
+                st.markdown(tabella_html_sicura(preventivi), unsafe_allow_html=True)
                 with open(PREVENTIVI_CSV, "rb") as f:
                     st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
 
@@ -606,7 +639,7 @@ if profilo == "SA-TEC":
                         "Email": d["email"],
                         "Ricarico %": d.get("ricarico", ""),
                     })
-                st.dataframe(dataframe_sicuro(righe), use_container_width=True)
+                st.markdown(tabella_html_sicura(righe), unsafe_allow_html=True)
                 with open(UTENTI_CSV, "rb") as f:
                     st.download_button("Scarica CSV utenti", data=f, file_name="utenti_satec.csv", mime="text/csv")
 
@@ -887,7 +920,7 @@ if profilo == "SA-TEC":
             "Totale vendita": euro(a["totale"]),
             "Costo totale": euro(a["costo_totale_satec"]),
         })
-    st.dataframe(dataframe_sicuro(tabella), use_container_width=True)
+    st.markdown(tabella_html_sicura(tabella), unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================
