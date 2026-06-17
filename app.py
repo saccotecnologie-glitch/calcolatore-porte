@@ -53,10 +53,10 @@ LISTINI = {
 }
 
 def img_to_base64(path):
-    if not Path(path).exists():
+    file = Path(path)
+    if not file.exists():
         return ""
-    with open(path, "rb") as img:
-        return base64.b64encode(img.read()).decode()
+    return base64.b64encode(file.read_bytes()).decode()
 
 logo_satec64 = img_to_base64("logo_satec.jpg")
 logo_sesamo64 = img_to_base64("SESAMO LOGO.png")
@@ -79,30 +79,33 @@ def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scont
 def mini_porta_html(ante):
     if ante == "1 anta":
         return """
-        <svg width="115" height="115" viewBox="0 0 120 120">
-            <rect x="20" y="18" width="80" height="10" fill="#d9d9d9" stroke="#111"/>
-            <rect x="25" y="30" width="70" height="70" fill="#f7fbff" stroke="#111" stroke-width="2"/>
-            <line x1="60" y1="30" x2="60" y2="100" stroke="#111" stroke-width="2"/>
-            <path d="M43 65 L67 65" stroke="#111" stroke-width="3" marker-end="url(#m1)"/>
+        <svg width="120" height="120" viewBox="0 0 120 120">
+            <rect x="18" y="18" width="84" height="10" fill="#d9d9d9" stroke="#111"/>
+            <rect x="26" y="30" width="34" height="72" fill="#eef7ff" stroke="#111" stroke-width="2"/>
+            <rect x="60" y="30" width="34" height="72" fill="#ffffff" stroke="#111" stroke-width="2"/>
+            <line x1="60" y1="30" x2="60" y2="102" stroke="#111" stroke-width="2"/>
+            <path d="M42 68 L70 68" stroke="#111" stroke-width="3" marker-end="url(#a1)"/>
             <defs>
-                <marker id="m1" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto">
+                <marker id="a1" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto">
                     <path d="M0,0 L0,6 L6,3 z" fill="#111"/>
                 </marker>
             </defs>
         </svg>
         """
     return """
-    <svg width="115" height="115" viewBox="0 0 120 120">
-        <rect x="20" y="18" width="80" height="10" fill="#d9d9d9" stroke="#111"/>
-        <rect x="25" y="30" width="70" height="70" fill="#f7fbff" stroke="#111" stroke-width="2"/>
-        <line x1="60" y1="30" x2="60" y2="100" stroke="#111" stroke-width="2"/>
-        <path d="M55 65 L35 65" stroke="#111" stroke-width="3" marker-end="url(#ml)"/>
-        <path d="M65 65 L85 65" stroke="#111" stroke-width="3" marker-end="url(#mr)"/>
+    <svg width="120" height="120" viewBox="0 0 120 120">
+        <rect x="18" y="18" width="84" height="10" fill="#d9d9d9" stroke="#111"/>
+        <rect x="25" y="30" width="35" height="72" fill="#eef7ff" stroke="#111" stroke-width="2"/>
+        <rect x="60" y="30" width="35" height="72" fill="#eef7ff" stroke="#111" stroke-width="2"/>
+        <rect x="56" y="30" width="5" height="72" fill="#ffffff" stroke="#111" stroke-width="1"/>
+        <rect x="61" y="30" width="5" height="72" fill="#ffffff" stroke="#111" stroke-width="1"/>
+        <path d="M54 68 L35 68" stroke="#111" stroke-width="3" marker-end="url(#al)"/>
+        <path d="M66 68 L85 68" stroke="#111" stroke-width="3" marker-end="url(#ar)"/>
         <defs>
-            <marker id="mr" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto">
+            <marker id="ar" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto">
                 <path d="M0,0 L0,6 L6,3 z" fill="#111"/>
             </marker>
-            <marker id="ml" markerWidth="10" markerHeight="10" refX="1" refY="3" orient="auto">
+            <marker id="al" markerWidth="10" markerHeight="10" refX="1" refY="3" orient="auto">
                 <path d="M6,0 L6,6 L0,3 z" fill="#111"/>
             </marker>
         </defs>
@@ -121,19 +124,19 @@ def render_choice_card(title, desc, ante, active):
         border-radius:14px;
         text-align:center;
         padding:14px;
-        min-height:235px;
+        min-height:242px;
         font-family:Arial,sans-serif;
     ">
-        <div style="font-size:20px;font-weight:900;color:#111;line-height:1.1;margin-bottom:5px;">
+        <div style="font-size:19px;font-weight:900;color:#111;line-height:1.15;margin-bottom:6px;">
             {title}
         </div>
         <div>{mini_porta_html(ante)}</div>
-        <div style="font-size:15px;line-height:1.25;color:#111;margin-top:4px;">
+        <div style="font-size:14px;line-height:1.28;color:#111;margin-top:4px;">
             {desc}
         </div>
     </div>
     """
-    components.html(html, height=255)
+    components.html(html, height=260)
 
 def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     blu = "#06499b"
@@ -145,75 +148,75 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
 
     if ante == "1 anta":
         ante_svg = f"""
-        <rect x="75" y="110" width="250" height="175" fill="{vetro}" stroke="{nero}" stroke-width="4"/>
-        <rect x="325" y="110" width="250" height="175" fill="#ffffff" stroke="{nero}" stroke-width="4"/>
-        <line x1="325" y1="110" x2="325" y2="285" stroke="{nero}" stroke-width="6"/>
-        <path d="M170 205 L265 205" stroke="{blu}" stroke-width="8" marker-end="url(#arrow1)"/>
-        <text x="325" y="320" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">
+        <rect x="80" y="115" width="260" height="170" fill="{vetro}" stroke="{nero}" stroke-width="4"/>
+        <rect x="340" y="115" width="260" height="170" fill="#ffffff" stroke="{nero}" stroke-width="4"/>
+        <line x1="340" y1="115" x2="340" y2="285" stroke="{nero}" stroke-width="6"/>
+        <path d="M190 205 L290 205" stroke="{blu}" stroke-width="9" marker-end="url(#arrow1)"/>
+        <text x="340" y="322" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">
             SCORRIMENTO LINEARE 1 ANTA
         </text>
         <defs>
-            <marker id="arrow1" markerWidth="14" markerHeight="14" refX="7" refY="4" orient="auto">
-                <path d="M0,0 L0,8 L9,4 z" fill="{blu}"/>
+            <marker id="arrow1" markerWidth="15" markerHeight="15" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L0,8 L10,4 z" fill="{blu}"/>
             </marker>
         </defs>
         """
-        titolo = "1 ANTA SELEZIONATA"
+        titolo = "ANTE SELEZIONATA: 1 ANTA"
     else:
         ante_svg = f"""
-        <rect x="75" y="110" width="250" height="175" fill="{vetro}" stroke="{nero}" stroke-width="4"/>
-        <rect x="325" y="110" width="250" height="175" fill="{vetro2}" stroke="{nero}" stroke-width="4"/>
-        <rect x="315" y="110" width="12" height="175" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
-        <rect x="329" y="110" width="12" height="175" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
-        <path d="M260 205 L145 205" stroke="{blu}" stroke-width="8" marker-end="url(#arrowL)"/>
-        <path d="M390 205 L505 205" stroke="{blu}" stroke-width="8" marker-end="url(#arrowR)"/>
-        <text x="325" y="320" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">
+        <rect x="80" y="115" width="260" height="170" fill="{vetro}" stroke="{nero}" stroke-width="4"/>
+        <rect x="340" y="115" width="260" height="170" fill="{vetro2}" stroke="{nero}" stroke-width="4"/>
+        <rect x="328" y="115" width="10" height="170" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
+        <rect x="342" y="115" width="10" height="170" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
+        <path d="M285 205 L160 205" stroke="{blu}" stroke-width="9" marker-end="url(#arrowL)"/>
+        <path d="M395 205 L520 205" stroke="{blu}" stroke-width="9" marker-end="url(#arrowR)"/>
+        <text x="340" y="322" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">
             SCORRIMENTO LINEARE 2 ANTE
         </text>
         <defs>
-            <marker id="arrowR" markerWidth="14" markerHeight="14" refX="7" refY="4" orient="auto">
-                <path d="M0,0 L0,8 L9,4 z" fill="{blu}"/>
+            <marker id="arrowR" markerWidth="15" markerHeight="15" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L0,8 L10,4 z" fill="{blu}"/>
             </marker>
-            <marker id="arrowL" markerWidth="14" markerHeight="14" refX="2" refY="4" orient="auto">
-                <path d="M9,0 L9,8 L0,4 z" fill="{blu}"/>
+            <marker id="arrowL" markerWidth="15" markerHeight="15" refX="2" refY="4" orient="auto">
+                <path d="M10,0 L10,8 L0,4 z" fill="{blu}"/>
             </marker>
         </defs>
         """
-        titolo = "2 ANTE SELEZIONATA"
+        titolo = "ANTE SELEZIONATA: 2 ANTE"
 
     return f"""
     <div style="background:#ffffff;border:2px solid #b8d4f3;border-radius:12px;padding:10px;font-family:Arial,sans-serif;">
-    <svg width="100%" height="390" viewBox="0 0 650 390">
-        <text x="20" y="28" font-size="18" fill="{blu}" font-weight="900">{titolo}</text>
+    <svg width="100%" height="390" viewBox="0 0 680 390">
+        <text x="18" y="28" font-size="18" fill="{blu}" font-weight="900">{titolo}</text>
 
-        <text x="325" y="58" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900">
+        <text x="340" y="58" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900">
             MISURA TRAVERSA CALCOLATA
         </text>
-        <text x="325" y="84" text-anchor="middle" font-size="24" fill="{blu}" font-weight="900">
+        <text x="340" y="84" text-anchor="middle" font-size="24" fill="{blu}" font-weight="900">
             {misura_traversa} mm
         </text>
 
-        <line x1="75" y1="95" x2="575" y2="95" stroke="{blu}" stroke-width="3"/>
-        <line x1="75" y1="82" x2="75" y2="108" stroke="{blu}" stroke-width="3"/>
-        <line x1="575" y1="82" x2="575" y2="108" stroke="{blu}" stroke-width="3"/>
+        <line x1="80" y1="96" x2="600" y2="96" stroke="{blu}" stroke-width="3"/>
+        <line x1="80" y1="84" x2="80" y2="108" stroke="{blu}" stroke-width="3"/>
+        <line x1="600" y1="84" x2="600" y2="108" stroke="{blu}" stroke-width="3"/>
 
-        <rect x="65" y="90" width="520" height="35" fill="#e9eef3" stroke="{nero}" stroke-width="2"/>
-        <rect x="75" y="98" width="500" height="8" fill="#ffffff" opacity="0.45"/>
-        <rect x="305" y="101" width="40" height="14" rx="3" fill="{nero}"/>
+        <rect x="70" y="92" width="540" height="34" fill="#e9eef3" stroke="{nero}" stroke-width="2"/>
+        <rect x="82" y="100" width="516" height="8" fill="#ffffff" opacity="0.45"/>
+        <rect x="318" y="103" width="44" height="14" rx="3" fill="{nero}"/>
 
         {ante_svg}
 
-        <line x1="145" y1="342" x2="505" y2="342" stroke="{blu}" stroke-width="3"/>
+        <line x1="145" y1="342" x2="535" y2="342" stroke="{blu}" stroke-width="3"/>
         <line x1="145" y1="330" x2="145" y2="354" stroke="{blu}" stroke-width="3"/>
-        <line x1="505" y1="330" x2="505" y2="354" stroke="{blu}" stroke-width="3"/>
-        <text x="325" y="370" text-anchor="middle" font-size="17" fill="{blu}" font-weight="900">
+        <line x1="535" y1="330" x2="535" y2="354" stroke="{blu}" stroke-width="3"/>
+        <text x="340" y="370" text-anchor="middle" font-size="17" fill="{blu}" font-weight="900">
             LUCE PASSAGGIO {luce_mm} mm
         </text>
 
-        <line x1="615" y1="110" x2="615" y2="285" stroke="{blu}" stroke-width="3"/>
-        <line x1="602" y1="110" x2="628" y2="110" stroke="{blu}" stroke-width="3"/>
-        <line x1="602" y1="285" x2="628" y2="285" stroke="{blu}" stroke-width="3"/>
-        <text x="640" y="205" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900" transform="rotate(90 640,205)">
+        <line x1="632" y1="115" x2="632" y2="285" stroke="{blu}" stroke-width="3"/>
+        <line x1="620" y1="115" x2="644" y2="115" stroke="{blu}" stroke-width="3"/>
+        <line x1="620" y1="285" x2="644" y2="285" stroke="{blu}" stroke-width="3"/>
+        <text x="660" y="205" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900" transform="rotate(90 660,205)">
             H {altezza_mm} mm
         </text>
     </svg>
@@ -230,7 +233,7 @@ st.markdown("""
     border-bottom:5px solid #063b7a;
     padding:22px 32px;
     display:grid;
-    grid-template-columns: 28% 44% 28%;
+    grid-template-columns:28% 44% 28%;
     align-items:center;
     color:white;
 }
@@ -244,21 +247,14 @@ st.markdown("""
     background:white;
     padding:18px 34px;
     display:grid;
-    grid-template-columns: 50% 50%;
+    grid-template-columns:50% 50%;
     align-items:center;
     border-bottom:1px solid #bdd4ef;
 }
-.powercore-title {font-size:32px;font-weight:900;color:#111;}
+.powercore-title {font-size:34px;font-weight:900;color:#111;}
 .powercore-title span {color:#ff7900;}
 .powercore-sub {font-size:17px;color:#111;margin-top:8px;}
-.sesamo-logo {height:80px;}
-
-.grid-main {
-    display:grid;
-    grid-template-columns: 69% 31%;
-    gap:18px;
-    margin-top:18px;
-}
+.sesamo-logo {height:105px;max-width:330px;object-fit:contain;}
 
 .card {
     background:white;
@@ -267,7 +263,6 @@ st.markdown("""
     padding:16px;
     margin-bottom:16px;
 }
-
 .title-bar {
     display:inline-block;
     background:#06499b;
@@ -278,10 +273,9 @@ st.markdown("""
     font-weight:900;
     margin-bottom:16px;
 }
-
 .section-row {
     display:grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns:1fr 1fr;
     gap:14px;
     margin-top:16px;
 }
@@ -293,10 +287,7 @@ st.markdown("""
     font-weight:800;
     font-size:16px;
 }
-.section-box.green {
-    background:#eefaf2;
-    color:#0c7b3e;
-}
+.section-box.green {background:#eefaf2;color:#0c7b3e;}
 
 div[data-testid="stNumberInput"] label {
     color:#111!important;
@@ -312,14 +303,13 @@ div[data-testid="stNumberInput"] input {
     color:#06499b!important;
     height:54px!important;
 }
-
 .measure-total {
     border:2px solid #bdd4ef;
     background:#f8fbff;
     border-radius:10px;
     padding:14px;
     display:grid;
-    grid-template-columns: 1fr 200px;
+    grid-template-columns:1fr 200px;
     align-items:center;
     color:#06499b;
     margin-top:10px;
@@ -341,32 +331,27 @@ div[data-testid="stNumberInput"] input {
     margin-bottom:18px;
     background:white;
 }
-.option-title {font-size:20px;font-weight:900;color:#06499b;margin-bottom:12px;}
-div[data-testid="stCheckbox"] label {
-    color:#06499b!important;
-    font-size:18px!important;
-    font-weight:900!important;
+.option-title {
+    font-size:20px;
+    font-weight:900;
+    color:#06499b;
+    margin-bottom:12px;
 }
 div[data-testid="stCheckbox"] {
     border:2px solid #06499b;
     border-radius:12px;
     padding:12px;
     background:#f8fbff;
-    margin-bottom:15px;
+    margin-bottom:18px;
+}
+div[data-testid="stCheckbox"] label {
+    color:#06499b!important;
+    font-size:18px!important;
+    font-weight:900!important;
 }
 
-.price {
-    text-align:center;
-    color:#06499b;
-    font-size:42px;
-    font-weight:900;
-}
-.price-label {
-    color:#06499b;
-    font-size:18px;
-    font-weight:900;
-    text-align:center;
-}
+.price {text-align:center;color:#06499b;font-size:42px;font-weight:900;}
+.price-label {color:#06499b;font-size:18px;font-weight:900;text-align:center;}
 .vat-box {
     border:1px solid #bdd4ef;
     border-radius:10px;
@@ -376,14 +361,13 @@ div[data-testid="stCheckbox"] {
     font-weight:800;
     background:#f8fbff;
 }
-
 .power-side-title {color:#06499b;font-size:18px;font-weight:900;margin-bottom:12px;}
 .power-side-text {font-size:15px;line-height:1.45;color:#111;}
 .power-side-list li {margin-bottom:10px;color:#111;}
 
 .desc-grid {
     display:grid;
-    grid-template-columns: 34% 33% 33%;
+    grid-template-columns:34% 33% 33%;
     gap:16px;
     color:#111;
     font-size:15px;
@@ -397,7 +381,7 @@ div[data-testid="stCheckbox"] {
     color:white;
     padding:18px 34px;
     display:grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns:1fr 1fr 1fr;
     font-size:16px;
     font-weight:700;
     margin-top:12px;
@@ -416,7 +400,7 @@ div[data-testid="stCheckbox"] {
 """, unsafe_allow_html=True)
 
 logo_satec_html = f'<img class="logo-satec" src="data:image/jpeg;base64,{logo_satec64}">' if logo_satec64 else "<h1 style='color:#06499b'>SA-TEC</h1>"
-sesamo_logo_html = f'<img class="sesamo-logo" src="data:image/png;base64,{logo_sesamo64}">' if logo_sesamo64 else "<h1>SESAMO</h1>"
+sesamo_logo_html = f'<img class="sesamo-logo" src="data:image/png;base64,{logo_sesamo64}">' if logo_sesamo64 else "<h1 style='font-size:42px;color:#000;'>SESAMO</h1>"
 
 st.markdown(f"""
 <div class="header">
@@ -522,11 +506,7 @@ with col_main:
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
 
-    d1, d2 = st.columns(2)
-    with d1:
-        components.html(disegno_porta("1 anta", luce_mm, altezza_mm, lunghezza_traversa), height=430)
-    with d2:
-        components.html(disegno_porta("2 ante", luce_mm, altezza_mm, lunghezza_traversa), height=430)
+    components.html(disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa), height=430)
 
     st.markdown(f"""
     <div class="measure-total">
@@ -546,11 +526,13 @@ with col_main:
 with col_side:
     st.markdown('<div class="side-card"><div class="title-bar">3&nbsp;&nbsp; ACCESSORI E SERVIZI</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="option-title">ELETTROBLOCCO</div>', unsafe_allow_html=True)
-    elettroblocco = st.checkbox("☑ Aggiungi elettroblocco", value=True, key="elettro")
+    st.markdown('<div class="option-box"><div class="option-title">ELETTROBLOCCO</div>', unsafe_allow_html=True)
+    elettroblocco = st.checkbox("Aggiungi elettroblocco", value=True, key="elettro")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown('<div class="option-title">ALLACCIO E COLLAUDO</div>', unsafe_allow_html=True)
-    allaccio = st.checkbox("☑ Aggiungi allaccio e collaudo SA-TEC", value=True, key="allaccio")
+    st.markdown('<div class="option-box"><div class="option-title">ALLACCIO E COLLAUDO</div>', unsafe_allow_html=True)
+    allaccio = st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=True, key="allaccio")
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -604,7 +586,7 @@ with col_side:
     st.markdown(f"""
     <div class="side-card">
         <div class="power-side-title">SESAMO POWERCORE PW100</div>
-        <div style="margin-bottom:14px;">{sesamo_logo_html}</div>
+        <div style="text-align:center;margin-bottom:14px;">{sesamo_logo_html}</div>
         <div class="power-side-text">
             PowerCore PW100 è l'automazione lineare Sesamo progettata per porte scorrevoli automatiche a 1 o 2 ante.
             <br><br>
@@ -645,7 +627,7 @@ for art in articoli:
     righe_descrizione += f"<tr><td>{art['descrizione']}</td><td>{art['descrizione_lunga']}</td></tr>"
 
 logo_print = f'<img src="data:image/jpeg;base64,{logo_satec64}" style="width:240px;">' if logo_satec64 else f"<h1>{AZIENDA}</h1>"
-sesamo_print = f'<img src="data:image/png;base64,{logo_sesamo64}" style="height:70px;">' if logo_sesamo64 else ""
+sesamo_print = f'<img src="data:image/png;base64,{logo_sesamo64}" style="height:90px;">' if logo_sesamo64 else ""
 
 html_stampa = f"""
 <!DOCTYPE html>
