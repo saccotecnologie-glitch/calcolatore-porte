@@ -3,6 +3,7 @@ import streamlit.components.v1 as components
 import base64
 import json
 import csv
+import pandas as pd
 import random
 import string
 from pathlib import Path
@@ -131,6 +132,17 @@ LISTINI = {
 # =========================
 # FUNZIONI UTILI
 # =========================
+
+
+def dataframe_sicuro(dati):
+    """
+    Evita errore Streamlit con valori NaN nelle tabelle.
+    Converte celle vuote/NaN in stringa vuota.
+    """
+    df = pd.DataFrame(dati)
+    if df.empty:
+        return df
+    return df.fillna("").astype(str)
 
 def euro(v):
     return f"€ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -563,7 +575,7 @@ if profilo == "SA-TEC":
                     except:
                         pass
                 st.write(f"Valore totale IVA esclusa: **{euro(totale)}**")
-                st.dataframe(preventivi, use_container_width=True)
+                st.dataframe(dataframe_sicuro(preventivi), use_container_width=True)
                 with open(PREVENTIVI_CSV, "rb") as f:
                     st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
 
@@ -583,7 +595,7 @@ if profilo == "SA-TEC":
                         "Email": d["email"],
                         "Ricarico %": d.get("ricarico", ""),
                     })
-                st.dataframe(righe, use_container_width=True)
+                st.dataframe(dataframe_sicuro(righe), use_container_width=True)
                 with open(UTENTI_CSV, "rb") as f:
                     st.download_button("Scarica CSV utenti", data=f, file_name="utenti_satec.csv", mime="text/csv")
 
@@ -864,7 +876,7 @@ if profilo == "SA-TEC":
             "Totale vendita": euro(a["totale"]),
             "Costo totale": euro(a["costo_totale_satec"]),
         })
-    st.dataframe(tabella, use_container_width=True)
+    st.dataframe(dataframe_sicuro(tabella), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================
