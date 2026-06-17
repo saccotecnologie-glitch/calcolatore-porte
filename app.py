@@ -18,8 +18,8 @@ from datetime import datetime, date
 # - Salvataggio preventivi su CSV
 # Formula definitiva:
 # Costo SA-TEC reale = Listino × 0,50 × 0,95
-# Prezzo vendita = Costo SA-TEC × 1,35
-# Formula finale = Listino × 0,64125
+# Prezzo vendita = Costo SA-TEC × (1 + ricarico utente / 100)
+# Ricarico personalizzato assegnabile da ADMIN
 # =========================================================
 
 st.set_page_config(
@@ -51,7 +51,8 @@ UTENTI_BASE = {
         "nome": "SA-TEC Amministratore",
         "azienda": "SA-TEC",
         "telefono": "",
-        "email": ""
+        "email": "",
+        "ricarico": "0"
     },
     "ROSSI01": {
         "password": "R2026#",
@@ -59,7 +60,8 @@ UTENTI_BASE = {
         "nome": "Rivenditore Rossi",
         "azienda": "Rossi",
         "telefono": "",
-        "email": ""
+        "email": "",
+        "ricarico": "30"
     },
     "VERDI01": {
         "password": "V2026#",
@@ -67,7 +69,8 @@ UTENTI_BASE = {
         "nome": "Rivenditore Verdi",
         "azienda": "Verdi",
         "telefono": "",
-        "email": ""
+        "email": "",
+        "ricarico": "30"
     },
     "MARIO01": {
         "password": "M2026#",
@@ -75,7 +78,8 @@ UTENTI_BASE = {
         "nome": "Installatore Mario",
         "azienda": "",
         "telefono": "",
-        "email": ""
+        "email": "",
+        "ricarico": "20"
     },
     "LUCA01": {
         "password": "L2026#",
@@ -83,7 +87,8 @@ UTENTI_BASE = {
         "nome": "Installatore Luca",
         "azienda": "",
         "telefono": "",
-        "email": ""
+        "email": "",
+        "ricarico": "20"
     },
 }
 
@@ -133,8 +138,20 @@ def euro(v):
 def costo_satec_reale(listino):
     return listino * 0.50 * 0.95
 
+def ricarico_default(profilo):
+    if profilo == "SA-TEC":
+        return 0.0
+    if profilo == "INSTALLATORE":
+        return 20.0
+    if profilo == "RIVENDITORE":
+        return 30.0
+    return 35.0
+
+RICARICO_ATTIVO = 35.0
+
 def prezzo_vendita(listino):
-    return listino * 0.50 * 0.95 * 1.35
+    costo = costo_satec_reale(listino)
+    return costo * (1 + (RICARICO_ATTIVO / 100))
 
 def img_to_base64(paths):
     for p in paths:
@@ -177,13 +194,14 @@ def carica_utenti_csv():
                     "nome": r.get("nome", ""),
                     "azienda": r.get("azienda", ""),
                     "telefono": r.get("telefono", ""),
-                    "email": r.get("email", "")
+                    "email": r.get("email", ""),
+                    "ricarico": r.get("ricarico", "")
                 }
     return utenti
 
-def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email):
+def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email, ricarico="35"):
     file_exists = Path(UTENTI_CSV).exists()
-    campi = ["utente", "password", "profilo", "nome", "azienda", "telefono", "email", "data_creazione"]
+    campi = ["utente", "password", "profilo", "nome", "azienda", "telefono", "email", "ricarico", "data_creazione"]
 
     with open(UTENTI_CSV, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=campi)
@@ -197,6 +215,7 @@ def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email):
             "azienda": azienda,
             "telefono": telefono,
             "email": email,
+            "ricarico": ricarico,
             "data_creazione": datetime.now().strftime("%d/%m/%Y %H:%M")
         })
 
@@ -233,7 +252,7 @@ def salva_preventivo(dati):
         "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
         "cliente_telefono", "cliente_email", "configurazione", "luce_mm",
         "altezza_mm", "traversa_m", "elettroblocco", "allaccio",
-        "imponibile", "iva", "totale_iva", "stato"
+        "ricarico_percento", "imponibile", "iva", "totale_iva", "stato"
     ]
     with open(PREVENTIVI_CSV, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=campi)
@@ -268,7 +287,8 @@ def login_box():
         "nome": "",
         "azienda": "",
         "telefono": "",
-        "email": ""
+        "email": "",
+        "ricarico": "35"
     }
 
     if username.strip() or password.strip():
@@ -305,12 +325,21 @@ def login_box():
                 reg_nome,
                 reg_azienda,
                 reg_tel,
-                reg_email
+                reg_email,
+                "35"
             )
             st.success("Accesso cliente creato.")
             st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
 
-    return profilo, nome_utente, utente_codice, dati_utente
+    try:
+        ricarico_effettivo = float(str(dati_utente.get("ricarico", "")).replace(",", "."))
+    except:
+        ricarico_effettivo = ricarico_default(profilo)
+
+    if profilo == "SA-TEC":
+        ricarico_effettivo = 0.0
+
+    return profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo
 
 # =========================
 # DISEGNI PORTE
@@ -488,7 +517,8 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-profilo, nome_utente, utente_codice, dati_utente = login_box()
+profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
+RICARICO_ATTIVO = ricarico_effettivo
 
 # =========================
 # ADMIN
@@ -505,12 +535,13 @@ if profilo == "SA-TEC":
         azienda_new = st.text_input("Azienda", key="admin_azienda_new")
         telefono_new = st.text_input("Telefono", key="admin_tel_new")
         email_new = st.text_input("Email", key="admin_email_new")
+        ricarico_new = st.number_input("Ricarico %", min_value=0.0, max_value=100.0, value=ricarico_default(profilo_new), step=1.0, key="admin_ricarico_new")
         if st.button("CREA UTENTE"):
             codice = genera_codice_progressivo(profilo_new, utenti_now)
             pwd = genera_password()
-            salva_utente_csv(codice, pwd, profilo_new, nome_new, azienda_new, telefono_new, email_new)
+            salva_utente_csv(codice, pwd, profilo_new, nome_new, azienda_new, telefono_new, email_new, str(ricarico_new))
             st.success("Utente creato")
-            st.code(f"Utente: {codice}\nPassword: {pwd}\nProfilo: {profilo_new}")
+            st.code(f"Utente: {codice}\nPassword: {pwd}\nProfilo: {profilo_new}\nRicarico: {ricarico_new}%")
 
     if mostra_dashboard:
         st.markdown('<div class="admin-box"><h2 style="color:#06499b;">Dashboard SA-TEC</h2>', unsafe_allow_html=True)
@@ -550,6 +581,7 @@ if profilo == "SA-TEC":
                         "Azienda": d["azienda"],
                         "Telefono": d["telefono"],
                         "Email": d["email"],
+                        "Ricarico %": d.get("ricarico", ""),
                     })
                 st.dataframe(righe, use_container_width=True)
                 with open(UTENTI_CSV, "rb") as f:
@@ -716,6 +748,7 @@ with col_side:
     <div class="price">{euro(imponibile)}</div>
     <div class="vat-box">
     Profilo: <b>{PROFILI[profilo]}</b><br>
+    Ricarico applicato: <b>{ricarico_effettivo:.0f}%</b><br>
     IVA 22%: <span style="float:right;">{euro(iva)}</span><br>
     TOTALE IVA INCLUSA: <span style="float:right;">{euro(totale_iva)}</span><br><br>
     <b>Prezzo franco deposito SA-TEC Lamezia Terme</b>
@@ -779,6 +812,7 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "traversa_m": f"{lunghezza_traversa:.2f}",
         "elettroblocco": "SI" if elettroblocco else "NO",
         "allaccio": "SI" if allaccio else "NO",
+        "ricarico_percento": f"{ricarico_effettivo:.0f}",
         "imponibile": f"{imponibile:.2f}",
         "iva": f"{iva:.2f}",
         "totale_iva": f"{totale_iva:.2f}",
@@ -803,6 +837,7 @@ st.markdown(f"""
 <div class="desc-grid">
 <div>
 <b>Profilo:</b> {PROFILI[profilo]}<br><br>
+<b>Ricarico applicato:</b> {ricarico_effettivo:.0f}%<br><br>
 <b>Utente:</b> {utente_codice}<br><br>
 <b>Configurazione selezionata:</b> {scelta}<br><br>
 <b>Automazione:</b> SESAMO POWERCORE PW100<br><br>
@@ -874,6 +909,7 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <div class="box">
 <b>Data:</b> {date.today().strftime("%d/%m/%Y")}<br>
 <b>Profilo:</b> {PROFILI[profilo]}<br>
+<b>Ricarico applicato:</b> {ricarico_effettivo:.0f}%<br>
 <b>Utente:</b> {utente_codice}<br>
 <b>Cliente:</b> {cliente_nome} - {cliente_azienda}<br>
 <b>Configurazione:</b> {scelta}<br>
