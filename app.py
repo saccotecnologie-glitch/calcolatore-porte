@@ -31,20 +31,24 @@ LISTINI = {
     "PW100_2": 1298.00,
     "ER140_1": 2140.00,
     "ER140_2": 2200.00,
+
     "CASSA": 343.00 / 6.6,
     "COPERCHIO": 214.00 / 6.6,
     "GUARN_COPERCHIO": 134.00 / 35,
     "CINGHIA": 671.00 / 60,
     "GUIDA": 49.20 / 6.6,
     "GUARN_GUIDA": 66.00 / 30,
+
     "HR100": 135.00,
     "ICON": 114.00,
     "BATTERIE": 118.00,
     "ELETTRO_STANDARD": 195.00,
+
     "SSR3_ER_BL": 375.00,
     "DIGIDOR": 180.00,
     "PULSANTE_EMERGENZA": 130.00,
     "ELETTRO_RIDONDANTE": 290.00,
+
     "ALLACCIO_COLLAUDO": 350.00,
 }
 
@@ -72,30 +76,64 @@ def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scont
         "totale": prezzo * quantita
     })
 
-def mini_porta(ante):
+def mini_porta_html(ante):
     if ante == "1 anta":
         return """
-        <svg width="120" height="120" viewBox="0 0 120 120">
+        <svg width="115" height="115" viewBox="0 0 120 120">
             <rect x="20" y="18" width="80" height="10" fill="#d9d9d9" stroke="#111"/>
             <rect x="25" y="30" width="70" height="70" fill="#f7fbff" stroke="#111" stroke-width="2"/>
             <line x1="60" y1="30" x2="60" y2="100" stroke="#111" stroke-width="2"/>
             <path d="M43 65 L67 65" stroke="#111" stroke-width="3" marker-end="url(#m1)"/>
-            <defs><marker id="m1" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#111"/></marker></defs>
+            <defs>
+                <marker id="m1" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto">
+                    <path d="M0,0 L0,6 L6,3 z" fill="#111"/>
+                </marker>
+            </defs>
         </svg>
         """
     return """
-    <svg width="120" height="120" viewBox="0 0 120 120">
+    <svg width="115" height="115" viewBox="0 0 120 120">
         <rect x="20" y="18" width="80" height="10" fill="#d9d9d9" stroke="#111"/>
         <rect x="25" y="30" width="70" height="70" fill="#f7fbff" stroke="#111" stroke-width="2"/>
         <line x1="60" y1="30" x2="60" y2="100" stroke="#111" stroke-width="2"/>
         <path d="M55 65 L35 65" stroke="#111" stroke-width="3" marker-end="url(#ml)"/>
         <path d="M65 65 L85 65" stroke="#111" stroke-width="3" marker-end="url(#mr)"/>
         <defs>
-            <marker id="mr" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#111"/></marker>
-            <marker id="ml" markerWidth="10" markerHeight="10" refX="1" refY="3" orient="auto"><path d="M6,0 L6,6 L0,3 z" fill="#111"/></marker>
+            <marker id="mr" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L6,3 z" fill="#111"/>
+            </marker>
+            <marker id="ml" markerWidth="10" markerHeight="10" refX="1" refY="3" orient="auto">
+                <path d="M6,0 L6,6 L0,3 z" fill="#111"/>
+            </marker>
         </defs>
     </svg>
     """
+
+def render_choice_card(title, desc, ante, active):
+    border = "#06499b" if active else "#d4dce8"
+    border_width = "4px" if active else "2px"
+    bg = "#f0f7ff" if active else "#ffffff"
+
+    html = f"""
+    <div style="
+        border:{border_width} solid {border};
+        background:{bg};
+        border-radius:14px;
+        text-align:center;
+        padding:14px;
+        min-height:235px;
+        font-family:Arial,sans-serif;
+    ">
+        <div style="font-size:20px;font-weight:900;color:#111;line-height:1.1;margin-bottom:5px;">
+            {title}
+        </div>
+        <div>{mini_porta_html(ante)}</div>
+        <div style="font-size:15px;line-height:1.25;color:#111;margin-top:4px;">
+            {desc}
+        </div>
+    </div>
+    """
+    components.html(html, height=255)
 
 def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     blu = "#06499b"
@@ -111,7 +149,9 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
         <rect x="325" y="110" width="250" height="175" fill="#ffffff" stroke="{nero}" stroke-width="4"/>
         <line x1="325" y1="110" x2="325" y2="285" stroke="{nero}" stroke-width="6"/>
         <path d="M170 205 L265 205" stroke="{blu}" stroke-width="8" marker-end="url(#arrow1)"/>
-        <text x="325" y="320" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">SCORRIMENTO LINEARE 1 ANTA</text>
+        <text x="325" y="320" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">
+            SCORRIMENTO LINEARE 1 ANTA
+        </text>
         <defs>
             <marker id="arrow1" markerWidth="14" markerHeight="14" refX="7" refY="4" orient="auto">
                 <path d="M0,0 L0,8 L9,4 z" fill="{blu}"/>
@@ -127,7 +167,9 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
         <rect x="329" y="110" width="12" height="175" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
         <path d="M260 205 L145 205" stroke="{blu}" stroke-width="8" marker-end="url(#arrowL)"/>
         <path d="M390 205 L505 205" stroke="{blu}" stroke-width="8" marker-end="url(#arrowR)"/>
-        <text x="325" y="320" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">SCORRIMENTO LINEARE 2 ANTE</text>
+        <text x="325" y="320" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">
+            SCORRIMENTO LINEARE 2 ANTE
+        </text>
         <defs>
             <marker id="arrowR" markerWidth="14" markerHeight="14" refX="7" refY="4" orient="auto">
                 <path d="M0,0 L0,8 L9,4 z" fill="{blu}"/>
@@ -140,12 +182,16 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
         titolo = "2 ANTE SELEZIONATA"
 
     return f"""
-    <div style="background:#ffffff;border:2px solid #b8d4f3;border-radius:12px;padding:10px;">
+    <div style="background:#ffffff;border:2px solid #b8d4f3;border-radius:12px;padding:10px;font-family:Arial,sans-serif;">
     <svg width="100%" height="390" viewBox="0 0 650 390">
         <text x="20" y="28" font-size="18" fill="{blu}" font-weight="900">{titolo}</text>
 
-        <text x="325" y="58" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900">MISURA TRAVERSA CALCOLATA</text>
-        <text x="325" y="84" text-anchor="middle" font-size="24" fill="{blu}" font-weight="900">{misura_traversa} mm</text>
+        <text x="325" y="58" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900">
+            MISURA TRAVERSA CALCOLATA
+        </text>
+        <text x="325" y="84" text-anchor="middle" font-size="24" fill="{blu}" font-weight="900">
+            {misura_traversa} mm
+        </text>
 
         <line x1="75" y1="95" x2="575" y2="95" stroke="{blu}" stroke-width="3"/>
         <line x1="75" y1="82" x2="75" y2="108" stroke="{blu}" stroke-width="3"/>
@@ -160,12 +206,16 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
         <line x1="145" y1="342" x2="505" y2="342" stroke="{blu}" stroke-width="3"/>
         <line x1="145" y1="330" x2="145" y2="354" stroke="{blu}" stroke-width="3"/>
         <line x1="505" y1="330" x2="505" y2="354" stroke="{blu}" stroke-width="3"/>
-        <text x="325" y="370" text-anchor="middle" font-size="17" fill="{blu}" font-weight="900">LUCE PASSAGGIO {luce_mm} mm</text>
+        <text x="325" y="370" text-anchor="middle" font-size="17" fill="{blu}" font-weight="900">
+            LUCE PASSAGGIO {luce_mm} mm
+        </text>
 
         <line x1="615" y1="110" x2="615" y2="285" stroke="{blu}" stroke-width="3"/>
         <line x1="602" y1="110" x2="628" y2="110" stroke="{blu}" stroke-width="3"/>
         <line x1="602" y1="285" x2="628" y2="285" stroke="{blu}" stroke-width="3"/>
-        <text x="640" y="205" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900" transform="rotate(90 640,205)">H {altezza_mm} mm</text>
+        <text x="640" y="205" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900" transform="rotate(90 640,205)">
+            H {altezza_mm} mm
+        </text>
     </svg>
     </div>
     """
@@ -229,26 +279,6 @@ st.markdown("""
     margin-bottom:16px;
 }
 
-.choice-grid {
-    display:grid;
-    grid-template-columns: repeat(4,1fr);
-    gap:16px;
-}
-.choice {
-    border:2px solid #d4dce8;
-    border-radius:12px;
-    text-align:center;
-    padding:12px;
-    min-height:250px;
-    background:white;
-}
-.choice-active {
-    border:3px solid #06499b;
-    background:#f0f7ff;
-}
-.choice-title {font-size:20px;font-weight:900;color:#111;line-height:1.1;}
-.choice-desc {font-size:15px;line-height:1.25;color:#111;}
-
 .section-row {
     display:grid;
     grid-template-columns: 1fr 1fr;
@@ -268,12 +298,6 @@ st.markdown("""
     color:#0c7b3e;
 }
 
-.measure-row {
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap:50px;
-    margin-bottom:10px;
-}
 div[data-testid="stNumberInput"] label {
     color:#111!important;
     font-size:15px!important;
@@ -287,12 +311,6 @@ div[data-testid="stNumberInput"] input {
     font-weight:800!important;
     color:#06499b!important;
     height:54px!important;
-}
-
-.diagram-row {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:14px;
 }
 
 .measure-total {
@@ -324,28 +342,18 @@ div[data-testid="stNumberInput"] input {
     background:white;
 }
 .option-title {font-size:20px;font-weight:900;color:#06499b;margin-bottom:12px;}
-.check-row {
-    display:flex;
-    align-items:center;
-    gap:14px;
-    font-size:16px;
-    color:#111;
-    font-weight:700;
+div[data-testid="stCheckbox"] label {
+    color:#06499b!important;
+    font-size:18px!important;
+    font-weight:900!important;
 }
-.custom-check {
-    width:26px;
-    height:26px;
-    border-radius:5px;
+div[data-testid="stCheckbox"] {
     border:2px solid #06499b;
-    background:#06499b;
-    color:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:20px;
-    font-weight:900;
+    border-radius:12px;
+    padding:12px;
+    background:#f8fbff;
+    margin-bottom:15px;
 }
-div[data-testid="stCheckbox"] {display:none;}
 
 .price {
     text-align:center;
@@ -383,6 +391,7 @@ div[data-testid="stCheckbox"] {display:none;}
 .desc-title {color:#06499b;font-size:22px;font-weight:900;margin-bottom:10px;}
 .desc-grid b {font-weight:900;}
 .desc-grid li {margin-bottom:8px;}
+
 .footer {
     background:#06499b;
     color:white;
@@ -426,6 +435,7 @@ st.markdown(f"""
         ✉ sa-tec@pec.it
     </div>
 </div>
+
 <div class="powercore">
     <div>
         <div class="powercore-title">SESAMO <span>POWERCORE</span> PW100</div>
@@ -441,135 +451,108 @@ st.markdown(f"""
 if "scelta" not in st.session_state:
     st.session_state.scelta = "STANDARD 1 ANTA"
 
-st.markdown('<div class="grid-main">', unsafe_allow_html=True)
+col_main, col_side = st.columns([0.69, 0.31], gap="large")
 
-st.markdown('<div>', unsafe_allow_html=True)
+with col_main:
+    st.markdown('<div class="card"><div class="title-bar">1&nbsp;&nbsp; SCEGLI LA PORTA AUTOMATICA</div>', unsafe_allow_html=True)
 
-st.markdown('<div class="card"><div class="title-bar">1&nbsp;&nbsp; SCEGLI LA PORTA AUTOMATICA</div>', unsafe_allow_html=True)
+    b1, b2, b3, b4 = st.columns(4)
+    with b1:
+        if st.button("STANDARD 1 ANTA"):
+            st.session_state.scelta = "STANDARD 1 ANTA"
+    with b2:
+        if st.button("STANDARD 2 ANTE"):
+            st.session_state.scelta = "STANDARD 2 ANTE"
+    with b3:
+        if st.button("RIDONDANTE 1 ANTA"):
+            st.session_state.scelta = "RIDONDANTE 1 ANTA"
+    with b4:
+        if st.button("RIDONDANTE 2 ANTE"):
+            st.session_state.scelta = "RIDONDANTE 2 ANTE"
 
-b1, b2, b3, b4 = st.columns(4)
-with b1:
-    if st.button("STANDARD 1 ANTA"):
-        st.session_state.scelta = "STANDARD 1 ANTA"
-with b2:
-    if st.button("STANDARD 2 ANTE"):
-        st.session_state.scelta = "STANDARD 2 ANTE"
-with b3:
-    if st.button("RIDONDANTE 1 ANTA"):
-        st.session_state.scelta = "RIDONDANTE 1 ANTA"
-with b4:
-    if st.button("RIDONDANTE 2 ANTE"):
-        st.session_state.scelta = "RIDONDANTE 2 ANTE"
+    scelta = st.session_state.scelta
 
-scelta = st.session_state.scelta
+    if scelta == "STANDARD 1 ANTA":
+        tipo, ante = "Standard", "1 anta"
+    elif scelta == "STANDARD 2 ANTE":
+        tipo, ante = "Standard", "2 ante"
+    elif scelta == "RIDONDANTE 1 ANTA":
+        tipo, ante = "Ridondante", "1 anta"
+    else:
+        tipo, ante = "Ridondante", "2 ante"
 
-if scelta == "STANDARD 1 ANTA":
-    tipo, ante = "Standard", "1 anta"
-elif scelta == "STANDARD 2 ANTE":
-    tipo, ante = "Standard", "2 ante"
-elif scelta == "RIDONDANTE 1 ANTA":
-    tipo, ante = "Ridondante", "1 anta"
-else:
-    tipo, ante = "Ridondante", "2 ante"
+    cards = [
+        ("STANDARD<br>1 ANTA", "STANDARD 1 ANTA", "Porta automatica<br>lineare standard<br>a una anta", "1 anta"),
+        ("STANDARD<br>2 ANTE", "STANDARD 2 ANTE", "Porta automatica<br>lineare standard<br>a due ante", "2 ante"),
+        ("RIDONDANTE<br>1 ANTA", "RIDONDANTE 1 ANTA", "Automazione lineare<br>per via di fuga<br>a una anta", "1 anta"),
+        ("RIDONDANTE<br>2 ANTE", "RIDONDANTE 2 ANTE", "Automazione lineare<br>per via di fuga<br>a due ante", "2 ante"),
+    ]
 
-cards = [
-    ("STANDARD<br>1 ANTA", "STANDARD 1 ANTA", "Porta automatica<br>lineare standard<br>a una anta", "1 anta"),
-    ("STANDARD<br>2 ANTE", "STANDARD 2 ANTE", "Porta automatica<br>lineare standard<br>a due ante", "2 ante"),
-    ("RIDONDANTE<br>1 ANTA", "RIDONDANTE 1 ANTA", "Automazione lineare<br>per via di fuga<br>a una anta", "1 anta"),
-    ("RIDONDANTE<br>2 ANTE", "RIDONDANTE 2 ANTE", "Automazione lineare<br>per via di fuga<br>a due ante", "2 ante"),
-]
+    c1, c2, c3, c4 = st.columns(4)
+    for col, (titolo, key, desc, ante_mini) in zip([c1, c2, c3, c4], cards):
+        with col:
+            render_choice_card(titolo, desc, ante_mini, scelta == key)
 
-html_cards = '<div class="choice-grid">'
-for titolo, key, desc, ante_mini in cards:
-    active = "choice-active" if scelta == key else ""
-    html_cards += f"""
-    <div class="choice {active}">
-        <div class="choice-title">{titolo}</div>
-        {mini_porta(ante_mini)}
-        <div class="choice-desc">{desc}</div>
+    st.markdown("""
+    <div class="section-row">
+        <div class="section-box">
+            CONFIGURAZIONE STANDARD<br>
+            <span style="font-weight:500;color:#111;">
+            Sesamo PowerCore PW100 per porta scorrevole automatica lineare ad uso normale.
+            </span>
+        </div>
+        <div class="section-box green">
+            CONFIGURAZIONE RIDONDANTE<br>
+            <span style="font-weight:500;color:#111;">
+            Automazione ridondante per vie di fuga e uscite di emergenza.
+            </span>
+        </div>
     </div>
-    """
-html_cards += "</div>"
+    """, unsafe_allow_html=True)
 
-st.markdown(html_cards, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown("""
-<div class="section-row">
-    <div class="section-box">
-        CONFIGURAZIONE STANDARD<br>
-        <span style="font-weight:500;color:#111;">Sesamo PowerCore PW100 per porta scorrevole automatica lineare ad uso normale.</span>
+    st.markdown('<div class="card"><div class="title-bar">2&nbsp;&nbsp; MISURE PORTA</div>', unsafe_allow_html=True)
+
+    m1, m2 = st.columns(2)
+    with m1:
+        luce_mm = st.number_input("LUCE PASSAGGIO IN MM", min_value=800, max_value=5000, value=1600, step=50)
+    with m2:
+        altezza_mm = st.number_input("ALTEZZA PASSAGGIO IN MM", min_value=1800, max_value=3000, value=2200, step=50)
+
+    lunghezza_traversa = calcola_traversa(luce_mm, ante)
+
+    d1, d2 = st.columns(2)
+    with d1:
+        components.html(disegno_porta("1 anta", luce_mm, altezza_mm, lunghezza_traversa), height=430)
+    with d2:
+        components.html(disegno_porta("2 ante", luce_mm, altezza_mm, lunghezza_traversa), height=430)
+
+    st.markdown(f"""
+    <div class="measure-total">
+        <div>
+            <b>MISURA TRAVERSA CALCOLATA</b><br>
+            Calcolo automatico in base alla luce passaggio.
+        </div>
+        <div>
+            <div class="big">{int(lunghezza_traversa * 1000)} mm</div>
+            <div class="small">{lunghezza_traversa:.2f} metri</div>
+        </div>
     </div>
-    <div class="section-box green">
-        CONFIGURAZIONE RIDONDANTE<br>
-        <span style="font-weight:500;color:#111;">Automazione ridondante per vie di fuga e uscite di emergenza.</span>
-    </div>
-</div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-st.markdown('<div class="card"><div class="title-bar">2&nbsp;&nbsp; MISURE PORTA</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-m1, m2 = st.columns(2)
-with m1:
-    luce_mm = st.number_input("LUCE PASSAGGIO IN MM", min_value=800, max_value=5000, value=1600, step=50)
-with m2:
-    altezza_mm = st.number_input("ALTEZZA PASSAGGIO IN MM", min_value=1800, max_value=3000, value=2200, step=50)
+with col_side:
+    st.markdown('<div class="side-card"><div class="title-bar">3&nbsp;&nbsp; ACCESSORI E SERVIZI</div>', unsafe_allow_html=True)
 
-lunghezza_traversa = calcola_traversa(luce_mm, ante)
+    st.markdown('<div class="option-title">ELETTROBLOCCO</div>', unsafe_allow_html=True)
+    elettroblocco = st.checkbox("☑ Aggiungi elettroblocco", value=True, key="elettro")
 
-d1, d2 = st.columns(2)
-with d1:
-    components.html(disegno_porta("1 anta", luce_mm, altezza_mm, lunghezza_traversa), height=430)
-with d2:
-    components.html(disegno_porta("2 ante", luce_mm, altezza_mm, lunghezza_traversa), height=430)
+    st.markdown('<div class="option-title">ALLACCIO E COLLAUDO</div>', unsafe_allow_html=True)
+    allaccio = st.checkbox("☑ Aggiungi allaccio e collaudo SA-TEC", value=True, key="allaccio")
 
-st.markdown(f"""
-<div class="measure-total">
-    <div>
-        <b>MISURA TRAVERSA CALCOLATA</b><br>
-        Calcolo automatico in base alla luce passaggio.
-    </div>
-    <div>
-        <div class="big">{int(lunghezza_traversa * 1000)} mm</div>
-        <div class="small">{lunghezza_traversa:.2f} metri</div>
-    </div>
-</div>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-st.markdown('<div>', unsafe_allow_html=True)
-
-st.markdown('<div class="side-card"><div class="title-bar">3&nbsp;&nbsp; ACCESSORI E SERVIZI</div>', unsafe_allow_html=True)
-
-elettroblocco = st.checkbox("Aggiungi elettroblocco", value=True, key="elettro")
-spunta_elettro = "✓" if elettroblocco else ""
-
-st.markdown(f"""
-<div class="option-box">
-    <div class="option-title">ELETTROBLOCCO</div>
-    <div class="check-row">
-        <div class="custom-check">{spunta_elettro}</div>
-        <div>Aggiungi elettroblocco</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-allaccio = st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=True, key="allaccio")
-spunta_allaccio = "✓" if allaccio else ""
-
-st.markdown(f"""
-<div class="option-box">
-    <div class="option-title">ALLACCIO E COLLAUDO</div>
-    <div class="check-row">
-        <div class="custom-check">{spunta_allaccio}</div>
-        <div>Aggiungi allaccio e collaudo SA-TEC</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 articoli = []
 
@@ -604,47 +587,38 @@ imponibile = sum(a["totale"] for a in articoli)
 iva = imponibile * IVA
 totale_iva = imponibile + iva
 
-st.markdown('<div class="side-card"><div class="title-bar">4&nbsp;&nbsp; RIEPILOGO PREVENTIVO</div>', unsafe_allow_html=True)
-st.markdown(f"""
-<div class="price-label">TOTALE IVA ESCLUSA</div>
-<div class="price">{euro(imponibile)}</div>
-<div class="vat-box">
-    IVA 22%: <span style="float:right;">{euro(iva)}</span><br>
-    TOTALE IVA INCLUSA: <span style="float:right;">{euro(totale_iva)}</span>
-</div>
-""", unsafe_allow_html=True)
-st.markdown("</div>", unsafe_allow_html=True)
+with col_side:
+    st.markdown('<div class="side-card"><div class="title-bar">4&nbsp;&nbsp; RIEPILOGO PREVENTIVO</div>', unsafe_allow_html=True)
 
-st.markdown(f"""
-<div class="side-card">
-    <div class="power-side-title">SESAMO POWERCORE PW100</div>
-    <div style="margin-bottom:14px;">{sesamo_logo_html}</div>
-    <div class="power-side-text">
-        PowerCore PW100 è l'automazione lineare Sesamo progettata per porte scorrevoli automatiche a 1 o 2 ante.
-        <br><br>
-        Affidabile, silenziosa e compatta, garantisce massima sicurezza e conformità alla normativa EN16005.
+    st.markdown(f"""
+    <div class="price-label">TOTALE IVA ESCLUSA</div>
+    <div class="price">{euro(imponibile)}</div>
+    <div class="vat-box">
+        IVA 22%: <span style="float:right;">{euro(iva)}</span><br>
+        TOTALE IVA INCLUSA: <span style="float:right;">{euro(totale_iva)}</span>
     </div>
-    <ul class="power-side-list">
-        <li>Tecnologia lineare ad alte prestazioni</li>
-        <li>Movimento fluido e silenzioso</li>
-        <li>Compatibile con sensori Sesamo e dispositivi di sicurezza</li>
-        <li>Ideale per ambienti pubblici e privati</li>
-    </ul>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-st.markdown("</div>", unsafe_allow_html=True)
-st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-righe1 = f"""
-<b>Configurazione selezionata:</b> {scelta}<br><br>
-<b>Automazione:</b> SESAMO POWERCORE PW100<br><br>
-<b>Luce passaggio:</b> {luce_mm} mm<br><br>
-<b>Altezza passaggio:</b> {altezza_mm} mm<br><br>
-<b>Misura traversa:</b> {lunghezza_traversa:.2f} metri
-"""
+    st.markdown(f"""
+    <div class="side-card">
+        <div class="power-side-title">SESAMO POWERCORE PW100</div>
+        <div style="margin-bottom:14px;">{sesamo_logo_html}</div>
+        <div class="power-side-text">
+            PowerCore PW100 è l'automazione lineare Sesamo progettata per porte scorrevoli automatiche a 1 o 2 ante.
+            <br><br>
+            Affidabile, silenziosa e compatta, garantisce massima sicurezza e conformità alla normativa EN16005.
+        </div>
+        <ul class="power-side-list">
+            <li>Tecnologia lineare ad alte prestazioni</li>
+            <li>Movimento fluido e silenzioso</li>
+            <li>Compatibile con sensori Sesamo e dispositivi di sicurezza</li>
+            <li>Ideale per ambienti pubblici e privati</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
 
-lista_articoli = "".join([f"<li>{a['descrizione_lunga']}</li>" for a in articoli])
 metà = len(articoli) // 2
 lista_sx = "".join([f"<li>{a['descrizione_lunga']}</li>" for a in articoli[:metà]])
 lista_dx = "".join([f"<li>{a['descrizione_lunga']}</li>" for a in articoli[metà:]])
@@ -653,7 +627,13 @@ st.markdown(f"""
 <div class="card">
     <div class="desc-title">DESCRIZIONE FORNITURA CLIENTE</div>
     <div class="desc-grid">
-        <div>{righe1}</div>
+        <div>
+            <b>Configurazione selezionata:</b> {scelta}<br><br>
+            <b>Automazione:</b> SESAMO POWERCORE PW100<br><br>
+            <b>Luce passaggio:</b> {luce_mm} mm<br><br>
+            <b>Altezza passaggio:</b> {altezza_mm} mm<br><br>
+            <b>Misura traversa:</b> {lunghezza_traversa:.2f} metri
+        </div>
         <div><ul>{lista_sx}</ul></div>
         <div><ul>{lista_dx}</ul></div>
     </div>
@@ -723,6 +703,7 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 </div>
 
 <h2>Descrizione fornitura</h2>
+
 <table>
 <thead><tr><th>Voce</th><th>Descrizione</th></tr></thead>
 <tbody>{righe_descrizione}</tbody>
