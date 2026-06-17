@@ -1,82 +1,204 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import base64, json
+import base64
+import json
+import csv
 from pathlib import Path
-from datetime import date
+from datetime import datetime, date
 
-st.set_page_config(page_title="Configuratore Porte Automatiche SA-TEC", layout="wide")
+# =========================================================
+# CONFIGURATORE SA-TEC PRO
+# Formula definitiva:
+# Costo SA-TEC reale = Listino × 0,50 × 0,95
+# Prezzo vendita = Costo SA-TEC × 1,35
+# Formula finale = Listino × 0,64125
+# =========================================================
 
-AZIENDA="SA-TEC S.R.L.s"
-SEDE="Via L. Settembrini 84, 88046 Lamezia Terme (CZ)"
-PIVA="P.IVA 04009610793"
-TELEFONO="0968-036797"
-EMAIL="sacco.tecnologie@gmail.com"
-PEC="sa-tec@pec.it"
-IBAN="IT30S0825842841007000002877"
-IVA=0.22
+st.set_page_config(
+    page_title="Configuratore Porte Automatiche SA-TEC",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-def prezzo_cliente(listino):
+AZIENDA = "SA-TEC S.R.L.s"
+SEDE = "Via L. Settembrini 84, 88046 Lamezia Terme (CZ)"
+PIVA = "P.IVA 04009610793"
+TELEFONO = "0968-036797"
+EMAIL = "sacco.tecnologie@gmail.com"
+PEC = "sa-tec@pec.it"
+IBAN = "IT30S0825842841007000002877"
+IVA = 0.22
+PREVENTIVI_CSV = "preventivi_satec.csv"
+
+# =========================
+# UTENTI PERSONALIZZATI
+# Cliente finale: accesso libero
+# SA-TEC: vede dashboard, costi reali e margine
+# Rivenditore / Installatore: accesso tracciato, stesso prezzo formula definitiva
+# =========================
+
+UTENTI = {
+    "ADMIN": {"password": "SATEC-ADMIN", "profilo": "SA-TEC", "nome": "SA-TEC Amministratore"},
+    "ROSSI01": {"password": "R2026#", "profilo": "RIVENDITORE", "nome": "Rivenditore Rossi"},
+    "VERDI01": {"password": "V2026#", "profilo": "RIVENDITORE", "nome": "Rivenditore Verdi"},
+    "MARIO01": {"password": "M2026#", "profilo": "INSTALLATORE", "nome": "Installatore Mario"},
+    "LUCA01": {"password": "L2026#", "profilo": "INSTALLATORE", "nome": "Installatore Luca"},
+}
+
+PROFILI = {
+    "CLIENTE": "Cliente finale",
+    "RIVENDITORE": "Rivenditore",
+    "INSTALLATORE": "Installatore",
+    "SA-TEC": "SA-TEC",
+}
+
+LISTINI = {
+    "PW100_1": 1236.00,
+    "PW100_2": 1298.00,
+    "ER140_1": 2140.00,
+    "ER140_2": 2200.00,
+
+    "CASSA": 343.00 / 6.6,
+    "COPERCHIO": 214.00 / 6.6,
+    "GUARN_COPERCHIO": 134.00 / 35,
+    "PF54_91_GUARN_ANTIVIBRAZIONE": 2.50,
+    "CINGHIA": 671.00 / 60,
+    "GUIDA": 49.20 / 6.6,
+    "GUARN_GUIDA": 66.00 / 30,
+
+    "HR100": 285.00,
+    "ICON": 114.00,
+    "BATTERIE": 118.00,
+    "ELETTRO_STANDARD": 195.00,
+
+    "SSR3_ER_BL": 375.00,
+    "DIGIDOR": 180.00,
+    "PULSANTE_EMERGENZA": 130.00,
+    "ELETTRO_RIDONDANTE": 290.00,
+
+    "ASSEMBLAGGIO": 130.00,
+    "ALLACCIO_COLLAUDO_STANDARD": 350.00,
+    "ALLACCIO_COLLAUDO_RIDONDANTE": 400.00,
+}
+
+# =========================
+# FUNZIONI PREZZI
+# =========================
+
+def costo_satec_reale(listino):
+    return listino * 0.50 * 0.95
+
+def prezzo_vendita(listino):
     return listino * 0.50 * 0.95 * 1.35
 
 def euro(v):
     return f"€ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-LISTINI={
-    "PW100_1":1236.00,
-    "PW100_2":1298.00,
-    "ER140_1":2140.00,
-    "ER140_2":2200.00,
-
-    "CASSA":343.00/6.6,
-    "COPERCHIO":214.00/6.6,
-    "GUARN_COPERCHIO":134.00/35,
-    "PF54_91_GUARN_ANTIVIBRAZIONE":2.50,
-    "CINGHIA":671.00/60,
-    "GUIDA":49.20/6.6,
-    "GUARN_GUIDA":66.00/30,
-
-    "HR100":285.00,
-    "ICON":114.00,
-    "BATTERIE":118.00,
-    "ELETTRO_STANDARD":195.00,
-
-    "SSR3_ER_BL":375.00,
-    "DIGIDOR":180.00,
-    "PULSANTE_EMERGENZA":130.00,
-    "ELETTRO_RIDONDANTE":290.00,
-
-    "ASSEMBLAGGIO":130.00,
-    "ALLACCIO_COLLAUDO_STANDARD":350.00,
-    "ALLACCIO_COLLAUDO_RIDONDANTE":400.00,
-}
-
 def img_to_base64(paths):
     for p in paths:
-        f=Path(p)
+        f = Path(p)
         if f.exists():
             return base64.b64encode(f.read_bytes()).decode()
     return ""
 
-logo_satec64=img_to_base64(["logo_satec.jpg","logo_satec.png","/mnt/data/logo_satec.jpg","/mnt/data/logo_satec.png"])
-logo_sesamo64=img_to_base64(["SESAMO LOGO.png","sesamo_logo.png","logo_sesamo.png","/mnt/data/SESAMO LOGO.png","/mnt/data/sesamo_logo.png","/mnt/data/logo_sesamo.png"])
+logo_satec64 = img_to_base64([
+    "logo_satec.jpg", "logo_satec.png",
+    "/mnt/data/logo_satec.jpg", "/mnt/data/logo_satec.png"
+])
+
+logo_sesamo64 = img_to_base64([
+    "SESAMO LOGO.png", "sesamo_logo.png", "logo_sesamo.png",
+    "/mnt/data/SESAMO LOGO.png", "/mnt/data/sesamo_logo.png", "/mnt/data/logo_sesamo.png"
+])
 
 def calcola_traversa(luce_mm, ante):
-    if ante=="1 anta":
-        return ((luce_mm*2)+100)/1000
-    return ((luce_mm*2)+200)/1000
+    if ante == "1 anta":
+        return ((luce_mm * 2) + 100) / 1000
+    return ((luce_mm * 2) + 200) / 1000
 
-def aggiungi(articoli,codice,descrizione,descrizione_lunga,quantita=1,scontato=True):
-    prezzo=prezzo_cliente(LISTINI[codice]) if scontato else LISTINI[codice]
+def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scontato=True):
+    listino = LISTINI[codice]
+
+    if scontato:
+        prezzo_unitario = prezzo_vendita(listino)
+        costo_unitario = costo_satec_reale(listino)
+    else:
+        prezzo_unitario = listino
+        costo_unitario = listino
+
     articoli.append({
-        "codice":codice,
-        "descrizione":descrizione,
-        "descrizione_lunga":descrizione_lunga,
-        "quantita":quantita,
-        "totale":prezzo*quantita
+        "codice": codice,
+        "descrizione": descrizione,
+        "descrizione_lunga": descrizione_lunga,
+        "quantita": quantita,
+        "listino_unitario": listino,
+        "costo_unitario_satec": costo_unitario,
+        "prezzo_unitario": prezzo_unitario,
+        "totale": prezzo_unitario * quantita,
+        "costo_totale_satec": costo_unitario * quantita
     })
 
+# =========================
+# LOGIN
+# =========================
+
+def login_box():
+    st.sidebar.markdown("## Accesso")
+    st.sidebar.info("Cliente finale: lascia vuoto.")
+    username = st.sidebar.text_input("Utente", value="", key="login_user")
+    password = st.sidebar.text_input("Password", value="", type="password", key="login_pwd")
+
+    profilo = "CLIENTE"
+    nome_utente = "Cliente finale"
+    utente_codice = "CLIENTE"
+
+    if username.strip() or password.strip():
+        u = username.strip().upper()
+        if u in UTENTI and UTENTI[u]["password"] == password:
+            profilo = UTENTI[u]["profilo"]
+            nome_utente = UTENTI[u]["nome"]
+            utente_codice = u
+            st.sidebar.success(f"Accesso: {nome_utente}")
+        else:
+            st.sidebar.error("Utente o password non corretti. Accesso cliente finale.")
+    else:
+        st.sidebar.success("Accesso cliente finale")
+
+    st.sidebar.markdown("---")
+    st.sidebar.write(f"Profilo attivo: **{PROFILI[profilo]}**")
+    return profilo, nome_utente, utente_codice
+
+# =========================
+# SALVATAGGIO PREVENTIVI
+# =========================
+
+def salva_preventivo(dati):
+    file_exists = Path(PREVENTIVI_CSV).exists()
+    campi = [
+        "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
+        "cliente_telefono", "cliente_email", "configurazione", "luce_mm",
+        "altezza_mm", "traversa_m", "elettroblocco", "allaccio",
+        "imponibile", "iva", "totale_iva", "stato"
+    ]
+    with open(PREVENTIVI_CSV, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=campi)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(dati)
+
+def carica_preventivi():
+    path = Path(PREVENTIVI_CSV)
+    if not path.exists():
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+# =========================
+# DISEGNI PORTE
+# =========================
+
 def mini_porta_html(ante):
-    if ante=="1 anta":
+    if ante == "1 anta":
         return """
         <svg width="120" height="120" viewBox="0 0 120 120">
         <rect x="18" y="18" width="84" height="10" fill="#d9d9d9" stroke="#111"/>
@@ -93,10 +215,10 @@ def mini_porta_html(ante):
     <rect x="61" y="30" width="5" height="72" fill="#fff" stroke="#111"/>
     </svg>"""
 
-def render_choice_card(title,desc,ante,active):
-    border="#06499b" if active else "#d4dce8"
-    bw="4px" if active else "2px"
-    bg="#dcecff" if active else "#fff"
+def render_choice_card(title, desc, ante, active):
+    border = "#06499b" if active else "#d4dce8"
+    bw = "4px" if active else "2px"
+    bg = "#dcecff" if active else "#fff"
     components.html(f"""
     <div style="border:{bw} solid {border};background:{bg};border-radius:14px;text-align:center;padding:14px;min-height:242px;font-family:Arial;">
     <div style="font-size:19px;font-weight:900;color:#111;line-height:1.15;margin-bottom:6px;">{title}</div>
@@ -105,22 +227,25 @@ def render_choice_card(title,desc,ante,active):
     </div>""", height=260)
 
 def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    blu="#06499b"; vetro_sel="#d5eaff"; vetro="#fff"; nero="#111"
-    mt=int(lunghezza_traversa*1000)
+    blu = "#06499b"
+    vetro_sel = "#d5eaff"
+    vetro = "#fff"
+    nero = "#111"
+    mt = int(lunghezza_traversa * 1000)
 
-    if ante=="1 anta":
-        ante_svg=f"""
+    if ante == "1 anta":
+        ante_svg = f"""
         <rect x="80" y="115" width="260" height="170" fill="{vetro_sel}" stroke="{nero}" stroke-width="4"/>
         <rect x="340" y="115" width="260" height="170" fill="{vetro}" stroke="{nero}" stroke-width="4"/>
         <line x1="340" y1="115" x2="340" y2="285" stroke="{nero}" stroke-width="6"/>"""
-        titolo="ANTE SELEZIONATA: 1 ANTA"
+        titolo = "ANTE SELEZIONATA: 1 ANTA"
     else:
-        ante_svg=f"""
+        ante_svg = f"""
         <rect x="80" y="115" width="260" height="170" fill="{vetro_sel}" stroke="{nero}" stroke-width="4"/>
         <rect x="340" y="115" width="260" height="170" fill="{vetro_sel}" stroke="{nero}" stroke-width="4"/>
         <rect x="328" y="115" width="10" height="170" fill="#fff" stroke="{nero}" stroke-width="3"/>
         <rect x="342" y="115" width="10" height="170" fill="#fff" stroke="{nero}" stroke-width="3"/>"""
-        titolo="ANTE SELEZIONATA: 2 ANTE"
+        titolo = "ANTE SELEZIONATA: 2 ANTE"
 
     return f"""
     <div style="background:#fff;border:2px solid #b8d4f3;border-radius:12px;padding:10px;font-family:Arial;">
@@ -144,6 +269,10 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     <line x1="620" y1="285" x2="644" y2="285" stroke="{blu}" stroke-width="3"/>
     <text x="660" y="205" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900" transform="rotate(90 660,205)">H {altezza_mm} mm</text>
     </svg></div>"""
+
+# =========================
+# CSS
+# =========================
 
 st.markdown("""
 <style>
@@ -186,11 +315,17 @@ div[data-testid="stCheckbox"] label {color:#06499b!important;font-size:18px!impo
 .footer {background:#06499b;color:white;padding:18px 34px;display:grid;grid-template-columns:1fr 1fr 1fr;font-size:16px;font-weight:700;margin-top:12px;}
 .stButton>button {background:#06499b;color:white;border-radius:8px;height:48px;font-size:16px;font-weight:900;border:none;}
 .stButton>button:hover {background:#073763;color:white;}
+.admin-box {background:#ffffff;border:2px solid #06499b;border-radius:14px;padding:18px;margin-bottom:18px;}
 </style>
 """, unsafe_allow_html=True)
 
-logo_satec_html=f'<img class="logo-satec" src="data:image/jpeg;base64,{logo_satec64}">' if logo_satec64 else "<h1 style='color:#06499b'>SA-TEC</h1>"
-sesamo_logo_html=f'<img class="sesamo-logo" src="data:image/png;base64,{logo_sesamo64}">' if logo_sesamo64 else """
+# =========================
+# HEADER
+# =========================
+
+logo_satec_html = f'<img class="logo-satec" src="data:image/jpeg;base64,{logo_satec64}">' if logo_satec64 else "<h1 style='color:#06499b'>SA-TEC</h1>"
+
+sesamo_logo_html = f'<img class="sesamo-logo" src="data:image/png;base64,{logo_sesamo64}">' if logo_sesamo64 else """
 <div style="display:flex;align-items:center;justify-content:center;gap:18px;">
 <div style="background:#ff7900;color:white;font-size:44px;font-weight:900;padding:10px 18px;">▌</div>
 <div><div style="font-size:48px;font-weight:900;color:#000;line-height:1;">SESAMO</div>
@@ -210,39 +345,86 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-if "scelta" not in st.session_state:
-    st.session_state.scelta="STANDARD 1 ANTA"
+profilo, nome_utente, utente_codice = login_box()
 
-col_main,col_side=st.columns([0.69,0.31], gap="large")
+# =========================
+# DASHBOARD SA-TEC
+# =========================
+
+if profilo == "SA-TEC":
+    st.sidebar.markdown("---")
+    mostra_dashboard = st.sidebar.checkbox("Mostra dashboard SA-TEC", value=False)
+
+    if mostra_dashboard:
+        st.markdown('<div class="admin-box"><h2 style="color:#06499b;">Dashboard SA-TEC</h2>', unsafe_allow_html=True)
+        preventivi = carica_preventivi()
+
+        if not preventivi:
+            st.info("Nessun preventivo salvato ancora.")
+        else:
+            st.write(f"Preventivi salvati: **{len(preventivi)}**")
+            totale = 0.0
+            for p in preventivi:
+                try:
+                    totale += float(p.get("imponibile", 0))
+                except:
+                    pass
+            st.write(f"Valore totale IVA esclusa: **{euro(totale)}**")
+            st.dataframe(preventivi, use_container_width=True)
+
+            with open(PREVENTIVI_CSV, "rb") as f:
+                st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================
+# CONFIGURATORE
+# =========================
+
+if "scelta" not in st.session_state:
+    st.session_state.scelta = "STANDARD 1 ANTA"
+
+col_main, col_side = st.columns([0.69, 0.31], gap="large")
 
 with col_main:
     st.markdown('<div class="card"><div class="title-bar">1&nbsp;&nbsp; SCEGLI LA PORTA AUTOMATICA</div>', unsafe_allow_html=True)
-    b1,b2,b3,b4=st.columns(4)
+    b1, b2, b3, b4 = st.columns(4)
+
     with b1:
-        if st.button("STANDARD 1 ANTA"): st.session_state.scelta="STANDARD 1 ANTA"
+        if st.button("STANDARD 1 ANTA"):
+            st.session_state.scelta = "STANDARD 1 ANTA"
     with b2:
-        if st.button("STANDARD 2 ANTE"): st.session_state.scelta="STANDARD 2 ANTE"
+        if st.button("STANDARD 2 ANTE"):
+            st.session_state.scelta = "STANDARD 2 ANTE"
     with b3:
-        if st.button("RIDONDANTE 1 ANTA"): st.session_state.scelta="RIDONDANTE 1 ANTA"
+        if st.button("RIDONDANTE 1 ANTA"):
+            st.session_state.scelta = "RIDONDANTE 1 ANTA"
     with b4:
-        if st.button("RIDONDANTE 2 ANTE"): st.session_state.scelta="RIDONDANTE 2 ANTE"
+        if st.button("RIDONDANTE 2 ANTE"):
+            st.session_state.scelta = "RIDONDANTE 2 ANTE"
 
-    scelta=st.session_state.scelta
-    if scelta=="STANDARD 1 ANTA": tipo,ante="Standard","1 anta"
-    elif scelta=="STANDARD 2 ANTE": tipo,ante="Standard","2 ante"
-    elif scelta=="RIDONDANTE 1 ANTA": tipo,ante="Ridondante","1 anta"
-    else: tipo,ante="Ridondante","2 ante"
+    scelta = st.session_state.scelta
 
-    cards=[
-        ("STANDARD<br>1 ANTA","STANDARD 1 ANTA","Porta automatica<br>lineare standard<br>a una anta","1 anta"),
-        ("STANDARD<br>2 ANTE","STANDARD 2 ANTE","Porta automatica<br>lineare standard<br>a due ante","2 ante"),
-        ("RIDONDANTE<br>1 ANTA","RIDONDANTE 1 ANTA","Automazione lineare<br>per via di fuga<br>a una anta","1 anta"),
-        ("RIDONDANTE<br>2 ANTE","RIDONDANTE 2 ANTE","Automazione lineare<br>per via di fuga<br>a due ante","2 ante"),
+    if scelta == "STANDARD 1 ANTA":
+        tipo, ante = "Standard", "1 anta"
+    elif scelta == "STANDARD 2 ANTE":
+        tipo, ante = "Standard", "2 ante"
+    elif scelta == "RIDONDANTE 1 ANTA":
+        tipo, ante = "Ridondante", "1 anta"
+    else:
+        tipo, ante = "Ridondante", "2 ante"
+
+    cards = [
+        ("STANDARD<br>1 ANTA", "STANDARD 1 ANTA", "Porta automatica<br>lineare standard<br>a una anta", "1 anta"),
+        ("STANDARD<br>2 ANTE", "STANDARD 2 ANTE", "Porta automatica<br>lineare standard<br>a due ante", "2 ante"),
+        ("RIDONDANTE<br>1 ANTA", "RIDONDANTE 1 ANTA", "Automazione lineare<br>per via di fuga<br>a una anta", "1 anta"),
+        ("RIDONDANTE<br>2 ANTE", "RIDONDANTE 2 ANTE", "Automazione lineare<br>per via di fuga<br>a due ante", "2 ante"),
     ]
-    cols=st.columns(4)
-    for c,(titolo,key,desc,ante_mini) in zip(cols,cards):
+
+    cols = st.columns(4)
+    for c, (titolo, key, desc, ante_mini) in zip(cols, cards):
         with c:
-            render_choice_card(titolo,desc,ante_mini,scelta==key)
+            render_choice_card(titolo, desc, ante_mini, scelta == key)
 
     st.markdown("""
     <div class="section-row">
@@ -252,13 +434,14 @@ with col_main:
     """, unsafe_allow_html=True)
 
     st.markdown('<div class="card"><div class="title-bar">2&nbsp;&nbsp; MISURE PORTA</div>', unsafe_allow_html=True)
-    m1,m2=st.columns(2)
-    with m1:
-        luce_mm=st.number_input("LUCE PASSAGGIO IN MM", min_value=800, max_value=5000, value=1600, step=50)
-    with m2:
-        altezza_mm=st.number_input("ALTEZZA PASSAGGIO IN MM", min_value=1800, max_value=3000, value=2200, step=50)
+    m1, m2 = st.columns(2)
 
-    lunghezza_traversa=calcola_traversa(luce_mm,ante)
+    with m1:
+        luce_mm = st.number_input("LUCE PASSAGGIO IN MM", min_value=800, max_value=5000, value=1600, step=50)
+    with m2:
+        altezza_mm = st.number_input("ALTEZZA PASSAGGIO IN MM", min_value=1800, max_value=3000, value=2200, step=50)
+
+    lunghezza_traversa = calcola_traversa(luce_mm, ante)
     components.html(disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa), height=430)
 
     st.markdown(f"""
@@ -270,15 +453,17 @@ with col_main:
 
 with col_side:
     st.markdown('<div class="side-card"><div class="title-bar">3&nbsp;&nbsp; ACCESSORI E SERVIZI</div>', unsafe_allow_html=True)
+
     st.markdown('<div class="option-box"><div class="option-title">ELETTROBLOCCO</div>', unsafe_allow_html=True)
-    elettroblocco=st.checkbox("Aggiungi elettroblocco", value=True, key="elettro")
+    elettroblocco = st.checkbox("Aggiungi elettroblocco", value=True, key="elettro")
     st.markdown("</div>", unsafe_allow_html=True)
 
-    prezzo_allaccio=LISTINI["ALLACCIO_COLLAUDO_STANDARD"] if tipo=="Standard" else LISTINI["ALLACCIO_COLLAUDO_RIDONDANTE"]
-    testo_tipo_allaccio="Standard" if tipo=="Standard" else "Ridondante"
+    prezzo_allaccio = LISTINI["ALLACCIO_COLLAUDO_STANDARD"] if tipo == "Standard" else LISTINI["ALLACCIO_COLLAUDO_RIDONDANTE"]
+    testo_tipo_allaccio = "Standard" if tipo == "Standard" else "Ridondante"
 
     st.markdown('<div class="option-box"><div class="option-title">ALLACCIO E COLLAUDO</div>', unsafe_allow_html=True)
-    allaccio=st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=True, key="allaccio")
+    allaccio = st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=True, key="allaccio")
+
     st.markdown(f"""
     <div class="option-note">
     Prezzo allaccio e collaudo {testo_tipo_allaccio}: <b>{euro(prezzo_allaccio)}</b> IVA esclusa.<br><br>
@@ -291,11 +476,15 @@ with col_side:
     """, unsafe_allow_html=True)
     st.markdown("</div></div>", unsafe_allow_html=True)
 
-articoli=[]
+# =========================
+# ARTICOLI
+# =========================
 
-aggiungi(articoli,"CASSA","Profilo cassa traversa in alluminio",f"Profilo cassa traversa in alluminio ({lunghezza_traversa:.2f} m)",lunghezza_traversa)
-aggiungi(articoli,"COPERCHIO","Coperchio traversa in alluminio",f"Coperchio traversa in alluminio ({lunghezza_traversa:.2f} m)",lunghezza_traversa)
-aggiungi(articoli,"GUARN_COPERCHIO","Guarnizione coperchio",f"Guarnizione coperchio ({lunghezza_traversa:.2f} m)",lunghezza_traversa)
+articoli = []
+
+aggiungi(articoli, "CASSA", "Profilo cassa traversa in alluminio", f"Profilo cassa traversa in alluminio ({lunghezza_traversa:.2f} m)", lunghezza_traversa)
+aggiungi(articoli, "COPERCHIO", "Coperchio traversa in alluminio", f"Coperchio traversa in alluminio ({lunghezza_traversa:.2f} m)", lunghezza_traversa)
+aggiungi(articoli, "GUARN_COPERCHIO", "Guarnizione coperchio", f"Guarnizione coperchio ({lunghezza_traversa:.2f} m)", lunghezza_traversa)
 
 aggiungi(
     articoli,
@@ -305,38 +494,40 @@ aggiungi(
     lunghezza_traversa
 )
 
-aggiungi(articoli,"CINGHIA","Cinghia dentata",f"Cinghia dentata ({lunghezza_traversa*1.8:.2f} m)",lunghezza_traversa*1.8)
-aggiungi(articoli,"GUIDA","Profilo guida scorrimento",f"Profilo guida scorrimento ({lunghezza_traversa:.2f} m)",lunghezza_traversa)
-aggiungi(articoli,"GUARN_GUIDA","Guarnizione guida",f"Guarnizione guida ({lunghezza_traversa:.2f} m)",lunghezza_traversa)
+aggiungi(articoli, "CINGHIA", "Cinghia dentata", f"Cinghia dentata ({lunghezza_traversa*1.8:.2f} m)", lunghezza_traversa * 1.8)
+aggiungi(articoli, "GUIDA", "Profilo guida scorrimento", f"Profilo guida scorrimento ({lunghezza_traversa:.2f} m)", lunghezza_traversa)
+aggiungi(articoli, "GUARN_GUIDA", "Guarnizione guida", f"Guarnizione guida ({lunghezza_traversa:.2f} m)", lunghezza_traversa)
 
-if tipo=="Standard":
-    aggiungi(articoli,"PW100_1" if ante=="1 anta" else "PW100_2",f"Automazione Sesamo PowerCore PW100 {ante}",f"Automazione Sesamo PowerCore PW100 {ante}")
-    aggiungi(articoli,"HR100","2 × Hotron HR100 Radar apertura e sicurezza EN16005","2 × Hotron HR100 Radar apertura e sicurezza EN16005",2)
-    aggiungi(articoli,"ICON","PF37.00 ICON Selettore Touch con 3 Tag","PF37.00 ICON Selettore Touch con 3 Tag")
-    aggiungi(articoli,"BATTERIE","PF54.73 Kit batterie","PF54.73 Kit batterie")
+if tipo == "Standard":
+    aggiungi(articoli, "PW100_1" if ante == "1 anta" else "PW100_2", f"Automazione Sesamo PowerCore PW100 {ante}", f"Automazione Sesamo PowerCore PW100 {ante}")
+    aggiungi(articoli, "HR100", "2 × Hotron HR100 Radar apertura e sicurezza EN16005", "2 × Hotron HR100 Radar apertura e sicurezza EN16005", 2)
+    aggiungi(articoli, "ICON", "PF37.00 ICON Selettore Touch con 3 Tag", "PF37.00 ICON Selettore Touch con 3 Tag")
+    aggiungi(articoli, "BATTERIE", "PF54.73 Kit batterie", "PF54.73 Kit batterie")
     if elettroblocco:
-        aggiungi(articoli,"ELETTRO_STANDARD","PF54.59 Elettroblocco Standard","PF54.59 Elettroblocco Standard")
+        aggiungi(articoli, "ELETTRO_STANDARD", "PF54.59 Elettroblocco Standard", "PF54.59 Elettroblocco Standard")
 else:
-    aggiungi(articoli,"ER140_1" if ante=="1 anta" else "ER140_2",f"Automazione Sesamo ER140 Ridondante {ante}",f"Automazione Sesamo ER140 Ridondante {ante}")
-    aggiungi(articoli,"SSR3_ER_BL","Hotron SSR3-ER-BL Radar evacuazione","Hotron SSR3-ER-BL Radar evacuazione")
-    aggiungi(articoli,"HR100","Hotron HR100 Radar apertura e sicurezza EN16005","Hotron HR100 Radar apertura e sicurezza EN16005")
-    aggiungi(articoli,"DIGIDOR","PF37.06 DIGIDOR Selettore","PF37.06 DIGIDOR Selettore")
-    aggiungi(articoli,"BATTERIE","PF54.73 Kit batterie","PF54.73 Kit batterie")
-    aggiungi(articoli,"PULSANTE_EMERGENZA","Pulsante emergenza","Pulsante emergenza")
+    aggiungi(articoli, "ER140_1" if ante == "1 anta" else "ER140_2", f"Automazione Sesamo ER140 Ridondante {ante}", f"Automazione Sesamo ER140 Ridondante {ante}")
+    aggiungi(articoli, "SSR3_ER_BL", "Hotron SSR3-ER-BL Radar evacuazione", "Hotron SSR3-ER-BL Radar evacuazione")
+    aggiungi(articoli, "HR100", "Hotron HR100 Radar apertura e sicurezza EN16005", "Hotron HR100 Radar apertura e sicurezza EN16005")
+    aggiungi(articoli, "DIGIDOR", "PF37.06 DIGIDOR Selettore", "PF37.06 DIGIDOR Selettore")
+    aggiungi(articoli, "BATTERIE", "PF54.73 Kit batterie", "PF54.73 Kit batterie")
+    aggiungi(articoli, "PULSANTE_EMERGENZA", "Pulsante emergenza", "Pulsante emergenza")
     if elettroblocco:
-        aggiungi(articoli,"ELETTRO_RIDONDANTE","PF54.62 Elettroblocco Ridondante","PF54.62 Elettroblocco Ridondante")
+        aggiungi(articoli, "ELETTRO_RIDONDANTE", "PF54.62 Elettroblocco Ridondante", "PF54.62 Elettroblocco Ridondante")
 
-aggiungi(articoli,"ASSEMBLAGGIO","Assemblaggio automatismo","Assemblaggio completo automatismo presso officina SA-TEC - Franco deposito SA-TEC Lamezia Terme",1,scontato=False)
+aggiungi(articoli, "ASSEMBLAGGIO", "Assemblaggio automatismo", "Assemblaggio completo automatismo presso officina SA-TEC - Franco deposito SA-TEC Lamezia Terme", 1, scontato=False)
 
 if allaccio:
-    if tipo=="Standard":
-        aggiungi(articoli,"ALLACCIO_COLLAUDO_STANDARD","Allaccio e collaudo SA-TEC Standard","Allaccio e collaudo eseguito da SA-TEC su automazione standard. Comprende libretto di manutenzione, certificazione e assistenza prioritaria con intervento risolutivo entro 48 ore.",1,scontato=False)
+    if tipo == "Standard":
+        aggiungi(articoli, "ALLACCIO_COLLAUDO_STANDARD", "Allaccio e collaudo SA-TEC Standard", "Allaccio e collaudo eseguito da SA-TEC su automazione standard. Comprende libretto di manutenzione, certificazione e assistenza prioritaria con intervento risolutivo entro 48 ore.", 1, scontato=False)
     else:
-        aggiungi(articoli,"ALLACCIO_COLLAUDO_RIDONDANTE","Allaccio e collaudo SA-TEC Ridondante","Allaccio e collaudo eseguito da SA-TEC su automazione ridondante. Comprende libretto di manutenzione, certificazione e assistenza prioritaria con intervento risolutivo entro 48 ore.",1,scontato=False)
+        aggiungi(articoli, "ALLACCIO_COLLAUDO_RIDONDANTE", "Allaccio e collaudo SA-TEC Ridondante", "Allaccio e collaudo eseguito da SA-TEC su automazione ridondante. Comprende libretto di manutenzione, certificazione e assistenza prioritaria con intervento risolutivo entro 48 ore.", 1, scontato=False)
 
-imponibile=sum(a["totale"] for a in articoli)
-iva=imponibile*IVA
-totale_iva=imponibile+iva
+imponibile = sum(a["totale"] for a in articoli)
+costo_satec_totale = sum(a["costo_totale_satec"] for a in articoli)
+utile_lordo = imponibile - costo_satec_totale
+iva = imponibile * IVA
+totale_iva = imponibile + iva
 
 with col_side:
     st.markdown('<div class="side-card"><div class="title-bar">4&nbsp;&nbsp; RIEPILOGO PREVENTIVO</div>', unsafe_allow_html=True)
@@ -344,11 +535,22 @@ with col_side:
     <div class="price-label">TOTALE IVA ESCLUSA</div>
     <div class="price">{euro(imponibile)}</div>
     <div class="vat-box">
+    Profilo: <b>{PROFILI[profilo]}</b><br>
     IVA 22%: <span style="float:right;">{euro(iva)}</span><br>
     TOTALE IVA INCLUSA: <span style="float:right;">{euro(totale_iva)}</span><br><br>
     <b>Prezzo franco deposito SA-TEC Lamezia Terme</b>
-    </div></div>
+    </div>
     """, unsafe_allow_html=True)
+
+    if profilo == "SA-TEC":
+        st.markdown(f"""
+        <div class="vat-box" style="margin-top:12px;">
+        Costo reale SA-TEC: <span style="float:right;">{euro(costo_satec_totale)}</span><br>
+        Utile lordo: <span style="float:right;">{euro(utile_lordo)}</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown(f"""
     <div class="side-card">
@@ -366,15 +568,61 @@ with col_side:
     </ul></div>
     """, unsafe_allow_html=True)
 
-metà=len(articoli)//2
-lista_sx="".join([f"<li>{a['descrizione_lunga']}</li>" for a in articoli[:metà]])
-lista_dx="".join([f"<li>{a['descrizione_lunga']}</li>" for a in articoli[metà:]])
+# =========================
+# DATI CLIENTE
+# =========================
+
+st.markdown('<div class="card"><div class="title-bar">5&nbsp;&nbsp; DATI CLIENTE E RICHIESTA</div>', unsafe_allow_html=True)
+
+dc1, dc2, dc3, dc4 = st.columns(4)
+with dc1:
+    cliente_nome = st.text_input("Nome cliente")
+with dc2:
+    cliente_azienda = st.text_input("Azienda")
+with dc3:
+    cliente_telefono = st.text_input("Telefono")
+with dc4:
+    cliente_email = st.text_input("Email")
+
+if st.button("SALVA PREVENTIVO / RICHIESTA"):
+    dati = {
+        "data_ora": datetime.now().strftime("%d/%m/%Y %H:%M"),
+        "utente": utente_codice,
+        "profilo": profilo,
+        "cliente_nome": cliente_nome,
+        "cliente_azienda": cliente_azienda,
+        "cliente_telefono": cliente_telefono,
+        "cliente_email": cliente_email,
+        "configurazione": scelta,
+        "luce_mm": luce_mm,
+        "altezza_mm": altezza_mm,
+        "traversa_m": f"{lunghezza_traversa:.2f}",
+        "elettroblocco": "SI" if elettroblocco else "NO",
+        "allaccio": "SI" if allaccio else "NO",
+        "imponibile": f"{imponibile:.2f}",
+        "iva": f"{iva:.2f}",
+        "totale_iva": f"{totale_iva:.2f}",
+        "stato": "Nuovo"
+    }
+    salva_preventivo(dati)
+    st.success("Preventivo salvato correttamente.")
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================
+# DESCRIZIONE FORNITURA
+# =========================
+
+metà = len(articoli) // 2
+lista_sx = "".join([f"<li>{a['descrizione_lunga']}</li>" for a in articoli[:metà]])
+lista_dx = "".join([f"<li>{a['descrizione_lunga']}</li>" for a in articoli[metà:]])
 
 st.markdown(f"""
 <div class="card">
 <div class="desc-title">DESCRIZIONE FORNITURA CLIENTE</div>
 <div class="desc-grid">
 <div>
+<b>Profilo:</b> {PROFILI[profilo]}<br><br>
 <b>Configurazione selezionata:</b> {scelta}<br><br>
 <b>Automazione:</b> SESAMO POWERCORE PW100<br><br>
 <b>Luce passaggio:</b> {luce_mm} mm<br><br>
@@ -387,14 +635,35 @@ st.markdown(f"""
 </div></div>
 """, unsafe_allow_html=True)
 
-righe_descrizione=""
+if profilo == "SA-TEC":
+    st.markdown('<div class="card"><div class="title-bar">DETTAGLIO INTERNO SA-TEC</div>', unsafe_allow_html=True)
+    tabella = []
+    for a in articoli:
+        tabella.append({
+            "Codice": a["codice"],
+            "Descrizione": a["descrizione"],
+            "Q.tà": round(a["quantita"], 2),
+            "Listino unit.": euro(a["listino_unitario"]),
+            "Costo SA-TEC unit.": euro(a["costo_unitario_satec"]),
+            "Prezzo unit.": euro(a["prezzo_unitario"]),
+            "Totale vendita": euro(a["totale"]),
+            "Costo totale": euro(a["costo_totale_satec"]),
+        })
+    st.dataframe(tabella, use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================
+# STAMPA / PDF HTML
+# =========================
+
+righe_descrizione = ""
 for art in articoli:
-    righe_descrizione+=f"<tr><td>{art['descrizione']}</td><td>{art['descrizione_lunga']}</td></tr>"
+    righe_descrizione += f"<tr><td>{art['descrizione']}</td><td>{art['descrizione_lunga']}</td></tr>"
 
-logo_print=f'<img src="data:image/jpeg;base64,{logo_satec64}" style="width:240px;">' if logo_satec64 else f"<h1>{AZIENDA}</h1>"
-sesamo_print=f'<img src="data:image/png;base64,{logo_sesamo64}" style="height:90px;">' if logo_sesamo64 else "<b>SESAMO POWERCORE PW100</b>"
+logo_print = f'<img src="data:image/jpeg;base64,{logo_satec64}" style="width:240px;">' if logo_satec64 else f"<h1>{AZIENDA}</h1>"
+sesamo_print = f'<img src="data:image/png;base64,{logo_sesamo64}" style="height:90px;">' if logo_sesamo64 else "<b>SESAMO POWERCORE PW100</b>"
 
-html_stampa=f"""
+html_stampa = f"""
 <!DOCTYPE html>
 <html>
 <head>
@@ -423,6 +692,7 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <h1>Preventivo porta automatica</h1>
 <div class="box">
 <b>Data:</b> {date.today().strftime("%d/%m/%Y")}<br>
+<b>Profilo:</b> {PROFILI[profilo]}<br>
 <b>Configurazione:</b> {scelta}<br>
 <b>Luce passaggio:</b> {luce_mm} mm<br>
 <b>Altezza passaggio:</b> {altezza_mm} mm<br>
@@ -450,7 +720,7 @@ Scegliendo SA-TEC per l'allaccio e il collaudo, sono inclusi nel prezzo i seguen
 </html>
 """
 
-html_js=json.dumps(html_stampa)
+html_js = json.dumps(html_stampa)
 
 components.html(f"""
 <div style="border:2px solid #06499b;border-radius:14px;padding:18px;background:#f8fbff;">
@@ -476,3 +746,4 @@ st.markdown(f"""
 <div>✉ {EMAIL}</div>
 </div>
 """, unsafe_allow_html=True)
+ 
