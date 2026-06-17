@@ -3,11 +3,19 @@ import streamlit.components.v1 as components
 import base64
 import json
 import csv
+import random
+import string
 from pathlib import Path
 from datetime import datetime, date
 
 # =========================================================
 # CONFIGURATORE SA-TEC PRO
+# Versione con:
+# - Login utenti
+# - Registrazione cliente automatica
+# - Creazione utenti da area ADMIN
+# - Salvataggio utenti su CSV
+# - Salvataggio preventivi su CSV
 # Formula definitiva:
 # Costo SA-TEC reale = Listino × 0,50 × 0,95
 # Prezzo vendita = Costo SA-TEC × 1,35
@@ -28,21 +36,55 @@ EMAIL = "sacco.tecnologie@gmail.com"
 PEC = "sa-tec@pec.it"
 IBAN = "IT30S0825842841007000002877"
 IVA = 0.22
+
 PREVENTIVI_CSV = "preventivi_satec.csv"
+UTENTI_CSV = "utenti_satec.csv"
 
 # =========================
-# UTENTI PERSONALIZZATI
-# Cliente finale: accesso libero
-# SA-TEC: vede dashboard, costi reali e margine
-# Rivenditore / Installatore: accesso tracciato, stesso prezzo formula definitiva
+# UTENTI BASE
 # =========================
 
-UTENTI = {
-    "ADMIN": {"password": "SATEC-ADMIN", "profilo": "SA-TEC", "nome": "SA-TEC Amministratore"},
-    "ROSSI01": {"password": "R2026#", "profilo": "RIVENDITORE", "nome": "Rivenditore Rossi"},
-    "VERDI01": {"password": "V2026#", "profilo": "RIVENDITORE", "nome": "Rivenditore Verdi"},
-    "MARIO01": {"password": "M2026#", "profilo": "INSTALLATORE", "nome": "Installatore Mario"},
-    "LUCA01": {"password": "L2026#", "profilo": "INSTALLATORE", "nome": "Installatore Luca"},
+UTENTI_BASE = {
+    "ADMIN": {
+        "password": "SATEC-ADMIN",
+        "profilo": "SA-TEC",
+        "nome": "SA-TEC Amministratore",
+        "azienda": "SA-TEC",
+        "telefono": "",
+        "email": ""
+    },
+    "ROSSI01": {
+        "password": "R2026#",
+        "profilo": "RIVENDITORE",
+        "nome": "Rivenditore Rossi",
+        "azienda": "Rossi",
+        "telefono": "",
+        "email": ""
+    },
+    "VERDI01": {
+        "password": "V2026#",
+        "profilo": "RIVENDITORE",
+        "nome": "Rivenditore Verdi",
+        "azienda": "Verdi",
+        "telefono": "",
+        "email": ""
+    },
+    "MARIO01": {
+        "password": "M2026#",
+        "profilo": "INSTALLATORE",
+        "nome": "Installatore Mario",
+        "azienda": "",
+        "telefono": "",
+        "email": ""
+    },
+    "LUCA01": {
+        "password": "L2026#",
+        "profilo": "INSTALLATORE",
+        "nome": "Installatore Luca",
+        "azienda": "",
+        "telefono": "",
+        "email": ""
+    },
 }
 
 PROFILI = {
@@ -82,17 +124,17 @@ LISTINI = {
 }
 
 # =========================
-# FUNZIONI PREZZI
+# FUNZIONI UTILI
 # =========================
+
+def euro(v):
+    return f"€ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 def costo_satec_reale(listino):
     return listino * 0.50 * 0.95
 
 def prezzo_vendita(listino):
     return listino * 0.50 * 0.95 * 1.35
-
-def euro(v):
-    return f"€ {v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 def img_to_base64(paths):
     for p in paths:
@@ -101,75 +143,88 @@ def img_to_base64(paths):
             return base64.b64encode(f.read_bytes()).decode()
     return ""
 
-logo_satec64 = img_to_base64([
-    "logo_satec.jpg", "logo_satec.png",
-    "/mnt/data/logo_satec.jpg", "/mnt/data/logo_satec.png"
-])
-
-logo_sesamo64 = img_to_base64([
-    "SESAMO LOGO.png", "sesamo_logo.png", "logo_sesamo.png",
-    "/mnt/data/SESAMO LOGO.png", "/mnt/data/sesamo_logo.png", "/mnt/data/logo_sesamo.png"
-])
-
 def calcola_traversa(luce_mm, ante):
     if ante == "1 anta":
         return ((luce_mm * 2) + 100) / 1000
     return ((luce_mm * 2) + 200) / 1000
 
-def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scontato=True):
-    listino = LISTINI[codice]
+def genera_password(lunghezza=7):
+    caratteri = string.ascii_uppercase + string.digits
+    return "".join(random.choice(caratteri) for _ in range(lunghezza))
 
-    if scontato:
-        prezzo_unitario = prezzo_vendita(listino)
-        costo_unitario = costo_satec_reale(listino)
-    else:
-        prezzo_unitario = listino
-        costo_unitario = listino
-
-    articoli.append({
-        "codice": codice,
-        "descrizione": descrizione,
-        "descrizione_lunga": descrizione_lunga,
-        "quantita": quantita,
-        "listino_unitario": listino,
-        "costo_unitario_satec": costo_unitario,
-        "prezzo_unitario": prezzo_unitario,
-        "totale": prezzo_unitario * quantita,
-        "costo_totale_satec": costo_unitario * quantita
-    })
+def normalizza_codice(testo):
+    pulito = "".join(ch for ch in testo.upper().strip() if ch.isalnum())
+    return pulito[:14] if pulito else "CLIENTE"
 
 # =========================
-# LOGIN
+# UTENTI CSV
 # =========================
 
-def login_box():
-    st.sidebar.markdown("## Accesso")
-    st.sidebar.info("Cliente finale: lascia vuoto.")
-    username = st.sidebar.text_input("Utente", value="", key="login_user")
-    password = st.sidebar.text_input("Password", value="", type="password", key="login_pwd")
+def carica_utenti_csv():
+    utenti = {}
+    path = Path(UTENTI_CSV)
+    if not path.exists():
+        return utenti
 
-    profilo = "CLIENTE"
-    nome_utente = "Cliente finale"
-    utente_codice = "CLIENTE"
+    with open(path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for r in reader:
+            codice = r.get("utente", "").strip().upper()
+            if codice:
+                utenti[codice] = {
+                    "password": r.get("password", ""),
+                    "profilo": r.get("profilo", "CLIENTE"),
+                    "nome": r.get("nome", ""),
+                    "azienda": r.get("azienda", ""),
+                    "telefono": r.get("telefono", ""),
+                    "email": r.get("email", "")
+                }
+    return utenti
 
-    if username.strip() or password.strip():
-        u = username.strip().upper()
-        if u in UTENTI and UTENTI[u]["password"] == password:
-            profilo = UTENTI[u]["profilo"]
-            nome_utente = UTENTI[u]["nome"]
-            utente_codice = u
-            st.sidebar.success(f"Accesso: {nome_utente}")
-        else:
-            st.sidebar.error("Utente o password non corretti. Accesso cliente finale.")
-    else:
-        st.sidebar.success("Accesso cliente finale")
+def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email):
+    file_exists = Path(UTENTI_CSV).exists()
+    campi = ["utente", "password", "profilo", "nome", "azienda", "telefono", "email", "data_creazione"]
 
-    st.sidebar.markdown("---")
-    st.sidebar.write(f"Profilo attivo: **{PROFILI[profilo]}**")
-    return profilo, nome_utente, utente_codice
+    with open(UTENTI_CSV, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=campi)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow({
+            "utente": utente,
+            "password": password,
+            "profilo": profilo,
+            "nome": nome,
+            "azienda": azienda,
+            "telefono": telefono,
+            "email": email,
+            "data_creazione": datetime.now().strftime("%d/%m/%Y %H:%M")
+        })
+
+def carica_tutti_utenti():
+    utenti = dict(UTENTI_BASE)
+    utenti.update(carica_utenti_csv())
+    return utenti
+
+def genera_codice_progressivo(profilo, utenti):
+    prefisso = {
+        "CLIENTE": "CLI",
+        "RIVENDITORE": "RIV",
+        "INSTALLATORE": "INS",
+        "SA-TEC": "ADM"
+    }.get(profilo, "CLI")
+
+    numeri = []
+    for u in utenti.keys():
+        if u.startswith(prefisso):
+            try:
+                numeri.append(int(u.replace(prefisso, "")))
+            except:
+                pass
+    prossimo = max(numeri) + 1 if numeri else 1
+    return f"{prefisso}{prossimo:04d}"
 
 # =========================
-# SALVATAGGIO PREVENTIVI
+# PREVENTIVI CSV
 # =========================
 
 def salva_preventivo(dati):
@@ -192,6 +247,70 @@ def carica_preventivi():
         return []
     with open(path, "r", encoding="utf-8") as f:
         return list(csv.DictReader(f))
+
+# =========================
+# LOGIN + REGISTRAZIONE
+# =========================
+
+def login_box():
+    utenti = carica_tutti_utenti()
+
+    st.sidebar.markdown("## Accesso")
+    st.sidebar.info("Cliente finale: può entrare libero oppure registrarsi.")
+
+    username = st.sidebar.text_input("Utente", value="", key="login_user")
+    password = st.sidebar.text_input("Password", value="", type="password", key="login_pwd")
+
+    profilo = "CLIENTE"
+    nome_utente = "Cliente finale"
+    utente_codice = "CLIENTE"
+    dati_utente = {
+        "nome": "",
+        "azienda": "",
+        "telefono": "",
+        "email": ""
+    }
+
+    if username.strip() or password.strip():
+        u = username.strip().upper()
+        if u in utenti and utenti[u]["password"] == password:
+            profilo = utenti[u]["profilo"]
+            nome_utente = utenti[u]["nome"] or u
+            utente_codice = u
+            dati_utente = utenti[u]
+            st.sidebar.success(f"Accesso: {nome_utente}")
+        else:
+            st.sidebar.error("Utente o password non corretti.")
+    else:
+        st.sidebar.success("Accesso cliente finale")
+
+    st.sidebar.markdown("---")
+    st.sidebar.write(f"Profilo attivo: **{PROFILI[profilo]}**")
+
+    with st.sidebar.expander("Registrazione cliente"):
+        st.caption("Crea automaticamente una password cliente.")
+        reg_nome = st.text_input("Nome", key="reg_nome")
+        reg_azienda = st.text_input("Azienda", key="reg_azienda")
+        reg_tel = st.text_input("Telefono", key="reg_tel")
+        reg_email = st.text_input("Email", key="reg_email")
+
+        if st.button("GENERA ACCESSO CLIENTE"):
+            utenti_now = carica_tutti_utenti()
+            nuovo_user = genera_codice_progressivo("CLIENTE", utenti_now)
+            nuova_pwd = genera_password()
+            salva_utente_csv(
+                nuovo_user,
+                nuova_pwd,
+                "CLIENTE",
+                reg_nome,
+                reg_azienda,
+                reg_tel,
+                reg_email
+            )
+            st.success("Accesso cliente creato.")
+            st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
+
+    return profilo, nome_utente, utente_codice, dati_utente
 
 # =========================
 # DISEGNI PORTE
@@ -270,6 +389,27 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     <text x="660" y="205" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900" transform="rotate(90 660,205)">H {altezza_mm} mm</text>
     </svg></div>"""
 
+def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scontato=True):
+    listino = LISTINI[codice]
+    if scontato:
+        prezzo_unitario = prezzo_vendita(listino)
+        costo_unitario = costo_satec_reale(listino)
+    else:
+        prezzo_unitario = listino
+        costo_unitario = listino
+
+    articoli.append({
+        "codice": codice,
+        "descrizione": descrizione,
+        "descrizione_lunga": descrizione_lunga,
+        "quantita": quantita,
+        "listino_unitario": listino,
+        "costo_unitario_satec": costo_unitario,
+        "prezzo_unitario": prezzo_unitario,
+        "totale": prezzo_unitario * quantita,
+        "costo_totale_satec": costo_unitario * quantita
+    })
+
 # =========================
 # CSS
 # =========================
@@ -296,18 +436,7 @@ st.markdown("""
 .section-box.green {background:#eefaf2;color:#0c7b3e;}
 div[data-testid="stNumberInput"] label {color:#111!important;font-size:15px!important;font-weight:800!important;}
 div[data-testid="stNumberInput"] input {border:2px solid #8998b0!important;border-radius:0!important;text-align:center!important;font-size:28px!important;font-weight:800!important;color:#06499b!important;height:54px!important;}
-div[data-testid="stTextInput"] label {color:#111!important;font-size:15px!important;font-weight:800!important;}
-div[data-testid="stTextInput"] input {
-    background:#ffffff!important;
-    color:#06499b!important;
-    border:2px solid #8998b0!important;
-    border-radius:8px!important;
-    height:48px!important;
-    font-size:17px!important;
-    font-weight:700!important;
-}
-div[data-testid="stTextInput"] input::placeholder {color:#6d7f95!important;}
-
+div[data-testid="stTextInput"] input {background:#ffffff!important;color:#06499b!important;border:2px solid #8998b0!important;border-radius:6px!important;font-weight:800!important;}
 .measure-total {border:2px solid #bdd4ef;background:#f8fbff;border-radius:10px;padding:14px;display:grid;grid-template-columns:1fr 200px;align-items:center;color:#06499b;margin-top:10px;}
 .measure-total .big {font-size:30px;font-weight:900;text-align:center;}
 .measure-total .small {font-size:18px;font-weight:900;text-align:center;}
@@ -335,8 +464,10 @@ div[data-testid="stCheckbox"] label {color:#06499b!important;font-size:18px!impo
 # HEADER
 # =========================
 
-logo_satec_html = f'<img class="logo-satec" src="data:image/jpeg;base64,{logo_satec64}">' if logo_satec64 else "<h1 style='color:#06499b'>SA-TEC</h1>"
+logo_satec64 = img_to_base64(["logo_satec.jpg", "logo_satec.png", "/mnt/data/logo_satec.jpg", "/mnt/data/logo_satec.png"])
+logo_sesamo64 = img_to_base64(["SESAMO LOGO.png", "sesamo_logo.png", "logo_sesamo.png", "/mnt/data/SESAMO LOGO.png", "/mnt/data/sesamo_logo.png", "/mnt/data/logo_sesamo.png"])
 
+logo_satec_html = f'<img class="logo-satec" src="data:image/jpeg;base64,{logo_satec64}">' if logo_satec64 else "<h1 style='color:#06499b'>SA-TEC</h1>"
 sesamo_logo_html = f'<img class="sesamo-logo" src="data:image/png;base64,{logo_sesamo64}">' if logo_sesamo64 else """
 <div style="display:flex;align-items:center;justify-content:center;gap:18px;">
 <div style="background:#ff7900;color:white;font-size:44px;font-weight:900;padding:10px 18px;">▌</div>
@@ -357,35 +488,72 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-profilo, nome_utente, utente_codice = login_box()
+profilo, nome_utente, utente_codice, dati_utente = login_box()
 
 # =========================
-# DASHBOARD SA-TEC
+# ADMIN
 # =========================
 
 if profilo == "SA-TEC":
     st.sidebar.markdown("---")
     mostra_dashboard = st.sidebar.checkbox("Mostra dashboard SA-TEC", value=False)
 
+    with st.sidebar.expander("Crea utente manuale"):
+        utenti_now = carica_tutti_utenti()
+        profilo_new = st.selectbox("Profilo nuovo utente", ["CLIENTE", "RIVENDITORE", "INSTALLATORE"], key="admin_profilo_new")
+        nome_new = st.text_input("Nome", key="admin_nome_new")
+        azienda_new = st.text_input("Azienda", key="admin_azienda_new")
+        telefono_new = st.text_input("Telefono", key="admin_tel_new")
+        email_new = st.text_input("Email", key="admin_email_new")
+        if st.button("CREA UTENTE"):
+            codice = genera_codice_progressivo(profilo_new, utenti_now)
+            pwd = genera_password()
+            salva_utente_csv(codice, pwd, profilo_new, nome_new, azienda_new, telefono_new, email_new)
+            st.success("Utente creato")
+            st.code(f"Utente: {codice}\nPassword: {pwd}\nProfilo: {profilo_new}")
+
     if mostra_dashboard:
         st.markdown('<div class="admin-box"><h2 style="color:#06499b;">Dashboard SA-TEC</h2>', unsafe_allow_html=True)
+
         preventivi = carica_preventivi()
+        utenti_csv = carica_utenti_csv()
 
-        if not preventivi:
-            st.info("Nessun preventivo salvato ancora.")
-        else:
-            st.write(f"Preventivi salvati: **{len(preventivi)}**")
-            totale = 0.0
-            for p in preventivi:
-                try:
-                    totale += float(p.get("imponibile", 0))
-                except:
-                    pass
-            st.write(f"Valore totale IVA esclusa: **{euro(totale)}**")
-            st.dataframe(preventivi, use_container_width=True)
+        tab1, tab2 = st.tabs(["Preventivi", "Utenti creati"])
 
-            with open(PREVENTIVI_CSV, "rb") as f:
-                st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
+        with tab1:
+            if not preventivi:
+                st.info("Nessun preventivo salvato ancora.")
+            else:
+                st.write(f"Preventivi salvati: **{len(preventivi)}**")
+                totale = 0.0
+                for p in preventivi:
+                    try:
+                        totale += float(p.get("imponibile", 0))
+                    except:
+                        pass
+                st.write(f"Valore totale IVA esclusa: **{euro(totale)}**")
+                st.dataframe(preventivi, use_container_width=True)
+                with open(PREVENTIVI_CSV, "rb") as f:
+                    st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
+
+        with tab2:
+            if not utenti_csv:
+                st.info("Nessun utente creato da CSV.")
+            else:
+                righe = []
+                for u, d in utenti_csv.items():
+                    righe.append({
+                        "Utente": u,
+                        "Password": d["password"],
+                        "Profilo": d["profilo"],
+                        "Nome": d["nome"],
+                        "Azienda": d["azienda"],
+                        "Telefono": d["telefono"],
+                        "Email": d["email"],
+                    })
+                st.dataframe(righe, use_container_width=True)
+                with open(UTENTI_CSV, "rb") as f:
+                    st.download_button("Scarica CSV utenti", data=f, file_name="utenti_satec.csv", mime="text/csv")
 
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -584,23 +752,17 @@ with col_side:
 # DATI CLIENTE
 # =========================
 
-st.markdown('<div class="card"><div class="title-bar">5&nbsp;&nbsp; DATI CLIENTE PER SALVARE LA RICHIESTA</div>', unsafe_allow_html=True)
-
-st.markdown("""
-<div style="color:#06499b;font-weight:800;margin-bottom:12px;">
-Compila questi dati solo se vuoi salvare il preventivo nello storico SA-TEC.
-</div>
-""", unsafe_allow_html=True)
+st.markdown('<div class="card"><div class="title-bar">5&nbsp;&nbsp; DATI CLIENTE E RICHIESTA</div>', unsafe_allow_html=True)
 
 dc1, dc2, dc3, dc4 = st.columns(4)
 with dc1:
-    cliente_nome = st.text_input("Nome cliente")
+    cliente_nome = st.text_input("Nome cliente", value=dati_utente.get("nome", ""))
 with dc2:
-    cliente_azienda = st.text_input("Azienda")
+    cliente_azienda = st.text_input("Azienda", value=dati_utente.get("azienda", ""))
 with dc3:
-    cliente_telefono = st.text_input("Telefono")
+    cliente_telefono = st.text_input("Telefono", value=dati_utente.get("telefono", ""))
 with dc4:
-    cliente_email = st.text_input("Email")
+    cliente_email = st.text_input("Email", value=dati_utente.get("email", ""))
 
 if st.button("SALVA PREVENTIVO / RICHIESTA"):
     dati = {
@@ -623,7 +785,7 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "stato": "Nuovo"
     }
     salva_preventivo(dati)
-    st.success("Preventivo salvato correttamente.")
+    st.success("Preventivo salvato correttamente. SA-TEC lo vedrà nella dashboard.")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -641,6 +803,7 @@ st.markdown(f"""
 <div class="desc-grid">
 <div>
 <b>Profilo:</b> {PROFILI[profilo]}<br><br>
+<b>Utente:</b> {utente_codice}<br><br>
 <b>Configurazione selezionata:</b> {scelta}<br><br>
 <b>Automazione:</b> SESAMO POWERCORE PW100<br><br>
 <b>Luce passaggio:</b> {luce_mm} mm<br><br>
@@ -711,6 +874,8 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <div class="box">
 <b>Data:</b> {date.today().strftime("%d/%m/%Y")}<br>
 <b>Profilo:</b> {PROFILI[profilo]}<br>
+<b>Utente:</b> {utente_codice}<br>
+<b>Cliente:</b> {cliente_nome} - {cliente_azienda}<br>
 <b>Configurazione:</b> {scelta}<br>
 <b>Luce passaggio:</b> {luce_mm} mm<br>
 <b>Altezza passaggio:</b> {altezza_mm} mm<br>
