@@ -534,10 +534,18 @@ with col_side:
     <div class="option-note">
         Prezzo allaccio e collaudo {testo_tipo_allaccio}: <b>{euro(prezzo_allaccio)}</b> IVA esclusa.
         <br><br>
-        Se allaccio e collaudo è eseguito da SA-TEC daremo:
-        <br>• Libretto manutenzione
-        <br>• Certificazione
-        <br>• Intervento risolutivo garantito entro 48 ore
+        <b>Vantaggi inclusi se il servizio è eseguito da SA-TEC</b>
+        <br><br>
+        Scegliendo SA-TEC per l'allaccio e il collaudo, sono inclusi nel prezzo i seguenti benefici:
+        <br><br>
+        <b>Libretto di manutenzione:</b><br>
+        Rilascio della documentazione ufficiale dell'apparecchio/impianto.
+        <br><br>
+        <b>Certificazione:</b><br>
+        Rilascio delle certificazioni di conformità e corretta installazione a norma di legge.
+        <br><br>
+        <b>Assistenza prioritaria:</b><br>
+        Garanzia di un intervento risolutivo in caso di guasti o problemi entro 48 ore.
     </div>
     """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
@@ -585,7 +593,7 @@ if allaccio:
             articoli,
             "ALLACCIO_COLLAUDO_STANDARD",
             "Allaccio e collaudo SA-TEC Standard",
-            "Allaccio e collaudo eseguito da SA-TEC su automazione standard. Comprende rilascio libretto manutenzione, certificazione e intervento risolutivo garantito entro 48 ore.",
+            "Allaccio e collaudo eseguito da SA-TEC su automazione standard. Comprende libretto di manutenzione, certificazione e assistenza prioritaria con intervento risolutivo entro 48 ore.",
             1,
             scontato=False
         )
@@ -594,7 +602,7 @@ if allaccio:
             articoli,
             "ALLACCIO_COLLAUDO_RIDONDANTE",
             "Allaccio e collaudo SA-TEC Ridondante",
-            "Allaccio e collaudo eseguito da SA-TEC su automazione ridondante. Comprende rilascio libretto manutenzione, certificazione e intervento risolutivo garantito entro 48 ore.",
+            "Allaccio e collaudo eseguito da SA-TEC su automazione ridondante. Comprende libretto di manutenzione, certificazione e assistenza prioritaria con intervento risolutivo entro 48 ore.",
             1,
             scontato=False
         )
@@ -738,9 +746,19 @@ Totale IVA inclusa: {euro(totale_iva)}
 <h2>Condizioni di pagamento</h2>
 <p>Pagamento tramite bonifico bancario intestato a <b>{AZIENDA}</b>.<br>
 IBAN: <b>{IBAN}</b></p>
+
 <p>Condizioni proposte: 50% all’ordine e saldo 50% prima della consegna o al collaudo.</p>
+
 <p><b>Prezzi IVA esclusa. Merce resa franco deposito SA-TEC S.R.L.s - Lamezia Terme (CZ). Trasporto escluso salvo diversa indicazione.</b></p>
-<p>Se allaccio e collaudo è eseguito da SA-TEC, verranno rilasciati libretto manutenzione, certificazione e intervento risolutivo garantito entro 48 ore.</p>
+
+<p>
+<b>Vantaggi inclusi se il servizio è eseguito da SA-TEC:</b><br>
+Scegliendo SA-TEC per l'allaccio e il collaudo, sono inclusi nel prezzo i seguenti benefici:<br><br>
+<b>Libretto di manutenzione:</b> rilascio della documentazione ufficiale dell'apparecchio/impianto.<br>
+<b>Certificazione:</b> rilascio delle certificazioni di conformità e corretta installazione a norma di legge.<br>
+<b>Assistenza prioritaria:</b> garanzia di un intervento risolutivo in caso di guasti o problemi entro 48 ore.
+</p>
+
 <p>Preventivo indicativo soggetto a verifica tecnica e conferma definitiva SA-TEC S.R.L.s.</p>
 <p>Validità offerta: 15 giorni.</p>
 </div>
