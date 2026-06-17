@@ -180,11 +180,38 @@ st.markdown("""
     background:#eef6ff;border-left:6px solid #06499b;padding:22px;
     border-radius:14px;margin-top:18px;color:#18324f;font-size:18px;line-height:1.6;
 }
+
 .info-box {
-    background:linear-gradient(90deg,#eef6ff,#fff);border-radius:14px;padding:20px;margin-top:18px;
-    display:flex;justify-content:space-between;align-items:center;border-left:6px solid #06499b;
+    background:linear-gradient(90deg,#eef6ff,#ffffff);
+    border-radius:14px;
+    padding:22px;
+    margin-top:18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border:2px solid #bdd4ef;
+    border-left:7px solid #06499b;
+    color:#06499b;
 }
-.info-box strong {color:#06499b;font-size:30px;}
+
+.info-box b {
+    color:#06499b;
+    font-size:20px;
+    font-weight:900;
+}
+
+.info-box div {
+    color:#06499b;
+    font-size:17px;
+    font-weight:700;
+}
+
+.info-box strong {
+    color:#06499b;
+    font-size:34px;
+    font-weight:900;
+}
+
 .desc-box {
     background:#fff;border:2px solid #d7e6f7;border-left:7px solid #06499b;
     border-radius:12px;padding:20px;margin-bottom:14px;color:#18324f;
@@ -330,8 +357,14 @@ with col_left:
 
     st.markdown(f"""
     <div class="info-box">
-        <div><b>MISURA TRAVERSA CALCOLATA</b><br>Calcolo automatico in base alla luce passaggio.</div>
-        <div><strong>{int(lunghezza_traversa * 1000)} mm</strong><br><b>{lunghezza_traversa:.2f} metri</b></div>
+        <div>
+            <b>MISURA TRAVERSA CALCOLATA</b><br>
+            Calcolo automatico in base alla luce passaggio.
+        </div>
+        <div style="text-align:right;">
+            <strong>{int(lunghezza_traversa * 1000)} mm</strong><br>
+            <b>{lunghezza_traversa:.2f} metri</b>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
