@@ -49,6 +49,7 @@ LISTINI = {
     "PULSANTE_EMERGENZA": 130.00,
     "ELETTRO_RIDONDANTE": 290.00,
 
+    "ASSEMBLAGGIO": 130.00,
     "ALLACCIO_COLLAUDO": 350.00,
 }
 
@@ -544,6 +545,15 @@ else:
     if elettroblocco:
         aggiungi(articoli, "ELETTRO_RIDONDANTE", "PF54.62 Elettroblocco Ridondante", "PF54.62 Elettroblocco Ridondante")
 
+aggiungi(
+    articoli,
+    "ASSEMBLAGGIO",
+    "Assemblaggio automatismo",
+    "Assemblaggio completo automatismo presso officina SA-TEC - Franco deposito SA-TEC Lamezia Terme",
+    1,
+    scontato=False
+)
+
 if allaccio:
     aggiungi(articoli, "ALLACCIO_COLLAUDO", "Allaccio e collaudo SA-TEC", "Allaccio e collaudo SA-TEC", 1, scontato=False)
 
@@ -559,7 +569,8 @@ with col_side:
     <div class="price">{euro(imponibile)}</div>
     <div class="vat-box">
         IVA 22%: <span style="float:right;">{euro(iva)}</span><br>
-        TOTALE IVA INCLUSA: <span style="float:right;">{euro(totale_iva)}</span>
+        TOTALE IVA INCLUSA: <span style="float:right;">{euro(totale_iva)}</span><br><br>
+        <b>Prezzo franco deposito SA-TEC Lamezia Terme</b>
     </div>
     """, unsafe_allow_html=True)
 
@@ -596,7 +607,8 @@ st.markdown(f"""
             <b>Automazione:</b> SESAMO POWERCORE PW100<br><br>
             <b>Luce passaggio:</b> {luce_mm} mm<br><br>
             <b>Altezza passaggio:</b> {altezza_mm} mm<br><br>
-            <b>Misura traversa:</b> {lunghezza_traversa:.2f} metri
+            <b>Misura traversa:</b> {lunghezza_traversa:.2f} metri<br><br>
+            <b>Resa:</b> Franco deposito SA-TEC Lamezia Terme
         </div>
         <div><ul>{lista_sx}</ul></div>
         <div><ul>{lista_dx}</ul></div>
@@ -663,7 +675,8 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
     <b>Configurazione:</b> {scelta}<br>
     <b>Luce passaggio:</b> {luce_mm} mm<br>
     <b>Altezza passaggio:</b> {altezza_mm} mm<br>
-    <b>Misura traversa:</b> {lunghezza_traversa:.2f} metri
+    <b>Misura traversa:</b> {lunghezza_traversa:.2f} metri<br>
+    <b>Resa:</b> Franco deposito SA-TEC Lamezia Terme
 </div>
 
 <h2>Descrizione fornitura</h2>
@@ -684,6 +697,7 @@ Totale IVA inclusa: {euro(totale_iva)}
 <p>Pagamento tramite bonifico bancario intestato a <b>{AZIENDA}</b>.<br>
 IBAN: <b>{IBAN}</b></p>
 <p>Condizioni proposte: 50% all’ordine e saldo 50% prima della consegna o al collaudo.</p>
+<p><b>Prezzi IVA esclusa. Merce resa franco deposito SA-TEC S.R.L.s - Lamezia Terme (CZ). Trasporto escluso salvo diversa indicazione.</b></p>
 <p>Preventivo indicativo soggetto a verifica tecnica e conferma definitiva SA-TEC S.R.L.s.</p>
 <p>Validità offerta: 15 giorni.</p>
 </div>
