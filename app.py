@@ -95,15 +95,9 @@ def mini_porta_html(ante):
         return """
         <svg width="120" height="120" viewBox="0 0 120 120">
             <rect x="18" y="18" width="84" height="10" fill="#d9d9d9" stroke="#111"/>
-            <rect x="26" y="30" width="34" height="72" fill="#eef7ff" stroke="#111" stroke-width="2"/>
+            <rect x="26" y="30" width="34" height="72" fill="#dcecff" stroke="#111" stroke-width="2"/>
             <rect x="60" y="30" width="34" height="72" fill="#ffffff" stroke="#111" stroke-width="2"/>
             <line x1="60" y1="30" x2="60" y2="102" stroke="#111" stroke-width="2"/>
-            <path d="M42 68 L70 68" stroke="#111" stroke-width="3" marker-end="url(#a1)"/>
-            <defs>
-                <marker id="a1" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto">
-                    <path d="M0,0 L0,6 L6,3 z" fill="#111"/>
-                </marker>
-            </defs>
         </svg>
         """
     return """
@@ -113,23 +107,13 @@ def mini_porta_html(ante):
         <rect x="60" y="30" width="35" height="72" fill="#eef7ff" stroke="#111" stroke-width="2"/>
         <rect x="56" y="30" width="5" height="72" fill="#ffffff" stroke="#111" stroke-width="1"/>
         <rect x="61" y="30" width="5" height="72" fill="#ffffff" stroke="#111" stroke-width="1"/>
-        <path d="M54 68 L35 68" stroke="#111" stroke-width="3" marker-end="url(#al)"/>
-        <path d="M66 68 L85 68" stroke="#111" stroke-width="3" marker-end="url(#ar)"/>
-        <defs>
-            <marker id="ar" markerWidth="10" markerHeight="10" refX="5" refY="3" orient="auto">
-                <path d="M0,0 L0,6 L6,3 z" fill="#111"/>
-            </marker>
-            <marker id="al" markerWidth="10" markerHeight="10" refX="1" refY="3" orient="auto">
-                <path d="M6,0 L6,6 L0,3 z" fill="#111"/>
-            </marker>
-        </defs>
     </svg>
     """
 
 def render_choice_card(title, desc, ante, active):
     border = "#06499b" if active else "#d4dce8"
     border_width = "4px" if active else "2px"
-    bg = "#f0f7ff" if active else "#ffffff"
+    bg = "#dcecff" if active else "#ffffff"
 
     html = f"""
     <div style="
@@ -154,46 +138,24 @@ def render_choice_card(title, desc, ante, active):
 
 def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     blu = "#06499b"
-    vetro = "#eef7ff"
-    vetro2 = "#e2f1ff"
+    vetro_sel = "#d5eaff"
+    vetro = "#ffffff"
     nero = "#111111"
     misura_traversa = int(lunghezza_traversa * 1000)
 
     if ante == "1 anta":
         ante_svg = f"""
-        <rect x="80" y="115" width="260" height="170" fill="{vetro}" stroke="{nero}" stroke-width="4"/>
-        <rect x="340" y="115" width="260" height="170" fill="#ffffff" stroke="{nero}" stroke-width="4"/>
+        <rect x="80" y="115" width="260" height="170" fill="{vetro_sel}" stroke="{nero}" stroke-width="4"/>
+        <rect x="340" y="115" width="260" height="170" fill="{vetro}" stroke="{nero}" stroke-width="4"/>
         <line x1="340" y1="115" x2="340" y2="285" stroke="{nero}" stroke-width="6"/>
-        <path d="M190 205 L290 205" stroke="{blu}" stroke-width="9" marker-end="url(#arrow1)"/>
-        <text x="340" y="322" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">
-            SCORRIMENTO LINEARE 1 ANTA
-        </text>
-        <defs>
-            <marker id="arrow1" markerWidth="15" markerHeight="15" refX="7" refY="4" orient="auto">
-                <path d="M0,0 L0,8 L10,4 z" fill="{blu}"/>
-            </marker>
-        </defs>
         """
         titolo = "ANTE SELEZIONATA: 1 ANTA"
     else:
         ante_svg = f"""
-        <rect x="80" y="115" width="260" height="170" fill="{vetro}" stroke="{nero}" stroke-width="4"/>
-        <rect x="340" y="115" width="260" height="170" fill="{vetro2}" stroke="{nero}" stroke-width="4"/>
+        <rect x="80" y="115" width="260" height="170" fill="{vetro_sel}" stroke="{nero}" stroke-width="4"/>
+        <rect x="340" y="115" width="260" height="170" fill="{vetro_sel}" stroke="{nero}" stroke-width="4"/>
         <rect x="328" y="115" width="10" height="170" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
         <rect x="342" y="115" width="10" height="170" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
-        <path d="M285 205 L160 205" stroke="{blu}" stroke-width="9" marker-end="url(#arrowL)"/>
-        <path d="M395 205 L520 205" stroke="{blu}" stroke-width="9" marker-end="url(#arrowR)"/>
-        <text x="340" y="322" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">
-            SCORRIMENTO LINEARE 2 ANTE
-        </text>
-        <defs>
-            <marker id="arrowR" markerWidth="15" markerHeight="15" refX="7" refY="4" orient="auto">
-                <path d="M0,0 L0,8 L10,4 z" fill="{blu}"/>
-            </marker>
-            <marker id="arrowL" markerWidth="15" markerHeight="15" refX="2" refY="4" orient="auto">
-                <path d="M10,0 L10,8 L0,4 z" fill="{blu}"/>
-            </marker>
-        </defs>
         """
         titolo = "ANTE SELEZIONATA: 2 ANTE"
 
@@ -267,7 +229,7 @@ st.markdown("""
 .powercore-title {font-size:34px;font-weight:900;color:#111;}
 .powercore-title span {color:#ff7900;}
 .powercore-sub {font-size:17px;color:#111;margin-top:8px;}
-.sesamo-logo {height:105px;max-width:330px;object-fit:contain;}
+.sesamo-logo {height:115px;max-width:380px;object-fit:contain;}
 
 .card {
     background:white;
@@ -351,11 +313,9 @@ div[data-testid="stNumberInput"] input {
     margin-bottom:12px;
 }
 div[data-testid="stCheckbox"] {
-    border:2px solid #06499b;
-    border-radius:12px;
-    padding:12px;
-    background:#f8fbff;
-    margin-bottom:18px;
+    border:0;
+    padding:0;
+    margin:0;
 }
 div[data-testid="stCheckbox"] label {
     color:#06499b!important;
@@ -413,7 +373,15 @@ div[data-testid="stCheckbox"] label {
 """, unsafe_allow_html=True)
 
 logo_satec_html = f'<img class="logo-satec" src="data:image/jpeg;base64,{logo_satec64}">' if logo_satec64 else "<h1 style='color:#06499b'>SA-TEC</h1>"
-sesamo_logo_html = f'<img class="sesamo-logo" src="data:image/png;base64,{logo_sesamo64}">' if logo_sesamo64 else "<h1 style='font-size:42px;color:#000;'>SESAMO</h1>"
+sesamo_logo_html = f'<img class="sesamo-logo" src="data:image/png;base64,{logo_sesamo64}">' if logo_sesamo64 else """
+<div style="display:flex;align-items:center;justify-content:center;gap:18px;">
+    <div style="background:#ff7900;color:white;font-size:44px;font-weight:900;padding:10px 18px;">▌</div>
+    <div>
+        <div style="font-size:48px;font-weight:900;color:#000;line-height:1;">SESAMO</div>
+        <div style="font-size:16px;font-weight:900;color:#000;letter-spacing:1px;">THE DOOR TECHNOLOGY</div>
+    </div>
+</div>
+"""
 
 st.markdown(f"""
 <div class="header">
@@ -641,7 +609,7 @@ for art in articoli:
     righe_descrizione += f"<tr><td>{art['descrizione']}</td><td>{art['descrizione_lunga']}</td></tr>"
 
 logo_print = f'<img src="data:image/jpeg;base64,{logo_satec64}" style="width:240px;">' if logo_satec64 else f"<h1>{AZIENDA}</h1>"
-sesamo_print = f'<img src="data:image/png;base64,{logo_sesamo64}" style="height:90px;">' if logo_sesamo64 else ""
+sesamo_print = f'<img src="data:image/png;base64,{logo_sesamo64}" style="height:90px;">' if logo_sesamo64 else "<b>SESAMO POWERCORE PW100</b>"
 
 html_stampa = f"""
 <!DOCTYPE html>
