@@ -85,7 +85,6 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
             <rect x="385" y="115" width="235" height="130" fill="#eef3f6" stroke="{colore}" stroke-width="3"/>
 
             <line x1="380" y1="100" x2="380" y2="260" stroke="{colore}" stroke-width="4"/>
-
             <path d="M430 175 L560 175" stroke="{colore}" stroke-width="5" marker-end="url(#arrow1)"/>
 
             <line x1="120" y1="295" x2="640" y2="295" stroke="{colore}" stroke-width="2"/>
@@ -165,13 +164,16 @@ st.markdown("""
     background: #f2f4f7;
     font-family: Arial, sans-serif;
 }
+
 header[data-testid="stHeader"] {
     background: transparent;
 }
+
 .main .block-container {
     padding-top: 0rem;
     max-width: 1500px;
 }
+
 .hero {
     display: flex;
     align-items: center;
@@ -182,25 +184,30 @@ header[data-testid="stHeader"] {
     margin-bottom: 25px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 }
+
 .hero-logo {
     width: 320px;
     background: white;
 }
+
 .hero-title {
     color: white;
     padding-left: 35px;
     flex: 1;
 }
+
 .hero-title h1 {
     font-size: 42px;
     margin: 0;
     font-weight: 900;
 }
+
 .hero-title h3 {
     font-size: 21px;
     margin-top: 10px;
     font-weight: 400;
 }
+
 .top-icons {
     color: white;
     display: flex;
@@ -209,6 +216,7 @@ header[data-testid="stHeader"] {
     font-weight: 700;
     font-size: 14px;
 }
+
 .card {
     background: white;
     border-radius: 18px;
@@ -217,6 +225,7 @@ header[data-testid="stHeader"] {
     box-shadow: 0 5px 18px rgba(0,0,0,0.08);
     border: 1px solid #dcdcdc;
 }
+
 .card-title {
     color: #111111;
     font-size: 23px;
@@ -225,44 +234,57 @@ header[data-testid="stHeader"] {
     border-bottom: 1px solid #dcdcdc;
     padding-bottom: 12px;
 }
+
 .choice-card {
     border-radius: 18px;
-    padding: 22px;
+    padding: 24px;
     border: 2px solid #d0d0d0;
     background: #f8f8f8;
     text-align: center;
     min-height: 150px;
 }
+
 .choice-card-active {
-    border: 3px solid #111111;
+    border: 4px solid #111111;
     background: #eeeeee;
     box-shadow: 0 5px 18px rgba(0,0,0,0.18);
 }
+
 .choice-title {
     color: #111111;
-    font-size: 21px;
+    font-size: 22px;
     font-weight: 900;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
+
 .choice-subtitle {
     color: #333333;
-    font-size: 15px;
-    line-height: 1.35;
+    font-size: 16px;
+    line-height: 1.45;
 }
+
 .section-standard {
     background: #f5f5f5;
     border-left: 6px solid #111111;
-    padding: 20px;
+    padding: 22px;
     border-radius: 14px;
-    margin-top: 15px;
+    margin-top: 18px;
+    color: #111111;
+    font-size: 18px;
+    line-height: 1.6;
 }
+
 .section-ridondante {
     background: #fff4e8;
     border-left: 6px solid #d66a00;
-    padding: 20px;
+    padding: 22px;
     border-radius: 14px;
-    margin-top: 15px;
+    margin-top: 18px;
+    color: #111111;
+    font-size: 18px;
+    line-height: 1.6;
 }
+
 .info-box {
     background: linear-gradient(90deg, #f5f5f5, #ffffff);
     border-radius: 14px;
@@ -273,30 +295,42 @@ header[data-testid="stHeader"] {
     align-items: center;
     border-left: 6px solid #111111;
 }
+
 .info-box strong {
     color: #111111;
     font-size: 30px;
 }
+
 .desc-box {
-    background: #fafafa;
-    border: 1px solid #dddddd;
-    border-left: 5px solid #111111;
+    background: #ffffff;
+    border: 2px solid #dddddd;
+    border-left: 7px solid #111111;
     border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 10px;
+    padding: 20px;
+    margin-bottom: 14px;
+    color: #111111;
 }
+
 .desc-title {
     font-weight: 900;
-    color: #111111;
-    font-size: 17px;
-    margin-bottom: 5px;
+    color: #000000;
+    font-size: 20px;
+    margin-bottom: 10px;
 }
+
+.desc-text {
+    font-size: 18px;
+    line-height: 1.65;
+    color: #222222;
+}
+
 .summary-price {
     color: #111111;
     font-size: 42px;
     font-weight: 900;
     text-align: right;
 }
+
 .green-box {
     background: #eefaf2;
     border: 1px solid #b9e6c7;
@@ -304,7 +338,10 @@ header[data-testid="stHeader"] {
     padding: 20px;
     border-radius: 12px;
     margin-top: 18px;
+    font-size: 17px;
+    line-height: 1.5;
 }
+
 .orange-box {
     background: #fff6ed;
     border: 1px solid #ffd1a3;
@@ -312,7 +349,10 @@ header[data-testid="stHeader"] {
     padding: 18px;
     border-radius: 12px;
     margin-top: 18px;
+    font-size: 17px;
+    line-height: 1.5;
 }
+
 .footer {
     background: #111111;
     color: white;
@@ -323,16 +363,18 @@ header[data-testid="stHeader"] {
     justify-content: space-between;
     font-weight: 600;
 }
+
 .stButton>button {
     background: #111111;
     color: white;
     border-radius: 12px;
-    height: 52px;
+    height: 56px;
     font-size: 18px;
     font-weight: 900;
     border: none;
     width: 100%;
 }
+
 .stButton>button:hover {
     background: #333333;
     color: white;
@@ -362,17 +404,28 @@ st.markdown(f"""
 
 st.markdown('<div class="card"><div class="card-title">1️⃣ SCEGLI LA PORTA AUTOMATICA</div>', unsafe_allow_html=True)
 
-scelta = st.radio(
-    "Seleziona configurazione",
-    [
-        "STANDARD 1 ANTA",
-        "STANDARD 2 ANTE",
-        "RIDONDANTE 1 ANTA",
-        "RIDONDANTE 2 ANTE"
-    ],
-    horizontal=True,
-    label_visibility="collapsed"
-)
+if "scelta" not in st.session_state:
+    st.session_state.scelta = "STANDARD 1 ANTA"
+
+c1, c2, c3, c4 = st.columns(4)
+
+with c1:
+    if st.button("STANDARD 1 ANTA", key="btn_std_1"):
+        st.session_state.scelta = "STANDARD 1 ANTA"
+
+with c2:
+    if st.button("STANDARD 2 ANTE", key="btn_std_2"):
+        st.session_state.scelta = "STANDARD 2 ANTE"
+
+with c3:
+    if st.button("RIDONDANTE 1 ANTA", key="btn_rid_1"):
+        st.session_state.scelta = "RIDONDANTE 1 ANTA"
+
+with c4:
+    if st.button("RIDONDANTE 2 ANTE", key="btn_rid_2"):
+        st.session_state.scelta = "RIDONDANTE 2 ANTE"
+
+scelta = st.session_state.scelta
 
 if scelta == "STANDARD 1 ANTA":
     tipo = "Standard"
@@ -387,16 +440,16 @@ else:
     tipo = "Ridondante"
     ante = "2 ante"
 
-c1, c2, c3, c4 = st.columns(4)
-
 cards = [
-    ("STANDARD 1 ANTA", "Porta automatica normale a una anta"),
-    ("STANDARD 2 ANTE", "Porta automatica normale a due ante"),
-    ("RIDONDANTE 1 ANTA", "Via di fuga / emergenza a una anta"),
-    ("RIDONDANTE 2 ANTE", "Via di fuga / emergenza a due ante"),
+    ("STANDARD 1 ANTA", "Porta automatica standard a una anta"),
+    ("STANDARD 2 ANTE", "Porta automatica standard a due ante"),
+    ("RIDONDANTE 1 ANTA", "Automazione per via di fuga a una anta"),
+    ("RIDONDANTE 2 ANTE", "Automazione per via di fuga a due ante"),
 ]
 
-for col, (titolo, sottotitolo) in zip([c1, c2, c3, c4], cards):
+cc1, cc2, cc3, cc4 = st.columns(4)
+
+for col, (titolo, sottotitolo) in zip([cc1, cc2, cc3, cc4], cards):
     active = "choice-card-active" if scelta == titolo else ""
     with col:
         st.markdown(f"""
@@ -409,21 +462,17 @@ for col, (titolo, sottotitolo) in zip([c1, c2, c3, c4], cards):
 if tipo == "Standard":
     st.markdown("""
     <div class="section-standard">
-        <h3 style="margin:0;color:#111111;">CONFIGURAZIONE STANDARD</h3>
-        <p style="margin-bottom:0;">
-        Automazione per porta scorrevole automatica ad uso normale, completa di radar,
-        selettore touch e batterie di emergenza.
-        </p>
+        <h3 style="margin:0 0 8px 0;color:#111111;">CONFIGURAZIONE STANDARD</h3>
+        Automazione per porta scorrevole automatica ad uso normale.
+        Include radar di apertura e sicurezza, selettore touch e batterie di emergenza.
     </div>
     """, unsafe_allow_html=True)
 else:
     st.markdown("""
     <div class="section-ridondante">
-        <h3 style="margin:0;color:#d66a00;">CONFIGURAZIONE RIDONDANTE</h3>
-        <p style="margin-bottom:0;">
-        Automazione ridondante dedicata a vie di fuga e uscite di emergenza,
-        completa di radar evacuazione, selettore DIGIDOR, batterie e pulsante emergenza.
-        </p>
+        <h3 style="margin:0 0 8px 0;color:#d66a00;">CONFIGURAZIONE RIDONDANTE</h3>
+        Automazione dedicata a vie di fuga e uscite di emergenza.
+        Include radar evacuazione, selettore DIGIDOR, batterie e pulsante emergenza.
     </div>
     """, unsafe_allow_html=True)
 
@@ -481,47 +530,68 @@ with col_left:
     if tipo == "Standard":
         st.markdown("""
         <div class="desc-box">
-            <div class="desc-title">✅ Automazione Sesamo LH100</div>
-            Automazione standard per porta scorrevole automatica, completa dei componenti principali di movimento e comando.
+            <div class="desc-title">Automazione Sesamo LH100</div>
+            <div class="desc-text">
+            Automazione standard per porta scorrevole automatica, completa dei componenti principali di movimento,
+            elettronica di comando e predisposizione per il funzionamento automatico.
+            </div>
         </div>
         <div class="desc-box">
-            <div class="desc-title">✅ 2 × Hotron HR100</div>
-            Radar di apertura e sicurezza EN16005, uno lato interno e uno lato esterno.
+            <div class="desc-title">2 × Hotron HR100</div>
+            <div class="desc-text">
+            Radar di apertura e sicurezza EN16005. Vengono previsti due sensori: uno lato interno e uno lato esterno.
+            </div>
         </div>
         <div class="desc-box">
-            <div class="desc-title">✅ PF37.00 ICON</div>
-            Selettore Touch con 3 tessere Tag per gestione delle funzioni porta.
+            <div class="desc-title">PF37.00 ICON</div>
+            <div class="desc-text">
+            Selettore Touch con 3 tessere Tag per la gestione delle modalità di funzionamento della porta.
+            </div>
         </div>
         <div class="desc-box">
-            <div class="desc-title">✅ PF54.73 Kit batterie</div>
-            Kit batterie con scheda di controllo e ricarica.
+            <div class="desc-title">PF54.73 Kit batterie</div>
+            <div class="desc-text">
+            Kit batterie con scheda di controllo e ricarica, utile per il funzionamento in caso di mancanza rete.
+            </div>
         </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
         <div class="desc-box">
-            <div class="desc-title">✅ Automazione Sesamo ER140 Ridondante</div>
-            Automazione per porte su vie di fuga e uscite di emergenza.
+            <div class="desc-title">Automazione Sesamo ER140 Ridondante</div>
+            <div class="desc-text">
+            Automazione per porte installate su vie di fuga e uscite di emergenza, con logica ridondante dedicata.
+            </div>
         </div>
         <div class="desc-box">
-            <div class="desc-title">✅ Hotron SSR3-ER-BL</div>
+            <div class="desc-title">Hotron SSR3-ER-BL</div>
+            <div class="desc-text">
             Radar specifico per evacuazione e gestione della sicurezza su sistema ridondante.
+            </div>
         </div>
         <div class="desc-box">
-            <div class="desc-title">✅ Hotron HR100</div>
-            Radar apertura e sicurezza EN16005.
+            <div class="desc-title">Hotron HR100</div>
+            <div class="desc-text">
+            Radar per apertura automatica e sicurezza del passaggio secondo EN16005.
+            </div>
         </div>
         <div class="desc-box">
-            <div class="desc-title">✅ PF37.06 DIGIDOR</div>
-            Selettore dedicato per configurazioni ridondanti.
+            <div class="desc-title">PF37.06 DIGIDOR</div>
+            <div class="desc-text">
+            Selettore dedicato per automazioni ridondanti e gestione delle funzioni della porta.
+            </div>
         </div>
         <div class="desc-box">
-            <div class="desc-title">✅ PF54.73 Kit batterie</div>
-            Kit batterie con scheda di controllo e ricarica.
+            <div class="desc-title">PF54.73 Kit batterie</div>
+            <div class="desc-text">
+            Kit batterie con scheda di controllo e ricarica per garantire continuità al sistema.
+            </div>
         </div>
         <div class="desc-box">
-            <div class="desc-title">✅ Pulsante emergenza</div>
-            Pulsante per gestione emergenza e sicurezza.
+            <div class="desc-title">Pulsante emergenza</div>
+            <div class="desc-text">
+            Pulsante per gestione emergenza e sicurezza della porta automatica.
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -613,21 +683,21 @@ with col_right:
     if tipo == "Ridondante":
         st.markdown("""
         <div class="orange-box">
-            <b>⚠️ Configurazione ridondante</b><br><br>
+            <b>Configurazione ridondante</b><br><br>
             Soluzione indicata per via di fuga / uscita di emergenza.
         </div>
         """, unsafe_allow_html=True)
 
     st.markdown("""
     <div class="green-box">
-        <b>✅ Preventivo cliente</b><br><br>
+        <b>Preventivo cliente</b><br><br>
         I prezzi dei singoli articoli non vengono mostrati.
         Il cliente vede solo descrizione e totale finale.
     </div>
     """, unsafe_allow_html=True)
 
-    st.button("✈️ RICHIEDI PREVENTIVO")
-    st.button("⬇️ SCARICA PDF")
+    st.button("RICHIEDI PREVENTIVO")
+    st.button("SCARICA PDF")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -641,8 +711,8 @@ st.write(f"Lunghezza traversa calcolata: **{lunghezza_traversa:.2f} metri**")
 for art in articoli:
     st.markdown(f"""
     <div class="desc-box">
-        <div class="desc-title">✓ {art['descrizione']}</div>
-        <div>{art['descrizione_lunga']}</div>
+        <div class="desc-title">{art['descrizione']}</div>
+        <div class="desc-text">{art['descrizione_lunga']}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -654,8 +724,8 @@ st.markdown("</div>", unsafe_allow_html=True)
 st.markdown("""
 <div class="footer">
     <div>SA-TEC S.R.L.s</div>
-    <div>📍 Lamezia Terme (CZ)</div>
-    <div>☎ 0968-036797</div>
-    <div>✉ sacco.tecnologie@gmail.com</div>
+    <div>Lamezia Terme (CZ)</div>
+    <div>0968-036797</div>
+    <div>sacco.tecnologie@gmail.com</div>
 </div>
 """, unsafe_allow_html=True)
