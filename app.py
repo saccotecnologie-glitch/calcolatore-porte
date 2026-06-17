@@ -304,42 +304,81 @@ def carica_preventivi():
 def login_box():
     utenti = carica_tutti_utenti()
 
+    # Sessione login stabile
+    if "logged_profilo" not in st.session_state:
+        st.session_state.logged_profilo = "CLIENTE"
+        st.session_state.logged_nome = "Cliente finale"
+        st.session_state.logged_utente = "CLIENTE"
+        st.session_state.logged_dati = {
+            "nome": "",
+            "azienda": "",
+            "telefono": "",
+            "email": "",
+            "ricarico": "35"
+        }
+
     st.sidebar.markdown("## Accesso")
     st.sidebar.info("Cliente finale: può entrare libero oppure registrarsi.")
 
     username = st.sidebar.text_input("Utente", value="", key="login_user")
     password = st.sidebar.text_input("Password", value="", type="password", key="login_pwd")
 
-    profilo = "CLIENTE"
-    nome_utente = "Cliente finale"
-    utente_codice = "CLIENTE"
-    dati_utente = {
-        "nome": "",
-        "azienda": "",
-        "telefono": "",
-        "email": "",
-        "ricarico": "35"
-    }
+    col_login_1, col_login_2 = st.sidebar.columns(2)
 
-    if username.strip() or password.strip():
-        u = username.strip().upper()
-        pwd_inserita = password.strip()
-        pwd_salvata = str(utenti[u]["password"]).strip() if u in utenti else ""
+    with col_login_1:
+        accedi = st.button("ACCEDI", key="btn_accedi")
 
-        if u in utenti and pwd_salvata == pwd_inserita:
-            profilo = str(utenti[u]["profilo"]).strip().upper()
-            nome_utente = utenti[u]["nome"] or u
-            utente_codice = u
-            dati_utente = utenti[u]
-            st.sidebar.success(f"Accesso: {nome_utente}")
-        else:
-            st.sidebar.error("Utente o password non corretti.")
-            st.sidebar.caption("Controlla maiuscole, trattino e spazi. Admin corretto: ADMIN / SATEC-ADMIN")
-    else:
+    with col_login_2:
+        esci = st.button("ESCI", key="btn_esci")
+
+    if esci:
+        st.session_state.logged_profilo = "CLIENTE"
+        st.session_state.logged_nome = "Cliente finale"
+        st.session_state.logged_utente = "CLIENTE"
+        st.session_state.logged_dati = {
+            "nome": "",
+            "azienda": "",
+            "telefono": "",
+            "email": "",
+            "ricarico": "35"
+        }
         st.sidebar.success("Accesso cliente finale")
 
+    if accedi:
+        u = username.strip().upper()
+        pwd_inserita = password.strip()
+
+        # ADMIN SEMPRE ATTIVO, anche se CSV è sporco o mancante
+        if u == "ADMIN" and pwd_inserita == "SATEC-ADMIN":
+            st.session_state.logged_profilo = "SA-TEC"
+            st.session_state.logged_nome = "SA-TEC Amministratore"
+            st.session_state.logged_utente = "ADMIN"
+            st.session_state.logged_dati = UTENTI_BASE["ADMIN"]
+            st.sidebar.success("Accesso: SA-TEC Amministratore")
+
+        elif u in utenti and str(utenti[u].get("password", "")).strip() == pwd_inserita:
+            profilo_login = str(utenti[u].get("profilo", "CLIENTE")).strip().upper()
+            if profilo_login not in PROFILI:
+                profilo_login = "CLIENTE"
+
+            st.session_state.logged_profilo = profilo_login
+            st.session_state.logged_nome = utenti[u].get("nome", "") or u
+            st.session_state.logged_utente = u
+            st.session_state.logged_dati = utenti[u]
+            st.sidebar.success(f"Accesso: {st.session_state.logged_nome}")
+
+        else:
+            st.sidebar.error("Utente o password non corretti.")
+            st.sidebar.caption("Admin corretto: ADMIN / SATEC-ADMIN")
+
+    profilo = st.session_state.logged_profilo
+    nome_utente = st.session_state.logged_nome
+    utente_codice = st.session_state.logged_utente
+    dati_utente = st.session_state.logged_dati
+
     st.sidebar.markdown("---")
-    st.sidebar.write(f"Profilo attivo: **{PROFILI[profilo]}**")
+    st.sidebar.write(f"Profilo attivo: **{PROFILI.get(profilo, 'Cliente finale')}**")
+    st.sidebar.caption(f"Utente attivo: {utente_codice}")
 
     with st.sidebar.expander("Registrazione cliente"):
         st.caption("Crea automaticamente una password cliente.")
@@ -581,6 +620,7 @@ RICARICO_ATTIVO = ricarico_effettivo
 # =========================
 
 if profilo == "SA-TEC":
+    st.sidebar.success("AREA ADMIN ATTIVA")
     st.sidebar.markdown("---")
     mostra_dashboard = st.sidebar.checkbox("Mostra dashboard SA-TEC", value=False)
 
