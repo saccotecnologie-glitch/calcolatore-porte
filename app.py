@@ -52,19 +52,33 @@ LISTINI = {
     "ALLACCIO_COLLAUDO": 350.00,
 }
 
-def img_to_base64(path):
-    file = Path(path)
-    if not file.exists():
-        return ""
-    return base64.b64encode(file.read_bytes()).decode()
+def img_to_base64(paths):
+    for path in paths:
+        file = Path(path)
+        if file.exists():
+            return base64.b64encode(file.read_bytes()).decode()
+    return ""
 
-logo_satec64 = img_to_base64("logo_satec.jpg")
-logo_sesamo64 = img_to_base64("SESAMO LOGO.png")
+logo_satec64 = img_to_base64([
+    "logo_satec.jpg",
+    "logo_satec.png",
+    "/mnt/data/logo_satec.jpg",
+    "/mnt/data/logo_satec.png"
+])
+
+logo_sesamo64 = img_to_base64([
+    "SESAMO LOGO.png",
+    "sesamo_logo.png",
+    "logo_sesamo.png",
+    "/mnt/data/SESAMO LOGO.png",
+    "/mnt/data/sesamo_logo.png",
+    "/mnt/data/logo_sesamo.png"
+])
 
 def calcola_traversa(luce_mm, ante):
     if ante == "1 anta":
         return ((luce_mm * 2) + 100) / 1000
-    return (luce_mm + 100) / 1000
+    return ((luce_mm * 2) + 200) / 1000
 
 def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scontato=True):
     prezzo = prezzo_cliente(LISTINI[codice]) if scontato else LISTINI[codice]
@@ -140,7 +154,6 @@ def render_choice_card(title, desc, ante, active):
 
 def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     blu = "#06499b"
-    blu_scuro = "#073763"
     vetro = "#eef7ff"
     vetro2 = "#e2f1ff"
     nero = "#111111"
@@ -512,7 +525,8 @@ with col_main:
     <div class="measure-total">
         <div>
             <b>MISURA TRAVERSA CALCOLATA</b><br>
-            Calcolo automatico in base alla luce passaggio.
+            1 anta = doppio luce + 10 cm<br>
+            2 ante = doppio luce + 20 cm
         </div>
         <div>
             <div class="big">{int(lunghezza_traversa * 1000)} mm</div>
@@ -709,20 +723,10 @@ IBAN: <b>{IBAN}</b></p>
 </html>
 """
 
-st.markdown('<div class="card"><div class="title-bar">STAMPA PREVENTIVO</div>', unsafe_allow_html=True)
-
-st.download_button(
-    label="SCARICA PREVENTIVO STAMPABILE HTML",
-    data=html_stampa,
-    file_name="Preventivo_SA_TEC.html",
-    mime="text/html"
-)
-
 html_js = json.dumps(html_stampa)
 
 components.html(f"""
 <div style="border:2px solid #06499b;border-radius:14px;padding:18px;background:#f8fbff;">
-<h3 style="color:#06499b;margin-top:0;">Stampa preventivo</h3>
 <button onclick="openPrint()" style="
     background:#06499b;
     color:white;
@@ -745,9 +749,7 @@ function openPrint() {{
     win.document.close();
 }}
 </script>
-""", height=150)
-
-st.markdown("</div>", unsafe_allow_html=True)
+""", height=100)
 
 st.markdown(f"""
 <div class="footer">
