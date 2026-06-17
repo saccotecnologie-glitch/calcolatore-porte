@@ -233,7 +233,14 @@ def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email, 
 
 def carica_tutti_utenti():
     utenti = dict(UTENTI_BASE)
-    utenti.update(carica_utenti_csv())
+    utenti_csv = carica_utenti_csv()
+
+    # Non permettere al file CSV di sovrascrivere l'ADMIN base.
+    # Così ADMIN / SATEC-ADMIN funziona sempre.
+    if "ADMIN" in utenti_csv:
+        utenti_csv.pop("ADMIN", None)
+
+    utenti.update(utenti_csv)
     return utenti
 
 def genera_codice_progressivo(profilo, utenti):
@@ -305,14 +312,18 @@ def login_box():
 
     if username.strip() or password.strip():
         u = username.strip().upper()
-        if u in utenti and utenti[u]["password"] == password:
-            profilo = utenti[u]["profilo"]
+        pwd_inserita = password.strip()
+        pwd_salvata = str(utenti[u]["password"]).strip() if u in utenti else ""
+
+        if u in utenti and pwd_salvata == pwd_inserita:
+            profilo = str(utenti[u]["profilo"]).strip().upper()
             nome_utente = utenti[u]["nome"] or u
             utente_codice = u
             dati_utente = utenti[u]
             st.sidebar.success(f"Accesso: {nome_utente}")
         else:
             st.sidebar.error("Utente o password non corretti.")
+            st.sidebar.caption("Controlla maiuscole, trattino e spazi. Admin corretto: ADMIN / SATEC-ADMIN")
     else:
         st.sidebar.success("Accesso cliente finale")
 
