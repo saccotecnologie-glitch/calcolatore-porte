@@ -72,19 +72,19 @@ UTENTI_BASE = {
         "email": "",
         "ricarico": "30"
     },
-    "MARIO01": {
-        "password": "M2026#",
-        "profilo": "INSTALLATORE",
-        "nome": "Installatore Mario",
+    "GROS001": {
+        "password": "G2026#",
+        "profilo": "GROSSISTA",
+        "nome": "Grossista Mario",
         "azienda": "",
         "telefono": "",
         "email": "",
         "ricarico": "20"
     },
-    "LUCA01": {
-        "password": "L2026#",
-        "profilo": "INSTALLATORE",
-        "nome": "Installatore Luca",
+    "GROS002": {
+        "password": "G22026#",
+        "profilo": "GROSSISTA",
+        "nome": "Grossista Luca",
         "azienda": "",
         "telefono": "",
         "email": "",
@@ -95,7 +95,7 @@ UTENTI_BASE = {
 PROFILI = {
     "CLIENTE": "Cliente finale",
     "RIVENDITORE": "Rivenditore",
-    "INSTALLATORE": "Installatore",
+    "GROSSISTA": "Grossista",
     "SA-TEC": "SA-TEC",
 }
 
@@ -141,7 +141,7 @@ def costo_satec_reale(listino):
 def ricarico_default(profilo):
     if profilo == "SA-TEC":
         return 0.0
-    if profilo == "INSTALLATORE":
+    if profilo == "GROSSISTA":
         return 20.0
     if profilo == "RIVENDITORE":
         return 30.0
@@ -228,7 +228,7 @@ def genera_codice_progressivo(profilo, utenti):
     prefisso = {
         "CLIENTE": "CLI",
         "RIVENDITORE": "RIV",
-        "INSTALLATORE": "INS",
+        "GROSSISTA": "GROS",
         "SA-TEC": "ADM"
     }.get(profilo, "CLI")
 
@@ -530,7 +530,7 @@ if profilo == "SA-TEC":
 
     with st.sidebar.expander("Crea utente manuale"):
         utenti_now = carica_tutti_utenti()
-        profilo_new = st.selectbox("Profilo nuovo utente", ["CLIENTE", "RIVENDITORE", "INSTALLATORE"], key="admin_profilo_new")
+        profilo_new = st.selectbox("Profilo nuovo utente", ["CLIENTE", "RIVENDITORE", "GROSSISTA"], key="admin_profilo_new")
         nome_new = st.text_input("Nome", key="admin_nome_new")
         azienda_new = st.text_input("Azienda", key="admin_azienda_new")
         telefono_new = st.text_input("Telefono", key="admin_tel_new")
@@ -748,7 +748,6 @@ with col_side:
     <div class="price">{euro(imponibile)}</div>
     <div class="vat-box">
     Profilo: <b>{PROFILI[profilo]}</b><br>
-    Ricarico applicato: <b>{ricarico_effettivo:.0f}%</b><br>
     IVA 22%: <span style="float:right;">{euro(iva)}</span><br>
     TOTALE IVA INCLUSA: <span style="float:right;">{euro(totale_iva)}</span><br><br>
     <b>Prezzo franco deposito SA-TEC Lamezia Terme</b>
@@ -837,7 +836,6 @@ st.markdown(f"""
 <div class="desc-grid">
 <div>
 <b>Profilo:</b> {PROFILI[profilo]}<br><br>
-<b>Ricarico applicato:</b> {ricarico_effettivo:.0f}%<br><br>
 <b>Utente:</b> {utente_codice}<br><br>
 <b>Configurazione selezionata:</b> {scelta}<br><br>
 <b>Automazione:</b> SESAMO POWERCORE PW100<br><br>
@@ -853,6 +851,7 @@ st.markdown(f"""
 
 if profilo == "SA-TEC":
     st.markdown('<div class="card"><div class="title-bar">DETTAGLIO INTERNO SA-TEC</div>', unsafe_allow_html=True)
+    st.info(f"Ricarico applicato al profilo/utente: {ricarico_effettivo:.0f}%")
     tabella = []
     for a in articoli:
         tabella.append({
@@ -909,7 +908,6 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <div class="box">
 <b>Data:</b> {date.today().strftime("%d/%m/%Y")}<br>
 <b>Profilo:</b> {PROFILI[profilo]}<br>
-<b>Ricarico applicato:</b> {ricarico_effettivo:.0f}%<br>
 <b>Utente:</b> {utente_codice}<br>
 <b>Cliente:</b> {cliente_nome} - {cliente_azienda}<br>
 <b>Configurazione:</b> {scelta}<br>
