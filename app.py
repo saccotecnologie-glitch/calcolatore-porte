@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import base64
 from pathlib import Path
 
@@ -68,100 +69,106 @@ def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scont
     })
 
 def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    colore = "#111111"
-    vetro = "#d9e3ea"
-    sfondo = "#f7f7f7"
+    blu = "#06499b"
+    blu_scuro = "#073763"
+    azzurro = "#dcecff"
+    vetro = "#eef6ff"
+    grigio = "#f7faff"
 
     if ante == "1 anta":
         return f"""
+        <div style="background:white;border-radius:18px;padding:15px;">
         <svg width="100%" height="360" viewBox="0 0 760 360">
-            <rect x="70" y="35" width="620" height="34" rx="3" fill="{colore}"/>
-            <text x="380" y="27" text-anchor="middle" font-size="15" fill="{colore}" font-weight="bold">
+            <rect x="70" y="35" width="620" height="34" rx="4" fill="{blu_scuro}"/>
+            <text x="380" y="27" text-anchor="middle" font-size="15" fill="{blu}" font-weight="bold">
                 TRAVERSA {int(lunghezza_traversa * 1000)} mm
             </text>
 
-            <rect x="120" y="95" width="520" height="170" fill="{sfondo}" stroke="{colore}" stroke-width="4"/>
-            <rect x="140" y="115" width="235" height="130" fill="{vetro}" stroke="{colore}" stroke-width="3"/>
-            <rect x="385" y="115" width="235" height="130" fill="#eef3f6" stroke="{colore}" stroke-width="3"/>
+            <rect x="120" y="95" width="520" height="170" fill="{grigio}" stroke="{blu_scuro}" stroke-width="4"/>
+            <rect x="140" y="115" width="235" height="130" fill="{vetro}" stroke="{blu}" stroke-width="3"/>
+            <rect x="385" y="115" width="235" height="130" fill="{azzurro}" stroke="{blu}" stroke-width="3"/>
 
-            <line x1="380" y1="100" x2="380" y2="260" stroke="{colore}" stroke-width="4"/>
-            <path d="M430 175 L560 175" stroke="{colore}" stroke-width="5" marker-end="url(#arrow1)"/>
+            <line x1="380" y1="100" x2="380" y2="260" stroke="{blu_scuro}" stroke-width="4"/>
+            <path d="M430 175 L560 175" stroke="{blu}" stroke-width="5" marker-end="url(#arrow1)"/>
 
-            <line x1="120" y1="295" x2="640" y2="295" stroke="{colore}" stroke-width="2"/>
-            <line x1="120" y1="285" x2="120" y2="305" stroke="{colore}" stroke-width="2"/>
-            <line x1="640" y1="285" x2="640" y2="305" stroke="{colore}" stroke-width="2"/>
-            <text x="380" y="320" text-anchor="middle" font-size="17" fill="{colore}" font-weight="bold">
+            <line x1="120" y1="295" x2="640" y2="295" stroke="{blu_scuro}" stroke-width="2"/>
+            <line x1="120" y1="285" x2="120" y2="305" stroke="{blu_scuro}" stroke-width="2"/>
+            <line x1="640" y1="285" x2="640" y2="305" stroke="{blu_scuro}" stroke-width="2"/>
+            <text x="380" y="320" text-anchor="middle" font-size="17" fill="{blu}" font-weight="bold">
                 LUCE PASSAGGIO {luce_mm} mm
             </text>
 
-            <line x1="675" y1="95" x2="675" y2="265" stroke="{colore}" stroke-width="2"/>
-            <line x1="665" y1="95" x2="685" y2="95" stroke="{colore}" stroke-width="2"/>
-            <line x1="665" y1="265" x2="685" y2="265" stroke="{colore}" stroke-width="2"/>
-            <text x="710" y="185" text-anchor="middle" font-size="16" fill="{colore}" font-weight="bold" transform="rotate(90 710,185)">
+            <line x1="675" y1="95" x2="675" y2="265" stroke="{blu_scuro}" stroke-width="2"/>
+            <line x1="665" y1="95" x2="685" y2="95" stroke="{blu_scuro}" stroke-width="2"/>
+            <line x1="665" y1="265" x2="685" y2="265" stroke="{blu_scuro}" stroke-width="2"/>
+            <text x="710" y="185" text-anchor="middle" font-size="16" fill="{blu}" font-weight="bold" transform="rotate(90 710,185)">
                 H {altezza_mm} mm
             </text>
 
-            <text x="380" y="350" text-anchor="middle" font-size="20" fill="{colore}" font-weight="bold">
+            <text x="380" y="350" text-anchor="middle" font-size="20" fill="{blu_scuro}" font-weight="bold">
                 PORTA AUTOMATICA 1 ANTA
             </text>
 
             <defs>
                 <marker id="arrow1" markerWidth="12" markerHeight="12" refX="6" refY="3" orient="auto">
-                    <path d="M0,0 L0,6 L7,3 z" fill="{colore}"/>
+                    <path d="M0,0 L0,6 L7,3 z" fill="{blu}"/>
                 </marker>
             </defs>
         </svg>
+        </div>
         """
 
     return f"""
+    <div style="background:white;border-radius:18px;padding:15px;">
     <svg width="100%" height="360" viewBox="0 0 760 360">
-        <rect x="70" y="35" width="620" height="34" rx="3" fill="{colore}"/>
-        <text x="380" y="27" text-anchor="middle" font-size="15" fill="{colore}" font-weight="bold">
+        <rect x="70" y="35" width="620" height="34" rx="4" fill="{blu_scuro}"/>
+        <text x="380" y="27" text-anchor="middle" font-size="15" fill="{blu}" font-weight="bold">
             TRAVERSA {int(lunghezza_traversa * 1000)} mm
         </text>
 
-        <rect x="120" y="95" width="520" height="170" fill="{sfondo}" stroke="{colore}" stroke-width="4"/>
-        <rect x="140" y="115" width="235" height="130" fill="{vetro}" stroke="{colore}" stroke-width="3"/>
-        <rect x="385" y="115" width="235" height="130" fill="{vetro}" stroke="{colore}" stroke-width="3"/>
+        <rect x="120" y="95" width="520" height="170" fill="{grigio}" stroke="{blu_scuro}" stroke-width="4"/>
+        <rect x="140" y="115" width="235" height="130" fill="{vetro}" stroke="{blu}" stroke-width="3"/>
+        <rect x="385" y="115" width="235" height="130" fill="{vetro}" stroke="{blu}" stroke-width="3"/>
 
-        <line x1="380" y1="100" x2="380" y2="260" stroke="{colore}" stroke-width="4"/>
+        <line x1="380" y1="100" x2="380" y2="260" stroke="{blu_scuro}" stroke-width="4"/>
 
-        <path d="M340 175 L220 175" stroke="{colore}" stroke-width="5" marker-end="url(#arrowL)"/>
-        <path d="M420 175 L540 175" stroke="{colore}" stroke-width="5" marker-end="url(#arrowR)"/>
+        <path d="M340 175 L220 175" stroke="{blu}" stroke-width="5" marker-end="url(#arrowL)"/>
+        <path d="M420 175 L540 175" stroke="{blu}" stroke-width="5" marker-end="url(#arrowR)"/>
 
-        <line x1="120" y1="295" x2="640" y2="295" stroke="{colore}" stroke-width="2"/>
-        <line x1="120" y1="285" x2="120" y2="305" stroke="{colore}" stroke-width="2"/>
-        <line x1="640" y1="285" x2="640" y2="305" stroke="{colore}" stroke-width="2"/>
-        <text x="380" y="320" text-anchor="middle" font-size="17" fill="{colore}" font-weight="bold">
+        <line x1="120" y1="295" x2="640" y2="295" stroke="{blu_scuro}" stroke-width="2"/>
+        <line x1="120" y1="285" x2="120" y2="305" stroke="{blu_scuro}" stroke-width="2"/>
+        <line x1="640" y1="285" x2="640" y2="305" stroke="{blu_scuro}" stroke-width="2"/>
+        <text x="380" y="320" text-anchor="middle" font-size="17" fill="{blu}" font-weight="bold">
             LUCE PASSAGGIO {luce_mm} mm
         </text>
 
-        <line x1="675" y1="95" x2="675" y2="265" stroke="{colore}" stroke-width="2"/>
-        <line x1="665" y1="95" x2="685" y2="95" stroke="{colore}" stroke-width="2"/>
-        <line x1="665" y1="265" x2="685" y2="265" stroke="{colore}" stroke-width="2"/>
-        <text x="710" y="185" text-anchor="middle" font-size="16" fill="{colore}" font-weight="bold" transform="rotate(90 710,185)">
+        <line x1="675" y1="95" x2="675" y2="265" stroke="{blu_scuro}" stroke-width="2"/>
+        <line x1="665" y1="95" x2="685" y2="95" stroke="{blu_scuro}" stroke-width="2"/>
+        <line x1="665" y1="265" x2="685" y2="265" stroke="{blu_scuro}" stroke-width="2"/>
+        <text x="710" y="185" text-anchor="middle" font-size="16" fill="{blu}" font-weight="bold" transform="rotate(90 710,185)">
             H {altezza_mm} mm
         </text>
 
-        <text x="380" y="350" text-anchor="middle" font-size="20" fill="{colore}" font-weight="bold">
+        <text x="380" y="350" text-anchor="middle" font-size="20" fill="{blu_scuro}" font-weight="bold">
             PORTA AUTOMATICA 2 ANTE
         </text>
 
         <defs>
             <marker id="arrowR" markerWidth="12" markerHeight="12" refX="6" refY="3" orient="auto">
-                <path d="M0,0 L0,6 L7,3 z" fill="{colore}"/>
+                <path d="M0,0 L0,6 L7,3 z" fill="{blu}"/>
             </marker>
             <marker id="arrowL" markerWidth="12" markerHeight="12" refX="1" refY="3" orient="auto">
-                <path d="M7,0 L7,6 L0,3 z" fill="{colore}"/>
+                <path d="M7,0 L7,6 L0,3 z" fill="{blu}"/>
             </marker>
         </defs>
     </svg>
+    </div>
     """
 
 st.markdown("""
 <style>
 .stApp {
-    background: #f2f4f7;
+    background: #f3f7fd;
     font-family: Arial, sans-serif;
 }
 
@@ -178,11 +185,11 @@ header[data-testid="stHeader"] {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: linear-gradient(120deg, #ffffff 0%, #ffffff 28%, #1c1c1c 28%, #000000 100%);
-    border-radius: 0 0 20px 20px;
+    background: linear-gradient(120deg, #ffffff 0%, #ffffff 28%, #073763 28%, #06499b 100%);
+    border-radius: 0 0 22px 22px;
     padding: 25px 35px;
     margin-bottom: 25px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    box-shadow: 0 8px 24px rgba(6,73,155,0.20);
 }
 
 .hero-logo {
@@ -222,98 +229,98 @@ header[data-testid="stHeader"] {
     border-radius: 18px;
     padding: 26px;
     margin-bottom: 20px;
-    box-shadow: 0 5px 18px rgba(0,0,0,0.08);
-    border: 1px solid #dcdcdc;
+    box-shadow: 0 5px 18px rgba(6,73,155,0.10);
+    border: 1px solid #d7e6f7;
 }
 
 .card-title {
-    color: #111111;
+    color: #06499b;
     font-size: 23px;
     font-weight: 900;
     margin-bottom: 18px;
-    border-bottom: 1px solid #dcdcdc;
+    border-bottom: 1px solid #d7e6f7;
     padding-bottom: 12px;
 }
 
 .choice-card {
     border-radius: 18px;
     padding: 24px;
-    border: 2px solid #d0d0d0;
-    background: #f8f8f8;
+    border: 2px solid #bdd4ef;
+    background: #f8fbff;
     text-align: center;
     min-height: 150px;
 }
 
 .choice-card-active {
-    border: 4px solid #111111;
-    background: #eeeeee;
-    box-shadow: 0 5px 18px rgba(0,0,0,0.18);
+    border: 4px solid #06499b;
+    background: #eaf4ff;
+    box-shadow: 0 5px 18px rgba(6,73,155,0.22);
 }
 
 .choice-title {
-    color: #111111;
+    color: #06499b;
     font-size: 22px;
     font-weight: 900;
     margin-bottom: 10px;
 }
 
 .choice-subtitle {
-    color: #333333;
+    color: #18324f;
     font-size: 16px;
     line-height: 1.45;
 }
 
 .section-standard {
-    background: #f5f5f5;
-    border-left: 6px solid #111111;
+    background: #eef6ff;
+    border-left: 6px solid #06499b;
     padding: 22px;
     border-radius: 14px;
     margin-top: 18px;
-    color: #111111;
+    color: #18324f;
     font-size: 18px;
     line-height: 1.6;
 }
 
 .section-ridondante {
-    background: #fff4e8;
-    border-left: 6px solid #d66a00;
+    background: #eaf4ff;
+    border-left: 6px solid #073763;
     padding: 22px;
     border-radius: 14px;
     margin-top: 18px;
-    color: #111111;
+    color: #18324f;
     font-size: 18px;
     line-height: 1.6;
 }
 
 .info-box {
-    background: linear-gradient(90deg, #f5f5f5, #ffffff);
+    background: linear-gradient(90deg, #eef6ff, #ffffff);
     border-radius: 14px;
     padding: 20px;
     margin-top: 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-left: 6px solid #111111;
+    border-left: 6px solid #06499b;
 }
 
 .info-box strong {
-    color: #111111;
+    color: #06499b;
     font-size: 30px;
 }
 
 .desc-box {
     background: #ffffff;
-    border: 2px solid #dddddd;
-    border-left: 7px solid #111111;
+    border: 2px solid #d7e6f7;
+    border-left: 7px solid #06499b;
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 14px;
-    color: #111111;
+    color: #18324f;
 }
 
 .desc-title {
     font-weight: 900;
-    color: #000000;
+    color: #06499b;
     font-size: 20px;
     margin-bottom: 10px;
 }
@@ -321,11 +328,11 @@ header[data-testid="stHeader"] {
 .desc-text {
     font-size: 18px;
     line-height: 1.65;
-    color: #222222;
+    color: #18324f;
 }
 
 .summary-price {
-    color: #111111;
+    color: #06499b;
     font-size: 42px;
     font-weight: 900;
     text-align: right;
@@ -342,10 +349,10 @@ header[data-testid="stHeader"] {
     line-height: 1.5;
 }
 
-.orange-box {
-    background: #fff6ed;
-    border: 1px solid #ffd1a3;
-    color: #a65400;
+.blue-box {
+    background: #eef6ff;
+    border: 1px solid #bdd4ef;
+    color: #06499b;
     padding: 18px;
     border-radius: 12px;
     margin-top: 18px;
@@ -354,7 +361,7 @@ header[data-testid="stHeader"] {
 }
 
 .footer {
-    background: #111111;
+    background: #073763;
     color: white;
     padding: 18px 30px;
     border-radius: 14px 14px 0 0;
@@ -365,7 +372,7 @@ header[data-testid="stHeader"] {
 }
 
 .stButton>button {
-    background: #111111;
+    background: #06499b;
     color: white;
     border-radius: 12px;
     height: 56px;
@@ -376,7 +383,7 @@ header[data-testid="stHeader"] {
 }
 
 .stButton>button:hover {
-    background: #333333;
+    background: #073763;
     color: white;
 }
 </style>
@@ -385,7 +392,7 @@ header[data-testid="stHeader"] {
 if logo64:
     logo_html = f'<img class="hero-logo" src="data:image/jpeg;base64,{logo64}">'
 else:
-    logo_html = "<h1 style='color:#111;background:white;padding:20px;'>SA-TEC</h1>"
+    logo_html = "<h1 style='color:#06499b;background:white;padding:20px;'>SA-TEC</h1>"
 
 st.markdown(f"""
 <div class="hero">
@@ -462,7 +469,7 @@ for col, (titolo, sottotitolo) in zip([cc1, cc2, cc3, cc4], cards):
 if tipo == "Standard":
     st.markdown("""
     <div class="section-standard">
-        <h3 style="margin:0 0 8px 0;color:#111111;">CONFIGURAZIONE STANDARD</h3>
+        <h3 style="margin:0 0 8px 0;color:#06499b;">CONFIGURAZIONE STANDARD</h3>
         Automazione per porta scorrevole automatica ad uso normale.
         Include radar di apertura e sicurezza, selettore touch e batterie di emergenza.
     </div>
@@ -470,7 +477,7 @@ if tipo == "Standard":
 else:
     st.markdown("""
     <div class="section-ridondante">
-        <h3 style="margin:0 0 8px 0;color:#d66a00;">CONFIGURAZIONE RIDONDANTE</h3>
+        <h3 style="margin:0 0 8px 0;color:#073763;">CONFIGURAZIONE RIDONDANTE</h3>
         Automazione dedicata a vie di fuga e uscite di emergenza.
         Include radar evacuazione, selettore DIGIDOR, batterie e pulsante emergenza.
     </div>
@@ -505,9 +512,9 @@ with col_left:
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
 
-    st.markdown(
+    components.html(
         disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa),
-        unsafe_allow_html=True
+        height=390
     )
 
     st.markdown(f"""
@@ -675,14 +682,14 @@ with col_right:
 
     st.markdown(f"""
     <div>
-        <b style="color:#111111;">TOTALE IVA INCLUSA</b>
+        <b style="color:#06499b;">TOTALE IVA INCLUSA</b>
         <div class="summary-price">{euro(totale)}</div>
     </div>
     """, unsafe_allow_html=True)
 
     if tipo == "Ridondante":
         st.markdown("""
-        <div class="orange-box">
+        <div class="blue-box">
             <b>Configurazione ridondante</b><br><br>
             Soluzione indicata per via di fuga / uscita di emergenza.
         </div>
