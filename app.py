@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 import base64
 from pathlib import Path
+from datetime import date
 
 st.set_page_config(
     page_title="Configuratore Porte Automatiche SA-TEC",
@@ -9,13 +10,33 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# =========================
+# DATI AZIENDALI
+# =========================
+
+AZIENDA = "SA-TEC S.R.L.s"
+SEDE = "Via L. Settembrini 84, 88046 Lamezia Terme (CZ)"
+PIVA = "P.IVA 04009610793"
+TELEFONO = "0968-036797"
+EMAIL = "sacco.tecnologie@gmail.com"
+PEC = "sa-tec@pec.it"
+IBAN = "IT30S0825842841007000002877"
+
 IVA = 0.22
+
+# =========================
+# FUNZIONI PREZZI
+# =========================
 
 def prezzo_cliente(listino):
     return listino * 0.50 * 0.95 * 1.35
 
 def euro(valore):
     return f"€ {valore:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+# =========================
+# LISTINI
+# =========================
 
 LISTINI = {
     "LH100_1": 1236.00,
@@ -43,6 +64,10 @@ LISTINI = {
     "ALLACCIO_COLLAUDO": 350.00,
 }
 
+# =========================
+# LOGO
+# =========================
+
 def img_to_base64(path):
     if not Path(path).exists():
         return ""
@@ -50,6 +75,10 @@ def img_to_base64(path):
         return base64.b64encode(img.read()).decode()
 
 logo64 = img_to_base64("logo_satec.jpg")
+
+# =========================
+# FUNZIONI
+# =========================
 
 def calcola_traversa(luce_mm, ante):
     if ante == "1 anta":
@@ -59,7 +88,6 @@ def calcola_traversa(luce_mm, ante):
 def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scontato=True):
     listino = LISTINI[codice]
     prezzo = prezzo_cliente(listino) if scontato else listino
-
     articoli.append({
         "codice": codice,
         "descrizione": descrizione,
@@ -71,41 +99,40 @@ def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scont
 def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     blu = "#06499b"
     blu_scuro = "#073763"
-    azzurro = "#dcecff"
-    vetro = "#eef6ff"
-    grigio = "#f7faff"
+    azzurro = "#eaf4ff"
+    vetro = "#f7fbff"
 
     if ante == "1 anta":
         return f"""
-        <div style="background:white;border-radius:18px;padding:15px;">
+        <div style="background:white;border:2px solid #d7e6f7;border-radius:18px;padding:10px;">
         <svg width="100%" height="360" viewBox="0 0 760 360">
-            <rect x="70" y="35" width="620" height="34" rx="4" fill="{blu_scuro}"/>
-            <text x="380" y="27" text-anchor="middle" font-size="15" fill="{blu}" font-weight="bold">
+            <rect x="70" y="38" width="620" height="34" rx="4" fill="{blu_scuro}"/>
+            <text x="380" y="28" text-anchor="middle" font-size="17" fill="{blu_scuro}" font-weight="bold">
                 TRAVERSA {int(lunghezza_traversa * 1000)} mm
             </text>
 
-            <rect x="120" y="95" width="520" height="170" fill="{grigio}" stroke="{blu_scuro}" stroke-width="4"/>
-            <rect x="140" y="115" width="235" height="130" fill="{vetro}" stroke="{blu}" stroke-width="3"/>
-            <rect x="385" y="115" width="235" height="130" fill="{azzurro}" stroke="{blu}" stroke-width="3"/>
+            <rect x="120" y="98" width="520" height="170" fill="#ffffff" stroke="{blu_scuro}" stroke-width="4"/>
+            <rect x="140" y="118" width="235" height="130" fill="{vetro}" stroke="{blu}" stroke-width="3"/>
+            <rect x="385" y="118" width="235" height="130" fill="{azzurro}" stroke="{blu}" stroke-width="3"/>
 
-            <line x1="380" y1="100" x2="380" y2="260" stroke="{blu_scuro}" stroke-width="4"/>
-            <path d="M430 175 L560 175" stroke="{blu}" stroke-width="5" marker-end="url(#arrow1)"/>
+            <line x1="380" y1="102" x2="380" y2="264" stroke="{blu_scuro}" stroke-width="4"/>
+            <path d="M430 182 L560 182" stroke="{blu}" stroke-width="6" marker-end="url(#arrow1)"/>
 
-            <line x1="120" y1="295" x2="640" y2="295" stroke="{blu_scuro}" stroke-width="2"/>
-            <line x1="120" y1="285" x2="120" y2="305" stroke="{blu_scuro}" stroke-width="2"/>
-            <line x1="640" y1="285" x2="640" y2="305" stroke="{blu_scuro}" stroke-width="2"/>
-            <text x="380" y="320" text-anchor="middle" font-size="17" fill="{blu}" font-weight="bold">
+            <line x1="120" y1="298" x2="640" y2="298" stroke="{blu_scuro}" stroke-width="3"/>
+            <line x1="120" y1="286" x2="120" y2="310" stroke="{blu_scuro}" stroke-width="3"/>
+            <line x1="640" y1="286" x2="640" y2="310" stroke="{blu_scuro}" stroke-width="3"/>
+            <text x="380" y="326" text-anchor="middle" font-size="18" fill="{blu_scuro}" font-weight="bold">
                 LUCE PASSAGGIO {luce_mm} mm
             </text>
 
-            <line x1="675" y1="95" x2="675" y2="265" stroke="{blu_scuro}" stroke-width="2"/>
-            <line x1="665" y1="95" x2="685" y2="95" stroke="{blu_scuro}" stroke-width="2"/>
-            <line x1="665" y1="265" x2="685" y2="265" stroke="{blu_scuro}" stroke-width="2"/>
-            <text x="710" y="185" text-anchor="middle" font-size="16" fill="{blu}" font-weight="bold" transform="rotate(90 710,185)">
-                H {altezza_mm} mm
+            <line x1="678" y1="98" x2="678" y2="268" stroke="{blu_scuro}" stroke-width="3"/>
+            <line x1="666" y1="98" x2="690" y2="98" stroke="{blu_scuro}" stroke-width="3"/>
+            <line x1="666" y1="268" x2="690" y2="268" stroke="{blu_scuro}" stroke-width="3"/>
+            <text x="720" y="190" text-anchor="middle" font-size="17" fill="{blu_scuro}" font-weight="bold" transform="rotate(90 720,190)">
+                ALTEZZA {altezza_mm} mm
             </text>
 
-            <text x="380" y="350" text-anchor="middle" font-size="20" fill="{blu_scuro}" font-weight="bold">
+            <text x="380" y="354" text-anchor="middle" font-size="20" fill="{blu_scuro}" font-weight="bold">
                 PORTA AUTOMATICA 1 ANTA
             </text>
 
@@ -119,37 +146,37 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
         """
 
     return f"""
-    <div style="background:white;border-radius:18px;padding:15px;">
+    <div style="background:white;border:2px solid #d7e6f7;border-radius:18px;padding:10px;">
     <svg width="100%" height="360" viewBox="0 0 760 360">
-        <rect x="70" y="35" width="620" height="34" rx="4" fill="{blu_scuro}"/>
-        <text x="380" y="27" text-anchor="middle" font-size="15" fill="{blu}" font-weight="bold">
+        <rect x="70" y="38" width="620" height="34" rx="4" fill="{blu_scuro}"/>
+        <text x="380" y="28" text-anchor="middle" font-size="17" fill="{blu_scuro}" font-weight="bold">
             TRAVERSA {int(lunghezza_traversa * 1000)} mm
         </text>
 
-        <rect x="120" y="95" width="520" height="170" fill="{grigio}" stroke="{blu_scuro}" stroke-width="4"/>
-        <rect x="140" y="115" width="235" height="130" fill="{vetro}" stroke="{blu}" stroke-width="3"/>
-        <rect x="385" y="115" width="235" height="130" fill="{vetro}" stroke="{blu}" stroke-width="3"/>
+        <rect x="120" y="98" width="520" height="170" fill="#ffffff" stroke="{blu_scuro}" stroke-width="4"/>
+        <rect x="140" y="118" width="235" height="130" fill="{vetro}" stroke="{blu}" stroke-width="3"/>
+        <rect x="385" y="118" width="235" height="130" fill="{vetro}" stroke="{blu}" stroke-width="3"/>
 
-        <line x1="380" y1="100" x2="380" y2="260" stroke="{blu_scuro}" stroke-width="4"/>
+        <line x1="380" y1="102" x2="380" y2="264" stroke="{blu_scuro}" stroke-width="4"/>
 
-        <path d="M340 175 L220 175" stroke="{blu}" stroke-width="5" marker-end="url(#arrowL)"/>
-        <path d="M420 175 L540 175" stroke="{blu}" stroke-width="5" marker-end="url(#arrowR)"/>
+        <path d="M340 182 L220 182" stroke="{blu}" stroke-width="6" marker-end="url(#arrowL)"/>
+        <path d="M420 182 L540 182" stroke="{blu}" stroke-width="6" marker-end="url(#arrowR)"/>
 
-        <line x1="120" y1="295" x2="640" y2="295" stroke="{blu_scuro}" stroke-width="2"/>
-        <line x1="120" y1="285" x2="120" y2="305" stroke="{blu_scuro}" stroke-width="2"/>
-        <line x1="640" y1="285" x2="640" y2="305" stroke="{blu_scuro}" stroke-width="2"/>
-        <text x="380" y="320" text-anchor="middle" font-size="17" fill="{blu}" font-weight="bold">
+        <line x1="120" y1="298" x2="640" y2="298" stroke="{blu_scuro}" stroke-width="3"/>
+        <line x1="120" y1="286" x2="120" y2="310" stroke="{blu_scuro}" stroke-width="3"/>
+        <line x1="640" y1="286" x2="640" y2="310" stroke="{blu_scuro}" stroke-width="3"/>
+        <text x="380" y="326" text-anchor="middle" font-size="18" fill="{blu_scuro}" font-weight="bold">
             LUCE PASSAGGIO {luce_mm} mm
         </text>
 
-        <line x1="675" y1="95" x2="675" y2="265" stroke="{blu_scuro}" stroke-width="2"/>
-        <line x1="665" y1="95" x2="685" y2="95" stroke="{blu_scuro}" stroke-width="2"/>
-        <line x1="665" y1="265" x2="685" y2="265" stroke="{blu_scuro}" stroke-width="2"/>
-        <text x="710" y="185" text-anchor="middle" font-size="16" fill="{blu}" font-weight="bold" transform="rotate(90 710,185)">
-            H {altezza_mm} mm
+        <line x1="678" y1="98" x2="678" y2="268" stroke="{blu_scuro}" stroke-width="3"/>
+        <line x1="666" y1="98" x2="690" y2="98" stroke="{blu_scuro}" stroke-width="3"/>
+        <line x1="666" y1="268" x2="690" y2="268" stroke="{blu_scuro}" stroke-width="3"/>
+        <text x="720" y="190" text-anchor="middle" font-size="17" fill="{blu_scuro}" font-weight="bold" transform="rotate(90 720,190)">
+            ALTEZZA {altezza_mm} mm
         </text>
 
-        <text x="380" y="350" text-anchor="middle" font-size="20" fill="{blu_scuro}" font-weight="bold">
+        <text x="380" y="354" text-anchor="middle" font-size="20" fill="{blu_scuro}" font-weight="bold">
             PORTA AUTOMATICA 2 ANTE
         </text>
 
@@ -164,6 +191,10 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     </svg>
     </div>
     """
+
+# =========================
+# CSS
+# =========================
 
 st.markdown("""
 <style>
@@ -270,20 +301,9 @@ header[data-testid="stHeader"] {
     line-height: 1.45;
 }
 
-.section-standard {
+.section-standard, .section-ridondante {
     background: #eef6ff;
     border-left: 6px solid #06499b;
-    padding: 22px;
-    border-radius: 14px;
-    margin-top: 18px;
-    color: #18324f;
-    font-size: 18px;
-    line-height: 1.6;
-}
-
-.section-ridondante {
-    background: #eaf4ff;
-    border-left: 6px solid #073763;
     padding: 22px;
     border-radius: 14px;
     margin-top: 18px;
@@ -360,6 +380,17 @@ header[data-testid="stHeader"] {
     line-height: 1.5;
 }
 
+.accessory-box {
+    border: 2px solid #06499b;
+    background: #f8fbff;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+    color: #073763;
+    font-size: 18px;
+    font-weight: 800;
+}
+
 .footer {
     background: #073763;
     color: white;
@@ -386,8 +417,39 @@ header[data-testid="stHeader"] {
     background: #073763;
     color: white;
 }
+
+div[data-testid="stNumberInput"] label {
+    color: #06499b !important;
+    font-size: 18px !important;
+    font-weight: 900 !important;
+}
+
+div[data-testid="stNumberInput"] input {
+    border: 2px solid #06499b !important;
+    border-radius: 12px !important;
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    color: #073763 !important;
+    background: #ffffff !important;
+    height: 52px !important;
+}
+
+div[data-testid="stCheckbox"] label {
+    border: 2px solid #06499b;
+    background: #f8fbff;
+    border-radius: 14px;
+    padding: 14px 16px;
+    width: 100%;
+    font-size: 18px;
+    font-weight: 900;
+    color: #073763;
+}
 </style>
 """, unsafe_allow_html=True)
+
+# =========================
+# HEADER
+# =========================
 
 if logo64:
     logo_html = f'<img class="hero-logo" src="data:image/jpeg;base64,{logo64}">'
@@ -409,6 +471,10 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# =========================
+# SCELTA PORTA
+# =========================
+
 st.markdown('<div class="card"><div class="card-title">1️⃣ SCEGLI LA PORTA AUTOMATICA</div>', unsafe_allow_html=True)
 
 if "scelta" not in st.session_state:
@@ -419,15 +485,12 @@ c1, c2, c3, c4 = st.columns(4)
 with c1:
     if st.button("STANDARD 1 ANTA", key="btn_std_1"):
         st.session_state.scelta = "STANDARD 1 ANTA"
-
 with c2:
     if st.button("STANDARD 2 ANTE", key="btn_std_2"):
         st.session_state.scelta = "STANDARD 2 ANTE"
-
 with c3:
     if st.button("RIDONDANTE 1 ANTA", key="btn_rid_1"):
         st.session_state.scelta = "RIDONDANTE 1 ANTA"
-
 with c4:
     if st.button("RIDONDANTE 2 ANTE", key="btn_rid_2"):
         st.session_state.scelta = "RIDONDANTE 2 ANTE"
@@ -477,13 +540,17 @@ if tipo == "Standard":
 else:
     st.markdown("""
     <div class="section-ridondante">
-        <h3 style="margin:0 0 8px 0;color:#073763;">CONFIGURAZIONE RIDONDANTE</h3>
+        <h3 style="margin:0 0 8px 0;color:#06499b;">CONFIGURAZIONE RIDONDANTE</h3>
         Automazione dedicata a vie di fuga e uscite di emergenza.
         Include radar evacuazione, selettore DIGIDOR, batterie e pulsante emergenza.
     </div>
     """, unsafe_allow_html=True)
 
 st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================
+# MISURE E ACCESSORI
+# =========================
 
 col_left, col_right = st.columns([2, 1.05], gap="large")
 
@@ -532,81 +599,10 @@ with col_left:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown('<div class="card"><div class="card-title">3️⃣ COSA INCLUDE QUESTA CONFIGURAZIONE</div>', unsafe_allow_html=True)
-
-    if tipo == "Standard":
-        st.markdown("""
-        <div class="desc-box">
-            <div class="desc-title">Automazione Sesamo LH100</div>
-            <div class="desc-text">
-            Automazione standard per porta scorrevole automatica, completa dei componenti principali di movimento,
-            elettronica di comando e predisposizione per il funzionamento automatico.
-            </div>
-        </div>
-        <div class="desc-box">
-            <div class="desc-title">2 × Hotron HR100</div>
-            <div class="desc-text">
-            Radar di apertura e sicurezza EN16005. Vengono previsti due sensori: uno lato interno e uno lato esterno.
-            </div>
-        </div>
-        <div class="desc-box">
-            <div class="desc-title">PF37.00 ICON</div>
-            <div class="desc-text">
-            Selettore Touch con 3 tessere Tag per la gestione delle modalità di funzionamento della porta.
-            </div>
-        </div>
-        <div class="desc-box">
-            <div class="desc-title">PF54.73 Kit batterie</div>
-            <div class="desc-text">
-            Kit batterie con scheda di controllo e ricarica, utile per il funzionamento in caso di mancanza rete.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <div class="desc-box">
-            <div class="desc-title">Automazione Sesamo ER140 Ridondante</div>
-            <div class="desc-text">
-            Automazione per porte installate su vie di fuga e uscite di emergenza, con logica ridondante dedicata.
-            </div>
-        </div>
-        <div class="desc-box">
-            <div class="desc-title">Hotron SSR3-ER-BL</div>
-            <div class="desc-text">
-            Radar specifico per evacuazione e gestione della sicurezza su sistema ridondante.
-            </div>
-        </div>
-        <div class="desc-box">
-            <div class="desc-title">Hotron HR100</div>
-            <div class="desc-text">
-            Radar per apertura automatica e sicurezza del passaggio secondo EN16005.
-            </div>
-        </div>
-        <div class="desc-box">
-            <div class="desc-title">PF37.06 DIGIDOR</div>
-            <div class="desc-text">
-            Selettore dedicato per automazioni ridondanti e gestione delle funzioni della porta.
-            </div>
-        </div>
-        <div class="desc-box">
-            <div class="desc-title">PF54.73 Kit batterie</div>
-            <div class="desc-text">
-            Kit batterie con scheda di controllo e ricarica per garantire continuità al sistema.
-            </div>
-        </div>
-        <div class="desc-box">
-            <div class="desc-title">Pulsante emergenza</div>
-            <div class="desc-text">
-            Pulsante per gestione emergenza e sicurezza della porta automatica.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
 with col_right:
-    st.markdown('<div class="card"><div class="card-title">4️⃣ ACCESSORI</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card"><div class="card-title">3️⃣ ACCESSORI E SERVIZI</div>', unsafe_allow_html=True)
 
+    st.markdown('<div class="accessory-box">ELETTROBLOCCO</div>', unsafe_allow_html=True)
     elettroblocco = st.checkbox("Aggiungi elettroblocco", value=False)
 
     if elettroblocco and tipo == "Standard":
@@ -616,14 +612,19 @@ with col_right:
     else:
         st.info("Elettroblocco non incluso.")
 
-    allaccio = st.checkbox("Allaccio e collaudo SA-TEC", value=True)
+    st.markdown('<div class="accessory-box">ALLACCIO E COLLAUDO</div>', unsafe_allow_html=True)
+    allaccio = st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=True)
 
     if allaccio:
-        st.success("Allaccio e collaudo inclusi.")
+        st.success("Allaccio e collaudo inclusi nel preventivo.")
     else:
         st.warning("Solo fornitura materiale. Allaccio e collaudo esclusi.")
 
     st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================
+# CALCOLO ARTICOLI
+# =========================
 
 articoli = []
 
@@ -667,23 +668,27 @@ if allaccio:
 
 imponibile = sum(a["totale"] for a in articoli)
 iva = imponibile * IVA
-totale = imponibile + iva
+totale_iva = imponibile + iva
+
+# =========================
+# RIEPILOGO
+# =========================
 
 with col_right:
-    st.markdown('<div class="card"><div class="card-title">5️⃣ RIEPILOGO PREVENTIVO</div>', unsafe_allow_html=True)
-
-    st.write("Totale imponibile")
-    st.markdown(f"<h3 style='text-align:right;'>{euro(imponibile)}</h3>", unsafe_allow_html=True)
-
-    st.write("IVA 22%")
-    st.markdown(f"<h3 style='text-align:right;'>{euro(iva)}</h3>", unsafe_allow_html=True)
-
-    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown('<div class="card"><div class="card-title">4️⃣ RIEPILOGO PREVENTIVO</div>', unsafe_allow_html=True)
 
     st.markdown(f"""
     <div>
-        <b style="color:#06499b;">TOTALE IVA INCLUSA</b>
-        <div class="summary-price">{euro(totale)}</div>
+        <b style="color:#06499b;font-size:20px;">TOTALE PREVENTIVO IVA ESCLUSA</b>
+        <div class="summary-price">{euro(imponibile)}</div>
+        <div style="text-align:right;color:#18324f;font-size:17px;">IVA esclusa</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="blue-box">
+        IVA 22%: <b>{euro(iva)}</b><br>
+        Totale indicativo IVA inclusa: <b>{euro(totale_iva)}</b>
     </div>
     """, unsafe_allow_html=True)
 
@@ -698,15 +703,16 @@ with col_right:
     st.markdown("""
     <div class="green-box">
         <b>Preventivo cliente</b><br><br>
+        Il totale principale è IVA esclusa.
         I prezzi dei singoli articoli non vengono mostrati.
-        Il cliente vede solo descrizione e totale finale.
     </div>
     """, unsafe_allow_html=True)
 
-    st.button("RICHIEDI PREVENTIVO")
-    st.button("SCARICA PDF")
-
     st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================
+# DESCRIZIONE CLIENTE
+# =========================
 
 st.markdown('<div class="card"><div class="card-title">📌 DESCRIZIONE FORNITURA CLIENTE</div>', unsafe_allow_html=True)
 
@@ -728,11 +734,230 @@ if not allaccio:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-st.markdown("""
+# =========================
+# HTML STAMPA
+# =========================
+
+righe_descrizione = ""
+for art in articoli:
+    righe_descrizione += f"""
+    <tr>
+        <td>{art['descrizione']}</td>
+        <td>{art['descrizione_lunga']}</td>
+    </tr>
+    """
+
+logo_print = ""
+if logo64:
+    logo_print = f'<img src="data:image/jpeg;base64,{logo64}" style="width:240px;">'
+else:
+    logo_print = f"<h1>{AZIENDA}</h1>"
+
+html_stampa = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Preventivo SA-TEC</title>
+<style>
+body {{
+    font-family: Arial, sans-serif;
+    color: #18324f;
+    margin: 40px;
+}}
+.header {{
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 4px solid #06499b;
+    padding-bottom: 20px;
+    margin-bottom: 25px;
+}}
+.company {{
+    text-align: right;
+    font-size: 14px;
+    line-height: 1.5;
+}}
+h1, h2 {{
+    color: #06499b;
+}}
+.box {{
+    border: 2px solid #d7e6f7;
+    border-left: 8px solid #06499b;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 20px;
+}}
+table {{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}}
+th {{
+    background: #06499b;
+    color: white;
+    padding: 12px;
+    text-align: left;
+}}
+td {{
+    border: 1px solid #d7e6f7;
+    padding: 12px;
+    vertical-align: top;
+}}
+.total {{
+    text-align: right;
+    font-size: 26px;
+    font-weight: bold;
+    color: #06499b;
+    margin-top: 25px;
+}}
+.conditions {{
+    margin-top: 30px;
+    font-size: 15px;
+    line-height: 1.6;
+}}
+.print-button {{
+    background: #06499b;
+    color: white;
+    padding: 14px 22px;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+}}
+@media print {{
+    .print-button {{
+        display: none;
+    }}
+}}
+</style>
+</head>
+<body>
+
+<button class="print-button" onclick="window.print()">STAMPA / SALVA PDF</button>
+
+<div class="header">
+    <div>{logo_print}</div>
+    <div class="company">
+        <b>{AZIENDA}</b><br>
+        {SEDE}<br>
+        {PIVA}<br>
+        Tel. {TELEFONO}<br>
+        Email: {EMAIL}<br>
+        PEC: {PEC}
+    </div>
+</div>
+
+<h1>Preventivo porta automatica</h1>
+
+<div class="box">
+    <b>Data:</b> {date.today().strftime("%d/%m/%Y")}<br>
+    <b>Configurazione:</b> {scelta}<br>
+    <b>Luce passaggio:</b> {luce_mm} mm<br>
+    <b>Altezza passaggio:</b> {altezza_mm} mm<br>
+    <b>Lunghezza traversa calcolata:</b> {lunghezza_traversa:.2f} metri
+</div>
+
+<h2>Descrizione fornitura</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Voce</th>
+            <th>Descrizione</th>
+        </tr>
+    </thead>
+    <tbody>
+        {righe_descrizione}
+    </tbody>
+</table>
+
+<div class="total">
+    Totale preventivo IVA esclusa: {euro(imponibile)}
+</div>
+
+<div style="text-align:right;font-size:18px;margin-top:8px;">
+    IVA 22%: {euro(iva)}<br>
+    Totale IVA inclusa: {euro(totale_iva)}
+</div>
+
+<div class="conditions">
+    <h2>Condizioni di pagamento</h2>
+    <p>
+        Pagamento tramite bonifico bancario intestato a <b>{AZIENDA}</b>.<br>
+        IBAN: <b>{IBAN}</b>
+    </p>
+    <p>
+        Condizioni proposte: 50% all’ordine e saldo 50% prima della consegna o al collaudo,
+        salvo diversi accordi scritti tra le parti.
+    </p>
+    <p>
+        Il presente preventivo è indicativo e soggetto a verifica tecnica, disponibilità materiale
+        e conferma definitiva da parte di SA-TEC S.R.L.s.
+    </p>
+    <p>
+        Validità offerta: 15 giorni dalla data del presente documento.
+    </p>
+</div>
+
+</body>
+</html>
+"""
+
+st.markdown('<div class="card"><div class="card-title">🖨️ STAMPA PREVENTIVO</div>', unsafe_allow_html=True)
+
+st.download_button(
+    label="SCARICA PREVENTIVO STAMPABILE HTML",
+    data=html_stampa,
+    file_name="Preventivo_SA_TEC.html",
+    mime="text/html"
+)
+
+components.html(
+    f"""
+    <div style="border:2px solid #06499b;border-radius:14px;padding:18px;background:#f8fbff;">
+        <h3 style="color:#06499b;margin-top:0;">Anteprima stampa</h3>
+        <p style="font-size:16px;color:#18324f;">
+            Clicca sul pulsante qui sotto per aprire la stampa direttamente dal browser.
+        </p>
+        <button onclick="openPrint()" style="
+            background:#06499b;
+            color:white;
+            border:none;
+            padding:14px 22px;
+            border-radius:10px;
+            font-size:18px;
+            font-weight:bold;
+            cursor:pointer;
+        ">
+            STAMPA / SALVA PDF
+        </button>
+    </div>
+
+    <script>
+    function openPrint() {{
+        const html = `{html_stampa.replace("`", "\\`")}`;
+        const win = window.open("", "_blank");
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+    }}
+    </script>
+    """,
+    height=170
+)
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================
+# FOOTER
+# =========================
+
+st.markdown(f"""
 <div class="footer">
-    <div>SA-TEC S.R.L.s</div>
+    <div>{AZIENDA}</div>
     <div>Lamezia Terme (CZ)</div>
-    <div>0968-036797</div>
-    <div>sacco.tecnologie@gmail.com</div>
+    <div>{TELEFONO}</div>
+    <div>{EMAIL}</div>
 </div>
 """, unsafe_allow_html=True)
