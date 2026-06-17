@@ -1,50 +1,245 @@
 import streamlit as st
+import base64
+from pathlib import Path
 
-st.set_page_config(page_title="Configuratore SA-TEC", layout="centered")
+st.set_page_config(
+    page_title="Configuratore Porte Automatiche SA-TEC",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
 IVA = 0.22
-SCONTO_50 = 0.50
-SCONTO_EXTRA_5 = 0.95
-MAGGIORAZIONE = 1.35
 
 def prezzo_cliente(listino):
-    return listino * SCONTO_50 * SCONTO_EXTRA_5 * MAGGIORAZIONE
+    return listino * 0.50 * 0.95 * 1.35
 
 def euro(valore):
     return f"€ {valore:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 LISTINI = {
-    # AUTOMAZIONI STANDARD
-    "PF54.05": 1236.00,   # LH100 1 anta
-    "PF54.06": 1298.00,   # LH100 2 ante
+    "LH100_1": 1236.00,
+    "LH100_2": 1298.00,
+    "ER140_1": 2140.00,
+    "ER140_2": 2200.00,
 
-    # AUTOMAZIONI RIDONDANTI
-    "PF54.13": 2140.00,   # Ridondante 1 anta
-    "PF54.14": 2200.00,   # Ridondante 2 ante
+    "CASSA": 343.00 / 6.6,
+    "COPERCHIO": 214.00 / 6.6,
+    "GUARN_COPERCHIO": 134.00 / 35,
+    "CINGHIA": 671.00 / 60,
+    "GUIDA": 49.20 / 6.6,
+    "GUARN_GUIDA": 66.00 / 30,
 
-    # PROFILI / TRAVERSA
-    "PF54.25": 343.00 / 6.6,   # Profilo cassa
-    "PF54.43": 214.00 / 6.6,   # Coperchio
-    "PF54.55": 134.00 / 35,    # Guarnizione coperchio
-    "PF25.84": 671.00 / 60,    # Cinghia
-    "PF54.90": 49.20 / 6.6,    # Guida
-    "PF54.91": 66.00 / 30,     # Guarnizione guida
+    "HR100": 135.00,
+    "ICON": 114.00,
+    "BATTERIE": 118.00,
+    "ELETTRO_STANDARD": 195.00,
 
-    # ACCESSORI STANDARD
-    "HR100": 135.00,       # Hotron HR100
-    "PF37.00": 114.00,     # ICON Touch con 3 tag
-    "PF54.73": 118.00,     # Kit batterie
-    "PF54.59": 195.00,     # Elettroblocco standard
+    "SSR3_ER_BL": 375.00,
+    "DIGIDOR": 180.00,
+    "PULSANTE_EMERGENZA": 130.00,
+    "ELETTRO_RIDONDANTE": 290.00,
 
-    # ACCESSORI RIDONDANTE
-    "SSR3-ER-BL": 375.00,  # Radar evacuazione
-    "PF37.06": 180.00,     # DIGIDOR
-    "PEM130": 130.00,      # Pulsante emergenza
-    "PF54.62": 290.00,     # Elettroblocco ridondante
-
-    # SERVIZI
-    "ALLACCIO": 350.00,
+    "ALLACCIO_COLLAUDO": 350.00,
 }
+
+def img_to_base64(path):
+    if not Path(path).exists():
+        return ""
+    with open(path, "rb") as img:
+        return base64.b64encode(img.read()).decode()
+
+logo64 = img_to_base64("logo_satec.jpg")
+
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background: #f3f6fb;
+        font-family: Arial, sans-serif;
+    }
+
+    header[data-testid="stHeader"] {
+        background: transparent;
+    }
+
+    .main .block-container {
+        padding-top: 0rem;
+        max-width: 1500px;
+    }
+
+    .hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(120deg, #ffffff 0%, #ffffff 28%, #073763 28%, #002b55 100%);
+        border-radius: 0 0 18px 18px;
+        padding: 25px 35px;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .hero-logo {
+        width: 330px;
+        background: white;
+    }
+
+    .hero-title {
+        color: white;
+        text-align: left;
+        padding-left: 30px;
+        flex: 1;
+    }
+
+    .hero-title h1 {
+        font-size: 44px;
+        margin: 0;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+
+    .hero-title h3 {
+        font-size: 22px;
+        margin-top: 10px;
+        font-weight: 400;
+    }
+
+    .top-icons {
+        color: white;
+        display: flex;
+        gap: 35px;
+        text-align: center;
+        font-weight: 700;
+    }
+
+    .step-box {
+        display: flex;
+        gap: 15px;
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 18px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .step {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-right: 1px solid #dfe6f0;
+    }
+
+    .step:last-child {
+        border-right: none;
+    }
+
+    .circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #d8dde6;
+        color: #1b2638;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 800;
+    }
+
+    .circle.active {
+        background: #06499b;
+        color: white;
+    }
+
+    .card {
+        background: white;
+        border-radius: 15px;
+        padding: 28px;
+        margin-bottom: 18px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        border: 1px solid #e3eaf3;
+    }
+
+    .card-title {
+        color: #06499b;
+        font-size: 22px;
+        font-weight: 800;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #d8e1ec;
+        padding-bottom: 12px;
+    }
+
+    .info-box {
+        background: linear-gradient(90deg, #eef6ff, #ffffff);
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-left: 5px solid #06499b;
+    }
+
+    .info-box strong {
+        color: #06499b;
+        font-size: 28px;
+    }
+
+    .summary-price {
+        color: #06499b;
+        font-size: 42px;
+        font-weight: 900;
+        text-align: right;
+    }
+
+    .green-box {
+        background: #eefaf2;
+        border: 1px solid #b9e6c7;
+        color: #0c7b3e;
+        padding: 20px;
+        border-radius: 12px;
+        margin-top: 20px;
+    }
+
+    .included li {
+        margin-bottom: 8px;
+    }
+
+    .footer {
+        background: #073763;
+        color: white;
+        padding: 18px 30px;
+        border-radius: 14px 14px 0 0;
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+        font-weight: 600;
+    }
+
+    .stButton>button {
+        background: #06499b;
+        color: white;
+        border-radius: 10px;
+        height: 52px;
+        font-size: 18px;
+        font-weight: 800;
+        border: none;
+        width: 100%;
+    }
+
+    .stButton>button:hover {
+        background: #002b55;
+        color: white;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+def calcola_traversa(luce_mm, ante):
+    if ante == "1 anta":
+        return ((luce_mm * 2) + 100) / 1000
+    return (luce_mm + 100) / 1000
 
 def aggiungi(articoli, codice, descrizione, quantita=1, scontato=True):
     listino = LISTINI[codice]
@@ -56,92 +251,266 @@ def aggiungi(articoli, codice, descrizione, quantita=1, scontato=True):
         "totale": prezzo * quantita
     })
 
-def calcola_traversa(luce_mm, ante):
-    if ante == "1 anta":
-        lunghezza_mm = (luce_mm * 2) + 100
+if logo64:
+    logo_html = f'<img class="hero-logo" src="data:image/jpeg;base64,{logo64}">'
+else:
+    logo_html = "<h1 style='color:#06499b;background:white;padding:20px;'>SA-TEC</h1>"
+
+st.markdown(
+    f"""
+    <div class="hero">
+        <div>{logo_html}</div>
+        <div class="hero-title">
+            <h1>CONFIGURATORE<br>PORTE AUTOMATICHE</h1>
+            <h3>PREVENTIVO IN TEMPO REALE</h3>
+        </div>
+        <div class="top-icons">
+            <div>🛡️<br>PRODOTTI<br>CERTIFICATI</div>
+            <div>🎧<br>ASSISTENZA<br>TECNICA</div>
+            <div>⚙️<br>TECNOLOGIA<br>IN MOVIMENTO</div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="step-box">
+        <div class="step">
+            <div class="circle active">1</div>
+            <div><b>CONFIGURAZIONE</b><br>Imposta i parametri</div>
+        </div>
+        <div class="step">
+            <div class="circle">2</div>
+            <div><b>ACCESSORI</b><br>Seleziona le opzioni</div>
+        </div>
+        <div class="step">
+            <div class="circle">3</div>
+            <div><b>RIEPILOGO</b><br>Preventivo finale</div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+col_left, col_right = st.columns([2, 1.05], gap="large")
+
+with col_left:
+    st.markdown('<div class="card"><div class="card-title">⚙️ CONFIGURAZIONE PORTA</div>', unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        tipo = st.radio(
+            "TIPO AUTOMAZIONE",
+            ["Standard", "Ridondante"],
+            horizontal=True
+        )
+
+    with c2:
+        ante = st.radio(
+            "NUMERO ANTE",
+            ["1 anta", "2 ante"],
+            horizontal=True
+        )
+
+    c3, c4 = st.columns(2)
+
+    with c3:
+        luce_mm = st.number_input(
+            "LUCE PASSAGGIO (MM)",
+            min_value=800,
+            max_value=5000,
+            value=1600,
+            step=50
+        )
+
+    with c4:
+        altezza_mm = st.number_input(
+            "ALTEZZA PASSAGGIO (MM)",
+            min_value=1800,
+            max_value=3000,
+            value=2200,
+            step=50
+        )
+
+    lunghezza_traversa = calcola_traversa(luce_mm, ante)
+
+    st.markdown(
+        f"""
+        <div class="info-box">
+            <div>
+                <b>LUNGHEZZA TRAVERSA CALCOLATA</b><br>
+                Calcolata in base alla luce passaggio e numero ante
+            </div>
+            <div>
+                <strong>{int(lunghezza_traversa * 1000)} mm</strong><br>
+                <b>{lunghezza_traversa:.2f} metri</b>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<div class="card"><div class="card-title">🎁 INCLUSO NELLA CONFIGURAZIONE</div>', unsafe_allow_html=True)
+
+    inc1, inc2 = st.columns(2)
+
+    with inc1:
+        st.markdown(
+            """
+            <b style="color:#06499b;">STANDARD INCLUDE</b>
+            <ul class="included">
+                <li>✅ Automazione Sesamo LH100</li>
+                <li>✅ 2 × Hotron HR100 Radar apertura e sicurezza EN16005</li>
+                <li>✅ PF37.00 ICON Selettore Touch con 3 Tag</li>
+                <li>✅ PF54.73 Kit batterie con scheda controllo e ricarica</li>
+            </ul>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with inc2:
+        st.markdown(
+            """
+            <b style="color:#06499b;">RIDONDANTE INCLUDE</b>
+            <ul class="included">
+                <li>✅ Automazione Sesamo ER140 Ridondante</li>
+                <li>✅ Hotron SSR3-ER-BL Radar evacuazione</li>
+                <li>✅ Hotron HR100 Radar apertura e sicurezza EN16005</li>
+                <li>✅ PF37.06 DIGIDOR Selettore</li>
+                <li>✅ PF54.73 Kit batterie</li>
+                <li>✅ Pulsante emergenza</li>
+            </ul>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.info("Gli articoli inclusi variano automaticamente in base al tipo di automazione selezionata.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with col_right:
+    st.markdown('<div class="card"><div class="card-title">🛍️ ACCESSORI OPZIONALI</div>', unsafe_allow_html=True)
+
+    elettroblocco = st.checkbox("ELETTROBLOCCO")
+
+    if tipo == "Standard":
+        st.caption("Elettroblocco PF54.59 Standard")
     else:
-        lunghezza_mm = luce_mm + 100
-    return lunghezza_mm / 1000
+        st.caption("Elettroblocco PF54.62 Ridondante")
 
-st.title("Configuratore Porta Automatica")
-st.subheader("SA-TEC S.R.L.s")
+    allaccio = st.checkbox("ALLACCIO E COLLAUDO", value=True)
+    st.caption("Allaccio e collaudo SA-TEC")
 
-tipo = st.selectbox("Tipo automazione", ["Standard", "Ridondante"])
-ante = st.selectbox("Numero ante", ["1 anta", "2 ante"])
-luce_mm = st.number_input("Luce passaggio in mm", min_value=800, max_value=5000, value=1600, step=50)
-
-elettroblocco = st.checkbox("Aggiungi elettroblocco", value=False)
-allaccio = st.checkbox("Allaccio e collaudo SA-TEC", value=True)
-
-T = calcola_traversa(luce_mm, ante)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 articoli = []
 
-# TRAVERSA / PROFILI
-aggiungi(articoli, "PF54.25", "Profilo cassa traversa in alluminio", T)
-aggiungi(articoli, "PF54.43", "Coperchio traversa in alluminio", T)
-aggiungi(articoli, "PF54.55", "Guarnizione coperchio", T)
-aggiungi(articoli, "PF25.84", "Cinghia dentata", T * 1.8)
-aggiungi(articoli, "PF54.90", "Profilo guida scorrimento", T)
-aggiungi(articoli, "PF54.91", "Guarnizione guida", T)
+aggiungi(articoli, "CASSA", "Profilo cassa traversa in alluminio", lunghezza_traversa)
+aggiungi(articoli, "COPERCHIO", "Coperchio traversa in alluminio", lunghezza_traversa)
+aggiungi(articoli, "GUARN_COPERCHIO", "Guarnizione coperchio", lunghezza_traversa)
+aggiungi(articoli, "CINGHIA", "Cinghia dentata", lunghezza_traversa * 1.8)
+aggiungi(articoli, "GUIDA", "Profilo guida scorrimento", lunghezza_traversa)
+aggiungi(articoli, "GUARN_GUIDA", "Guarnizione guida", lunghezza_traversa)
 
-# STANDARD
 if tipo == "Standard":
     if ante == "1 anta":
-        aggiungi(articoli, "PF54.05", "Automazione Sesamo LH100 per porta scorrevole 1 anta")
+        aggiungi(articoli, "LH100_1", "Automazione Sesamo LH100 1 anta")
     else:
-        aggiungi(articoli, "PF54.06", "Automazione Sesamo LH100 per porta scorrevole 2 ante")
+        aggiungi(articoli, "LH100_2", "Automazione Sesamo LH100 2 ante")
 
-    aggiungi(articoli, "HR100", "Radar Hotron HR100 apertura e sicurezza EN16005", 2)
-    aggiungi(articoli, "PF37.00", "ICON – Selettore Touch con 3 tessere Tag")
-    aggiungi(articoli, "PF54.73", "Kit batterie con scheda di controllo e ricarica")
+    aggiungi(articoli, "HR100", "Hotron HR100 Radar apertura e sicurezza EN16005", 2)
+    aggiungi(articoli, "ICON", "PF37.00 ICON Selettore Touch con 3 Tag")
+    aggiungi(articoli, "BATTERIE", "PF54.73 Kit batterie con scheda controllo e ricarica")
 
     if elettroblocco:
-        aggiungi(articoli, "PF54.59", "Elettroblocco standard")
+        aggiungi(articoli, "ELETTRO_STANDARD", "PF54.59 Elettroblocco Standard")
 
-# RIDONDANTE
-if tipo == "Ridondante":
+else:
     if ante == "1 anta":
-        aggiungi(articoli, "PF54.13", "Automazione Sesamo ER140 ridondante 1 anta")
+        aggiungi(articoli, "ER140_1", "PF54.13 ER140 Ridondante 1 anta")
     else:
-        aggiungi(articoli, "PF54.14", "Automazione Sesamo ER140 ridondante 2 ante")
+        aggiungi(articoli, "ER140_2", "PF54.14 ER140 Ridondante 2 ante")
 
-    aggiungi(articoli, "SSR3-ER-BL", "Radar Hotron SSR3-ER-BL per evacuazione")
-    aggiungi(articoli, "HR100", "Radar Hotron HR100 apertura e sicurezza EN16005")
-    aggiungi(articoli, "PF37.06", "DIGIDOR selettore per ridondante")
-    aggiungi(articoli, "PF54.73", "Kit batterie con scheda di controllo e ricarica")
-    aggiungi(articoli, "PEM130", "Pulsante emergenza")
+    aggiungi(articoli, "SSR3_ER_BL", "Hotron SSR3-ER-BL Radar evacuazione")
+    aggiungi(articoli, "HR100", "Hotron HR100 Radar apertura e sicurezza EN16005")
+    aggiungi(articoli, "DIGIDOR", "PF37.06 DIGIDOR Selettore")
+    aggiungi(articoli, "BATTERIE", "PF54.73 Kit batterie")
+    aggiungi(articoli, "PULSANTE_EMERGENZA", "Pulsante emergenza")
 
     if elettroblocco:
-        aggiungi(articoli, "PF54.62", "Elettroblocco ridondante")
+        aggiungi(articoli, "ELETTRO_RIDONDANTE", "PF54.62 Elettroblocco Ridondante")
 
-# ALLACCIO E COLLAUDO
 if allaccio:
-    aggiungi(articoli, "ALLACCIO", "Allaccio e collaudo SA-TEC", 1, scontato=False)
+    aggiungi(articoli, "ALLACCIO_COLLAUDO", "Allaccio e collaudo SA-TEC", 1, scontato=False)
 
 imponibile = sum(a["totale"] for a in articoli)
 iva = imponibile * IVA
 totale = imponibile + iva
 
-st.divider()
+with col_right:
+    st.markdown('<div class="card"><div class="card-title">📄 RIEPILOGO PREVENTIVO</div>', unsafe_allow_html=True)
 
-st.subheader("Descrizione fornitura")
+    st.write("Totale imponibile")
+    st.markdown(f"<h3 style='text-align:right;'>{euro(imponibile)}</h3>", unsafe_allow_html=True)
 
-st.write(f"Configurazione: **{tipo} - {ante}**")
+    st.write("IVA 22%")
+    st.markdown(f"<h3 style='text-align:right;'>{euro(iva)}</h3>", unsafe_allow_html=True)
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+
+    st.markdown(
+        f"""
+        <div>
+            <b style="color:#06499b;">TOTALE IVA INCLUSA</b>
+            <div class="summary-price">{euro(totale)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <div class="green-box">
+            <b>✅ COSA INCLUDE IL PREVENTIVO</b><br><br>
+            Fornitura di materiali e dispositivi selezionati secondo la configurazione scelta.<br><br>
+            Preventivo indicativo soggetto a verifica tecnica.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.button("✈️ RICHIEDI PREVENTIVO")
+    st.button("⬇️ SCARICA PDF")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown('<div class="card"><div class="card-title">📌 DESCRIZIONE FORNITURA CLIENTE</div>', unsafe_allow_html=True)
+
+st.write(f"Configurazione selezionata: **{tipo} - {ante}**")
 st.write(f"Luce passaggio: **{luce_mm} mm**")
-st.write(f"Lunghezza traversa calcolata: **{T:.2f} m**")
+st.write(f"Altezza passaggio: **{altezza_mm} mm**")
+st.write(f"Lunghezza traversa calcolata: **{lunghezza_traversa:.2f} metri**")
 
-for articolo in articoli:
-    st.write(f"✓ {articolo['descrizione']}")
+for art in articoli:
+    st.write(f"✓ {art['descrizione']}")
 
 if not allaccio:
     st.warning("Allaccio e collaudo esclusi dalla presente offerta.")
 
-st.divider()
+st.markdown("</div>", unsafe_allow_html=True)
 
-st.subheader("Totale preventivo")
-
-st.success(f"Imponibile: {euro(imponibile)} + IVA")
-st.success(f"Totale IVA inclusa: {euro(totale)}")
-
-st.caption("Il preventivo è indicativo e soggetto a verifica tecnica SA-TEC.")
+st.markdown(
+    """
+    <div class="footer">
+        <div>SA-TEC S.R.L.s</div>
+        <div>📍 Lamezia Terme (CZ)</div>
+        <div>☎ 0968-036797</div>
+        <div>✉ sacco.tecnologie@gmail.com</div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
