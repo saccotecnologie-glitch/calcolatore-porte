@@ -296,6 +296,18 @@ st.markdown("""
 .section-box.green {background:#eefaf2;color:#0c7b3e;}
 div[data-testid="stNumberInput"] label {color:#111!important;font-size:15px!important;font-weight:800!important;}
 div[data-testid="stNumberInput"] input {border:2px solid #8998b0!important;border-radius:0!important;text-align:center!important;font-size:28px!important;font-weight:800!important;color:#06499b!important;height:54px!important;}
+div[data-testid="stTextInput"] label {color:#111!important;font-size:15px!important;font-weight:800!important;}
+div[data-testid="stTextInput"] input {
+    background:#ffffff!important;
+    color:#06499b!important;
+    border:2px solid #8998b0!important;
+    border-radius:8px!important;
+    height:48px!important;
+    font-size:17px!important;
+    font-weight:700!important;
+}
+div[data-testid="stTextInput"] input::placeholder {color:#6d7f95!important;}
+
 .measure-total {border:2px solid #bdd4ef;background:#f8fbff;border-radius:10px;padding:14px;display:grid;grid-template-columns:1fr 200px;align-items:center;color:#06499b;margin-top:10px;}
 .measure-total .big {font-size:30px;font-weight:900;text-align:center;}
 .measure-total .small {font-size:18px;font-weight:900;text-align:center;}
@@ -572,7 +584,13 @@ with col_side:
 # DATI CLIENTE
 # =========================
 
-st.markdown('<div class="card"><div class="title-bar">5&nbsp;&nbsp; DATI CLIENTE E RICHIESTA</div>', unsafe_allow_html=True)
+st.markdown('<div class="card"><div class="title-bar">5&nbsp;&nbsp; DATI CLIENTE PER SALVARE LA RICHIESTA</div>', unsafe_allow_html=True)
+
+st.markdown("""
+<div style="color:#06499b;font-weight:800;margin-bottom:12px;">
+Compila questi dati solo se vuoi salvare il preventivo nello storico SA-TEC.
+</div>
+""", unsafe_allow_html=True)
 
 dc1, dc2, dc3, dc4 = st.columns(4)
 with dc1:
@@ -746,4 +764,3 @@ st.markdown(f"""
 <div>✉ {EMAIL}</div>
 </div>
 """, unsafe_allow_html=True)
- 
