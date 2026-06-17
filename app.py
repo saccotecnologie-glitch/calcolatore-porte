@@ -1,59 +1,105 @@
 import streamlit as st
 
-st.set_page_config(page_title="Preventivo Porta Automatica SA-TEC")
+st.set_page_config(page_title="Configuratore SA-TEC")
 
-st.title("Configuratore Porta Automatica")
-st.subheader("SA-TEC S.R.L.s")
+st.title("Configuratore Porta Automatica SA-TEC")
 
-luce = st.number_input("Luce porta in mm", min_value=800, max_value=4000, value=1600)
+luce = st.number_input("Luce porta in mm", 800, 5000, 1600)
 ante = st.selectbox("Numero ante", ["1 anta", "2 ante"])
-peso = st.number_input("Peso anta in kg", min_value=20, max_value=200, value=80)
 
-montaggio = st.checkbox("Includi montaggio", value=True)
+tipo = st.selectbox(
+    "Tipo automazione",
+    [
+        "Standard",
+        "Ridondante vie di fuga"
+    ]
+)
+
+peso = st.number_input("Peso anta in kg", 20, 250, 80)
+
+montaggio = st.checkbox("Montaggio incluso", value=True)
 elettroblocco = st.checkbox("Elettroblocco")
-batteria = st.checkbox("Kit batterie")
+batterie = st.checkbox("Kit batterie")
 selettore = st.checkbox("Selettore funzioni")
-radar_extra = st.checkbox("Radar aggiuntivo")
 
-# PREZZI INTERNI NASCOSTI
-prezzo_1_anta = 2140
-prezzo_2_ante = 2200
-ricarico = 1.40
+# PREZZI INTERNI NON VISIBILI AL CLIENTE
+PREZZI = {
+    "standard_1": 2140,
+    "standard_2": 2200,
+    "ridondante_1": 2600,
+    "ridondante_2": 2900,
+    "montaggio": 500,
+    "elettroblocco": 285,
+    "batterie": 180,
+    "selettore": 178,
+    "radar_hotron": 375,
+    "pulsante_emergenza": 130,
+}
+
+RICARICO = 1.40
 
 totale = 0
+descrizione = []
 
-if ante == "1 anta":
-    totale += prezzo_1_anta * ricarico
-else:
-    totale += prezzo_2_ante * ricarico
+if tipo == "Standard":
+    if ante == "1 anta":
+        totale += PREZZI["standard_1"] * RICARICO
+    else:
+        totale += PREZZI["standard_2"] * RICARICO
 
-# Maggiorazione per luce porta
+    descrizione.append("Automazione per porta scorrevole automatica standard")
+    descrizione.append(f"Configurazione {ante}")
+
+if tipo == "Ridondante vie di fuga":
+    if ante == "1 anta":
+        totale += PREZZI["ridondante_1"] * RICARICO
+    else:
+        totale += PREZZI["ridondante_2"] * RICARICO
+
+    descrizione.append("Automazione ridondante per vie di fuga")
+    descrizione.append("Sistema conforme per uscite di emergenza")
+    descrizione.append("Radar Hotron per sicurezza e via di fuga")
+    descrizione.append("Pulsante di emergenza incluso")
+    descrizione.append(f"Configurazione {ante}")
+
+    totale += PREZZI["radar_hotron"] * RICARICO
+    totale += PREZZI["pulsante_emergenza"] * RICARICO
+
 if luce > 2500:
     totale += 350
+    descrizione.append("Maggiorazione per luce porta superiore a 2500 mm")
 
-# Maggiorazione peso
 if peso > 120:
     totale += 250
+    descrizione.append("Maggiorazione per ante pesanti")
 
 if montaggio:
-    totale += 500
+    totale += PREZZI["montaggio"]
+    descrizione.append("Montaggio, collegamento e collaudo inclusi")
 
 if elettroblocco:
-    totale += 285 * ricarico
+    totale += PREZZI["elettroblocco"] * RICARICO
+    descrizione.append("Elettroblocco per chiusura automatica")
 
-if batteria:
-    totale += 180 * ricarico
+if batterie:
+    totale += PREZZI["batterie"] * RICARICO
+    descrizione.append("Kit batterie di emergenza")
 
 if selettore:
-    totale += 178 * ricarico
-
-if radar_extra:
-    totale += 295 * ricarico
+    totale += PREZZI["selettore"] * RICARICO
+    descrizione.append("Selettore funzioni digitale")
 
 st.divider()
 
-st.subheader("Totale preventivo indicativo")
+st.subheader("Descrizione fornitura")
+
+for voce in descrizione:
+    st.write("• " + voce)
+
+st.divider()
+
+st.subheader("Totale preventivo")
 
 st.success(f"€ {totale:,.2f} + IVA")
 
-st.caption("Preventivo indicativo soggetto a verifica tecnica SA-TEC.")
+st.caption("Il preventivo è indicativo e soggetto a verifica tecnica SA-TEC.")
