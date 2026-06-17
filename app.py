@@ -50,7 +50,8 @@ LISTINI = {
     "ELETTRO_RIDONDANTE": 290.00,
 
     "ASSEMBLAGGIO": 130.00,
-    "ALLACCIO_COLLAUDO": 350.00,
+    "ALLACCIO_COLLAUDO_STANDARD": 350.00,
+    "ALLACCIO_COLLAUDO_RIDONDANTE": 400.00,
 }
 
 def img_to_base64(paths):
@@ -313,6 +314,17 @@ div[data-testid="stNumberInput"] input {
     color:#06499b;
     margin-bottom:12px;
 }
+.option-note {
+    border:2px solid #06499b;
+    border-radius:12px;
+    padding:13px;
+    background:#eef6ff;
+    color:#06499b;
+    font-size:15px;
+    font-weight:800;
+    line-height:1.45;
+    margin-top:12px;
+}
 div[data-testid="stCheckbox"] {
     border:0;
     padding:0;
@@ -513,8 +525,21 @@ with col_side:
     elettroblocco = st.checkbox("Aggiungi elettroblocco", value=True, key="elettro")
     st.markdown("</div>", unsafe_allow_html=True)
 
+    prezzo_allaccio = LISTINI["ALLACCIO_COLLAUDO_STANDARD"] if tipo == "Standard" else LISTINI["ALLACCIO_COLLAUDO_RIDONDANTE"]
+    testo_tipo_allaccio = "Standard" if tipo == "Standard" else "Ridondante"
+
     st.markdown('<div class="option-box"><div class="option-title">ALLACCIO E COLLAUDO</div>', unsafe_allow_html=True)
     allaccio = st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=True, key="allaccio")
+    st.markdown(f"""
+    <div class="option-note">
+        Prezzo allaccio e collaudo {testo_tipo_allaccio}: <b>{euro(prezzo_allaccio)}</b> IVA esclusa.
+        <br><br>
+        Se allaccio e collaudo è eseguito da SA-TEC daremo:
+        <br>• Libretto manutenzione
+        <br>• Certificazione
+        <br>• Intervento risolutivo garantito entro 48 ore
+    </div>
+    """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
@@ -555,7 +580,24 @@ aggiungi(
 )
 
 if allaccio:
-    aggiungi(articoli, "ALLACCIO_COLLAUDO", "Allaccio e collaudo SA-TEC", "Allaccio e collaudo SA-TEC", 1, scontato=False)
+    if tipo == "Standard":
+        aggiungi(
+            articoli,
+            "ALLACCIO_COLLAUDO_STANDARD",
+            "Allaccio e collaudo SA-TEC Standard",
+            "Allaccio e collaudo eseguito da SA-TEC su automazione standard. Comprende rilascio libretto manutenzione, certificazione e intervento risolutivo garantito entro 48 ore.",
+            1,
+            scontato=False
+        )
+    else:
+        aggiungi(
+            articoli,
+            "ALLACCIO_COLLAUDO_RIDONDANTE",
+            "Allaccio e collaudo SA-TEC Ridondante",
+            "Allaccio e collaudo eseguito da SA-TEC su automazione ridondante. Comprende rilascio libretto manutenzione, certificazione e intervento risolutivo garantito entro 48 ore.",
+            1,
+            scontato=False
+        )
 
 imponibile = sum(a["totale"] for a in articoli)
 iva = imponibile * IVA
@@ -698,6 +740,7 @@ Totale IVA inclusa: {euro(totale_iva)}
 IBAN: <b>{IBAN}</b></p>
 <p>Condizioni proposte: 50% all’ordine e saldo 50% prima della consegna o al collaudo.</p>
 <p><b>Prezzi IVA esclusa. Merce resa franco deposito SA-TEC S.R.L.s - Lamezia Terme (CZ). Trasporto escluso salvo diversa indicazione.</b></p>
+<p>Se allaccio e collaudo è eseguito da SA-TEC, verranno rilasciati libretto manutenzione, certificazione e intervento risolutivo garantito entro 48 ore.</p>
 <p>Preventivo indicativo soggetto a verifica tecnica e conferma definitiva SA-TEC S.R.L.s.</p>
 <p>Validità offerta: 15 giorni.</p>
 </div>
