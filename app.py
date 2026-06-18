@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import streamlit.components.v1 as components
 import base64
 import json
@@ -1844,6 +1844,9 @@ codice_stampa = st.session_state.get("ultimo_codice_preventivo", "DA SALVARE")
 coord_bancarie_html = f"""
 {coord_bancarie_html}
 """ if profilo in ["SA-TEC", "CLIENTE"] else ""
+
+resa_stampa = "Franco deposito SA-TEC Lamezia Terme" if profilo in ["SA-TEC", "CLIENTE"] else "Da concordare"
+brand_prodotto_stampa = "SESAMO POWERCORE PW100" if profilo in ["SA-TEC", "CLIENTE"] else "PORTE AUTOMATICHE"
 
 html_stampa = f"""
 <!DOCTYPE html>
