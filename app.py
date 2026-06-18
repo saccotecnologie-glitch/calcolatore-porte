@@ -1877,12 +1877,11 @@ logo_print = f'<img src="data:image/jpeg;base64,{logo_satec64}" style="width:300
 sesamo_print = f'<img src="data:image/png;base64,{logo_sesamo64}" style="height:90px;">' if logo_sesamo64 else "<b>SESAMO POWERCORE PW100</b>"
 codice_stampa = st.session_state.get("ultimo_codice_preventivo", "DA SALVARE")
 
+resa_stampa = "Franco deposito SA-TEC Lamezia Terme" if profilo in ["SA-TEC", "CLIENTE"] else "Da concordare"
+brand_prodotto_stampa = "SESAMO POWERCORE PW100" if profilo in ["SA-TEC", "CLIENTE"] else "PORTE AUTOMATICHE"
 coord_bancarie_html = f"""
 {coord_bancarie_html}
 """ if profilo in ["SA-TEC", "CLIENTE"] else ""
-
-resa_stampa = "Franco deposito SA-TEC Lamezia Terme" if profilo in ["SA-TEC", "CLIENTE"] else "Da concordare"
-brand_prodotto_stampa = "SESAMO POWERCORE PW100" if profilo in ["SA-TEC", "CLIENTE"] else "PORTE AUTOMATICHE"
 
 html_stampa = f"""
 <!DOCTYPE html>
@@ -2025,4 +2024,4 @@ st.markdown(f"""
 <div>☎ {TELEFONO}</div>
 <div>✉ {EMAIL}</div>
 </div>
-""", unsafe_allow_html=True) 
+""", unsafe_allow_html=True)
