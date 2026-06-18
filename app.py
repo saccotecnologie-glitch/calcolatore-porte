@@ -168,9 +168,9 @@ def ricarico_default(profilo):
         return 20.0
     if profilo == "RIVENDITORE":
         return 30.0
-    return 35.0
+    return 50.0
 
-RICARICO_ATTIVO = 35.0
+RICARICO_ATTIVO = 50.0
 
 def prezzo_vendita(listino):
     costo = costo_satec_reale(listino)
@@ -314,7 +314,7 @@ def login_box():
             "azienda": "",
             "telefono": "",
             "email": "",
-            "ricarico": "35"
+            "ricarico": "50"
         }
 
     st.sidebar.markdown("## Accesso")
@@ -340,7 +340,7 @@ def login_box():
             "azienda": "",
             "telefono": "",
             "email": "",
-            "ricarico": "35"
+            "ricarico": "50"
         }
         st.sidebar.success("Accesso cliente finale")
 
@@ -399,7 +399,7 @@ def login_box():
                 reg_azienda,
                 reg_tel,
                 reg_email,
-                "35"
+                "50"
             )
             st.success("Accesso cliente creato.")
             st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
