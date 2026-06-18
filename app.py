@@ -1007,14 +1007,14 @@ with col_side:
     st.markdown('<div class="side-card"><div class="title-bar">3&nbsp;&nbsp; ACCESSORI E SERVIZI</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="option-box"><div class="option-title">ELETTROBLOCCO</div>', unsafe_allow_html=True)
-    elettroblocco = st.checkbox("Aggiungi elettroblocco", value=True, key="elettro")
+    elettroblocco = st.checkbox("Aggiungi elettroblocco", value=False, key="elettro")
     st.markdown("</div>", unsafe_allow_html=True)
 
     prezzo_allaccio = LISTINI["ALLACCIO_COLLAUDO_STANDARD"] if tipo == "Standard" else LISTINI["ALLACCIO_COLLAUDO_RIDONDANTE"]
     testo_tipo_allaccio = "Standard" if tipo == "Standard" else "Ridondante"
 
     st.markdown('<div class="option-box"><div class="option-title">ALLACCIO E COLLAUDO</div>', unsafe_allow_html=True)
-    allaccio = st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=True, key="allaccio")
+    allaccio = st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=False, key="allaccio")
 
     st.markdown(f"""
     <div class="option-note">
