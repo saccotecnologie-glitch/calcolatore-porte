@@ -1847,7 +1847,8 @@ coord_bancarie_html = f"""
 
 resa_stampa = "Franco deposito SA-TEC Lamezia Terme" if profilo in ["SA-TEC", "CLIENTE"] else "Da concordare"
 brand_prodotto_stampa = "SESAMO POWERCORE PW100" if profilo in ["SA-TEC", "CLIENTE"] else "PORTE AUTOMATICHE"
-
+resa_stampa = "Franco deposito SA-TEC Lamezia Terme" if profilo in ["SA-TEC", "CLIENTE"] else "Da concordare"
+brand_prodotto_stampa = "SESAMO POWERCORE PW100" if profilo in ["SA-TEC", "CLIENTE"] else "PORTE AUTOMATICHE"
 html_stampa = f"""
 <!DOCTYPE html>
 <html>
