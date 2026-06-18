@@ -285,13 +285,24 @@ def salva_preventivo_supabase(dati):
             "totale": str(dati.get("totale_iva", dati.get("totale", ""))),
             "codice_preventivo": str(dati.get("codice_preventivo", "")),
             "stato": str(dati.get("stato", "Nuovo")),
+            "luce_mm": str(dati.get("luce_mm", "")),
+            "altezza_mm": str(dati.get("altezza_mm", "")),
+            "traversa_m": str(dati.get("traversa_m", "")),
+            "ante": str(dati.get("ante", "")),
+            "tipo_automazione": str(dati.get("tipo_automazione", "")),
+            "elettroblocco": str(dati.get("elettroblocco", "")),
+            "allaccio": str(dati.get("allaccio", "")),
+            "accessori_selezionati": str(dati.get("accessori_selezionati", "")),
         }
 
         try:
             sb.table("preventivi_satec").insert(dati_supabase).execute()
         except Exception:
-            dati_supabase.pop("codice_preventivo", None)
-            dati_supabase.pop("stato", None)
+            for campo in [
+                "codice_preventivo", "stato", "luce_mm", "altezza_mm", "traversa_m",
+                "ante", "tipo_automazione", "elettroblocco", "allaccio", "accessori_selezionati"
+            ]:
+                dati_supabase.pop(campo, None)
             sb.table("preventivi_satec").insert(dati_supabase).execute()
 
         return True
@@ -313,6 +324,28 @@ def carica_preventivi_supabase():
         st.sidebar.warning(f"Preventivi non letti da Supabase. Uso backup CSV. Errore: {e}")
         return []
 
+
+
+def aggiorna_stato_preventivo(codice_preventivo, nuovo_stato):
+    if not supabase_attivo() or not codice_preventivo:
+        return False
+    try:
+        sb = get_supabase()
+        sb.table("preventivi_satec").update({"stato": nuovo_stato}).eq("codice_preventivo", codice_preventivo).execute()
+        return True
+    except Exception as e:
+        st.warning(f"Stato non aggiornato: {e}")
+        return False
+
+def duplica_preventivo(p):
+    codice = genera_codice_preventivo()
+    nuovo = dict(p)
+    nuovo.pop("id", None)
+    nuovo["codice_preventivo"] = codice
+    nuovo["data_ora"] = datetime.now().strftime("%d/%m/%Y %H:%M")
+    nuovo["stato"] = "Nuovo"
+    salva_preventivo(nuovo)
+    return codice
 
 def genera_codice_preventivo():
     """
@@ -384,6 +417,11 @@ def prepara_tabella_preventivi(preventivi):
             "Telefono": p.get("cliente_telefono", ""),
             "Email": p.get("cliente_email", ""),
             "Configurazione": p.get("configurazione", ""),
+            "Luce mm": p.get("luce_mm", ""),
+            "Altezza mm": p.get("altezza_mm", ""),
+            "Traversa m": p.get("traversa_m", ""),
+            "Elettroblocco": p.get("elettroblocco", ""),
+            "Allaccio": p.get("allaccio", ""),
             "Imponibile": p.get("imponibile", ""),
             "IVA": p.get("iva", ""),
             "Totale": totale_val,
@@ -887,7 +925,51 @@ if profilo == "SA-TEC":
                 st.write(f"Valore filtrato IVA esclusa: **{euro(totale)}**")
 
                 tabella_preventivi = prepara_tabella_preventivi(preventivi_filtrati)
+
+                stati = {"Nuovo": 0, "Inviato": 0, "Accettato": 0, "Perso": 0}
+                for p in preventivi_filtrati:
+                    stato_p = p.get("stato", "Nuovo") or "Nuovo"
+                    if stato_p in stati:
+                        stati[stato_p] += 1
+
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Nuovi", stati["Nuovo"])
+                c2.metric("Inviati", stati["Inviato"])
+                c3.metric("Accettati", stati["Accettato"])
+                c4.metric("Persi", stati["Perso"])
+
                 st.markdown(tabella_html_sicura(tabella_preventivi), unsafe_allow_html=True)
+
+                with st.expander("Azioni preventivi: stato / duplica"):
+                    if not preventivi_filtrati:
+                        st.info("Nessun preventivo selezionato.")
+                    else:
+                        codici = [p.get("codice_preventivo", "") for p in preventivi_filtrati if p.get("codice_preventivo", "")]
+                        if codici:
+                            codice_sel = st.selectbox("Seleziona preventivo", codici)
+                            p_sel = next((p for p in preventivi_filtrati if p.get("codice_preventivo") == codice_sel), None)
+
+                            if p_sel:
+                                st.write(f"Cliente: **{p_sel.get('cliente_nome','')}** - Azienda: **{p_sel.get('cliente_azienda','')}**")
+                                st.write(f"Configurazione: **{p_sel.get('configurazione','')}** - Totale: **{p_sel.get('totale', p_sel.get('totale_iva',''))}**")
+
+                                col_a1, col_a2 = st.columns(2)
+                                with col_a1:
+                                    nuovo_stato = st.selectbox(
+                                        "Stato preventivo",
+                                        ["Nuovo", "Inviato", "Accettato", "Perso"],
+                                        index=["Nuovo", "Inviato", "Accettato", "Perso"].index(p_sel.get("stato", "Nuovo") if p_sel.get("stato", "Nuovo") in ["Nuovo", "Inviato", "Accettato", "Perso"] else "Nuovo")
+                                    )
+                                    if st.button("AGGIORNA STATO"):
+                                        if aggiorna_stato_preventivo(codice_sel, nuovo_stato):
+                                            st.success("Stato aggiornato. Premi AGGIORNA ARCHIVIO o riapri dashboard.")
+
+                                with col_a2:
+                                    if st.button("DUPLICA PREVENTIVO"):
+                                        nuovo_codice = duplica_preventivo(p_sel)
+                                        st.success(f"Preventivo duplicato: {nuovo_codice}")
+                        else:
+                            st.info("I vecchi preventivi non hanno codice SAT. Crea nuovi preventivi per usare le azioni.")
 
                 if tabella_preventivi:
                     csv_export = pd.DataFrame(tabella_preventivi).to_csv(index=False).encode("utf-8")
@@ -1148,11 +1230,14 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "cliente_telefono": cliente_telefono,
         "cliente_email": cliente_email,
         "configurazione": scelta,
-        "luce_mm": luce_mm,
-        "altezza_mm": altezza_mm,
+        "luce_mm": str(luce_mm),
+        "altezza_mm": str(altezza_mm),
         "traversa_m": f"{lunghezza_traversa:.2f}",
+        "ante": ante,
+        "tipo_automazione": tipo,
         "elettroblocco": "SI" if elettroblocco else "NO",
         "allaccio": "SI" if allaccio else "NO",
+        "accessori_selezionati": ", ".join([a["descrizione"] for a in articoli]),
         "ricarico_percento": f"{ricarico_effettivo:.0f}",
         "imponibile": f"{imponibile:.2f}",
         "iva": f"{iva:.2f}",
@@ -1252,6 +1337,7 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <div class="box">
 <b>Data:</b> {date.today().strftime("%d/%m/%Y")}<br>
 <b>Codice preventivo:</b> {codice_stampa}<br>
+<b>Validità offerta:</b> 15 giorni<br>
 <b>Profilo:</b> {PROFILI[profilo]}<br>
 <b>Utente:</b> {utente_codice}<br>
 <b>Cliente:</b> {cliente_nome} - {cliente_azienda}<br>
@@ -1266,17 +1352,36 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <div class="total">Totale preventivo IVA esclusa: {euro(imponibile)}</div>
 <div style="text-align:right;font-size:18px;margin-top:8px;">IVA 22%: {euro(iva)}<br>Totale IVA inclusa: {euro(totale_iva)}</div>
 <div class="conditions">
-<h2>Condizioni di pagamento</h2>
-<p>Pagamento tramite bonifico bancario intestato a <b>{AZIENDA}</b>.<br>IBAN: <b>{IBAN}</b></p>
-<p>Condizioni proposte: 50% all’ordine e saldo 50% prima della consegna o al collaudo.</p>
-<p><b>Prezzi IVA esclusa. Merce resa franco deposito SA-TEC S.R.L.s - Lamezia Terme (CZ). Trasporto escluso salvo diversa indicazione.</b></p>
-<p><b>Vantaggi inclusi se il servizio è eseguito da SA-TEC:</b><br>
-Scegliendo SA-TEC per l'allaccio e il collaudo, sono inclusi nel prezzo i seguenti benefici:<br><br>
-<b>Libretto di manutenzione:</b> rilascio della documentazione ufficiale dell'apparecchio/impianto.<br>
-<b>Certificazione:</b> rilascio delle certificazioni di conformità e corretta installazione a norma di legge.<br>
-<b>Assistenza prioritaria:</b> garanzia di un intervento risolutivo in caso di guasti o problemi entro 48 ore.</p>
-<p>Preventivo indicativo soggetto a verifica tecnica e conferma definitiva SA-TEC S.R.L.s.</p>
-<p>Validità offerta: 15 giorni.</p>
+<h2>Condizioni commerciali</h2>
+<ul>
+<li>Validità offerta: 15 giorni dalla data di emissione</li>
+<li>Pagamento: 50% all'ordine mediante bonifico bancario</li>
+<li>Saldo: 50% alla consegna</li>
+<li>Tempi di consegna: da confermare all'ordine</li>
+<li>IVA esclusa, salvo diversa indicazione</li>
+<li>Opere murarie escluse</li>
+<li>Opere elettriche escluse</li>
+<li>Predisposizione alimentazione automazione a carico del committente</li>
+<li>Linea dedicata 230V con interruttore magnetotermico 10A a carico del committente</li>
+<li>Trasporto escluso, salvo diversa indicazione nell'offerta</li>
+<li>Eventuali opere aggiuntive non indicate nel presente preventivo saranno contabilizzate separatamente</li>
+<li>Misure e caratteristiche da verificare definitivamente in fase di rilievo</li>
+<li>La presente offerta è subordinata alla verifica tecnica finale</li>
+</ul>
+
+<h2>Coordinate bancarie</h2>
+<p><b>Intestatario:</b> {AZIENDA}<br>
+<b>IBAN:</b> {IBAN}<br>
+<b>Causale:</b> Acconto preventivo {codice_stampa}</p>
+
+<h2>Accettazione offerta</h2>
+<p>Per accettazione del presente preventivo e delle condizioni commerciali sopra indicate.</p>
+<table style="margin-top:25px;">
+<tr>
+<td style="height:70px;"><b>Firma Cliente</b><br><br>_____________________________</td>
+<td style="height:70px;"><b>SA-TEC S.R.L.s</b><br><br>_____________________________</td>
+</tr>
+</table>
 </div>
 </body>
 </html>
