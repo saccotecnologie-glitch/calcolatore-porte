@@ -270,7 +270,7 @@ def salva_preventivo_supabase(dati):
     try:
         sb = get_supabase()
 
-        # Campi allineati alla tabella Supabase che hai creato.
+        # Campi allineati alla tabella Supabase.
         dati_supabase = {
             "data_ora": str(dati.get("data_ora", "")),
             "utente": str(dati.get("utente", "")),
@@ -283,9 +283,17 @@ def salva_preventivo_supabase(dati):
             "imponibile": str(dati.get("imponibile", "")),
             "iva": str(dati.get("iva", "")),
             "totale": str(dati.get("totale_iva", dati.get("totale", ""))),
+            "codice_preventivo": str(dati.get("codice_preventivo", "")),
+            "stato": str(dati.get("stato", "Nuovo")),
         }
 
-        sb.table("preventivi_satec").insert(dati_supabase).execute()
+        try:
+            sb.table("preventivi_satec").insert(dati_supabase).execute()
+        except Exception:
+            dati_supabase.pop("codice_preventivo", None)
+            dati_supabase.pop("stato", None)
+            sb.table("preventivi_satec").insert(dati_supabase).execute()
+
         return True
 
     except Exception as e:
@@ -304,6 +312,84 @@ def carica_preventivi_supabase():
     except Exception as e:
         st.sidebar.warning(f"Preventivi non letti da Supabase. Uso backup CSV. Errore: {e}")
         return []
+
+
+def genera_codice_preventivo():
+    """
+    Genera un codice preventivo progressivo tipo SAT-2026-0001.
+    """
+    anno = datetime.now().year
+
+    try:
+        if supabase_attivo():
+            sb = get_supabase()
+            res = sb.table("preventivi_satec").select("id").execute()
+            numero = len(res.data or []) + 1
+        else:
+            path = Path(PREVENTIVI_CSV)
+            if path.exists():
+                with open(path, "r", encoding="utf-8") as f:
+                    numero = len(list(csv.DictReader(f))) + 1
+            else:
+                numero = 1
+    except Exception:
+        numero = int(datetime.now().strftime("%m%d%H%M"))
+
+    return f"SAT-{anno}-{numero:04d}"
+
+def filtra_preventivi(preventivi, testo_ricerca="", profilo_filter="Tutti"):
+    if not preventivi:
+        return []
+
+    testo = str(testo_ricerca or "").strip().lower()
+    profilo_filter = str(profilo_filter or "Tutti")
+
+    risultati = []
+    for p in preventivi:
+        if profilo_filter != "Tutti" and str(p.get("profilo", "")) != profilo_filter:
+            continue
+
+        campi = [
+            p.get("codice_preventivo", ""),
+            p.get("data_ora", ""),
+            p.get("utente", ""),
+            p.get("profilo", ""),
+            p.get("cliente_nome", ""),
+            p.get("cliente_azienda", ""),
+            p.get("cliente_telefono", ""),
+            p.get("cliente_email", ""),
+            p.get("configurazione", ""),
+            p.get("stato", ""),
+        ]
+        haystack = " ".join(str(x) for x in campi).lower()
+
+        if testo and testo not in haystack:
+            continue
+
+        risultati.append(p)
+
+    return risultati
+
+def prepara_tabella_preventivi(preventivi):
+    righe = []
+    for p in preventivi:
+        totale_val = p.get("totale_iva", p.get("totale", ""))
+        righe.append({
+            "Codice": p.get("codice_preventivo", ""),
+            "Data": p.get("data_ora", ""),
+            "Utente": p.get("utente", ""),
+            "Profilo": p.get("profilo", ""),
+            "Cliente": p.get("cliente_nome", ""),
+            "Azienda": p.get("cliente_azienda", ""),
+            "Telefono": p.get("cliente_telefono", ""),
+            "Email": p.get("cliente_email", ""),
+            "Configurazione": p.get("configurazione", ""),
+            "Imponibile": p.get("imponibile", ""),
+            "IVA": p.get("iva", ""),
+            "Totale": totale_val,
+            "Stato": p.get("stato", "Nuovo"),
+        })
+    return righe
 
 
 # =========================
@@ -779,17 +865,42 @@ if profilo == "SA-TEC":
                 st.info("Nessun preventivo salvato ancora.")
             else:
                 st.write(f"Preventivi salvati: **{len(preventivi)}**")
+
+                col_f1, col_f2, col_f3 = st.columns([2, 1, 1])
+                with col_f1:
+                    ricerca = st.text_input("Cerca preventivo", placeholder="Cliente, azienda, telefono, email, codice, utente...")
+                with col_f2:
+                    profilo_filtro = st.selectbox("Profilo", ["Tutti", "SA-TEC", "CLIENTE", "RIVENDITORE", "GROSSISTA"])
+                with col_f3:
+                    st.button("AGGIORNA ARCHIVIO")
+
+                preventivi_filtrati = filtra_preventivi(preventivi, ricerca, profilo_filtro)
+
                 totale = 0.0
-                for p in preventivi:
+                for p in preventivi_filtrati:
                     try:
-                        totale += float(p.get("imponibile", 0))
+                        totale += float(str(p.get("imponibile", 0)).replace(",", "."))
                     except:
                         pass
-                st.write(f"Valore totale IVA esclusa: **{euro(totale)}**")
-                st.markdown(tabella_html_sicura(preventivi), unsafe_allow_html=True)
+
+                st.write(f"Risultati trovati: **{len(preventivi_filtrati)}**")
+                st.write(f"Valore filtrato IVA esclusa: **{euro(totale)}**")
+
+                tabella_preventivi = prepara_tabella_preventivi(preventivi_filtrati)
+                st.markdown(tabella_html_sicura(tabella_preventivi), unsafe_allow_html=True)
+
+                if tabella_preventivi:
+                    csv_export = pd.DataFrame(tabella_preventivi).to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        "Scarica archivio filtrato CSV",
+                        data=csv_export,
+                        file_name="archivio_preventivi_satec.csv",
+                        mime="text/csv"
+                    )
+
                 if Path(PREVENTIVI_CSV).exists():
                     with open(PREVENTIVI_CSV, "rb") as f:
-                        st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
+                        st.download_button("Scarica backup CSV locale", data=f, file_name="preventivi_satec.csv", mime="text/csv")
                 else:
                     st.caption("Archivio principale: Supabase")
 
@@ -1026,7 +1137,9 @@ with dc4:
     cliente_email = st.text_input("Email", value=dati_utente.get("email", ""))
 
 if st.button("SALVA PREVENTIVO / RICHIESTA"):
+    codice_preventivo = genera_codice_preventivo()
     dati = {
+        "codice_preventivo": codice_preventivo,
         "data_ora": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "utente": utente_codice,
         "profilo": profilo,
@@ -1047,7 +1160,8 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "stato": "Nuovo"
     }
     salva_preventivo(dati)
-    st.success("Preventivo salvato correttamente. SA-TEC lo vedrà nella dashboard.")
+    st.session_state.ultimo_codice_preventivo = codice_preventivo
+    st.success(f"Preventivo {codice_preventivo} salvato correttamente. SA-TEC lo vedrà nella dashboard.")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1106,6 +1220,7 @@ for art in articoli:
 
 logo_print = f'<img src="data:image/jpeg;base64,{logo_satec64}" style="width:240px;">' if logo_satec64 else f"<h1>{AZIENDA}</h1>"
 sesamo_print = f'<img src="data:image/png;base64,{logo_sesamo64}" style="height:90px;">' if logo_sesamo64 else "<b>SESAMO POWERCORE PW100</b>"
+codice_stampa = st.session_state.get("ultimo_codice_preventivo", "")
 
 html_stampa = f"""
 <!DOCTYPE html>
@@ -1136,6 +1251,7 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <h1>Preventivo porta automatica</h1>
 <div class="box">
 <b>Data:</b> {date.today().strftime("%d/%m/%Y")}<br>
+<b>Codice preventivo:</b> {codice_stampa}<br>
 <b>Profilo:</b> {PROFILI[profilo]}<br>
 <b>Utente:</b> {utente_codice}<br>
 <b>Cliente:</b> {cliente_nome} - {cliente_azienda}<br>
