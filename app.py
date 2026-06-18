@@ -212,9 +212,9 @@ def normalizza_codice(testo):
 def dati_intestazione_preventivo(profilo, dati_utente):
     """
     Regole branding PDF:
-    - SA-TEC: logo e dati SA-TEC completi.
-    - CLIENTE finale: logo, dati e IBAN SA-TEC.
-    - RIVENDITORE/GROSSISTA: brand dell'azienda rivenditore/grossista, senza SA-TEC.
+    - SA-TEC: logo, dati, IBAN e codice univoco SA-TEC.
+    - CLIENTE finale: logo, dati, IBAN e codice univoco SA-TEC.
+    - RIVENDITORE/GROSSISTA: brand dell'azienda rivenditore/grossista, senza dati SA-TEC.
     """
     if profilo in ["SA-TEC", "CLIENTE"]:
         return {
@@ -1187,17 +1187,53 @@ st.markdown("""
 div[data-testid="stNumberInput"] label {color:#111!important;font-size:15px!important;font-weight:800!important;}
 div[data-testid="stNumberInput"] input {border:2px solid #8998b0!important;border-radius:0!important;text-align:center!important;font-size:28px!important;font-weight:800!important;color:#06499b!important;height:54px!important;}
 div[data-testid="stTextInput"] input {
-    background:#ffffff!important;
+    background-color:#ffffff!important;
     color:#111111!important;
     -webkit-text-fill-color:#111111!important;
+    opacity:1!important;
     border:2px solid #8998b0!important;
     border-radius:6px!important;
     font-weight:800!important;
 }
 div[data-testid="stTextInput"] label {
     color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
     font-weight:800!important;
 }
+div[data-testid="stTextArea"] textarea {
+    background-color:#ffffff!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    opacity:1!important;
+    border:2px solid #8998b0!important;
+    border-radius:6px!important;
+    font-weight:700!important;
+}
+div[data-testid="stTextArea"] label {
+    color:#111111!important;
+    font-weight:800!important;
+}
+div[data-testid="stSelectbox"] label,
+div[data-testid="stNumberInput"] label,
+div[data-testid="stCheckbox"] label {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:800!important;
+}
+.option-box,
+.card,
+.side-card,
+.admin-box,
+.section-box {
+    color:#111111!important;
+}
+.option-title,
+.title-bar,
+.power-side-title,
+.desc-title {
+    color:#06499b!important;
+}
+
 .measure-total {border:2px solid #bdd4ef;background:#f8fbff;border-radius:10px;padding:14px;display:grid;grid-template-columns:1fr 200px;align-items:center;color:#06499b;margin-top:10px;}
 .measure-total .big {font-size:30px;font-weight:900;text-align:center;}
 .measure-total .small {font-size:18px;font-weight:900;text-align:center;}
@@ -1847,8 +1883,7 @@ coord_bancarie_html = f"""
 
 resa_stampa = "Franco deposito SA-TEC Lamezia Terme" if profilo in ["SA-TEC", "CLIENTE"] else "Da concordare"
 brand_prodotto_stampa = "SESAMO POWERCORE PW100" if profilo in ["SA-TEC", "CLIENTE"] else "PORTE AUTOMATICHE"
-resa_stampa = "Franco deposito SA-TEC Lamezia Terme" if profilo in ["SA-TEC", "CLIENTE"] else "Da concordare"
-brand_prodotto_stampa = "SESAMO POWERCORE PW100" if profilo in ["SA-TEC", "CLIENTE"] else "PORTE AUTOMATICHE"
+
 html_stampa = f"""
 <!DOCTYPE html>
 <html>
@@ -1990,4 +2025,4 @@ st.markdown(f"""
 <div>☎ {TELEFONO}</div>
 <div>✉ {EMAIL}</div>
 </div>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True) 
