@@ -1,9 +1,10 @@
-import streamlit as st
+ import streamlit as st
 import streamlit.components.v1 as components
 import base64
 import json
 import csv
 import pandas as pd
+from supabase import create_client
 import random
 import string
 from pathlib import Path
@@ -196,6 +197,115 @@ def normalizza_codice(testo):
     pulito = "".join(ch for ch in testo.upper().strip() if ch.isalnum())
     return pulito[:14] if pulito else "CLIENTE"
 
+
+# =========================
+# SUPABASE DATABASE
+# =========================
+
+def supabase_attivo():
+    try:
+        return bool(st.secrets.get("SUPABASE_URL")) and bool(st.secrets.get("SUPABASE_KEY"))
+    except Exception:
+        return False
+
+@st.cache_resource
+def get_supabase():
+    return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+
+def carica_utenti_supabase():
+    if not supabase_attivo():
+        return {}
+
+    try:
+        sb = get_supabase()
+        res = sb.table("utenti_satec").select("*").execute()
+        utenti = {}
+
+        for r in res.data or []:
+            codice = str(r.get("utente", "")).strip().upper()
+            if codice:
+                utenti[codice] = {
+                    "password": str(r.get("password", "") or ""),
+                    "profilo": str(r.get("profilo", "CLIENTE") or "CLIENTE").strip().upper(),
+                    "nome": str(r.get("nome", "") or ""),
+                    "azienda": str(r.get("azienda", "") or ""),
+                    "telefono": str(r.get("telefono", "") or ""),
+                    "email": str(r.get("email", "") or ""),
+                    "ricarico": str(r.get("ricarico", "50") or "50")
+                }
+
+        return utenti
+
+    except Exception as e:
+        st.sidebar.warning(f"Supabase non disponibile. Uso backup locale/utenti base. Errore: {e}")
+        return {}
+
+def salva_utente_supabase(utente, password, profilo, nome, azienda, telefono, email, ricarico="50"):
+    if not supabase_attivo():
+        return False
+
+    try:
+        sb = get_supabase()
+        dati = {
+            "utente": str(utente).strip().upper(),
+            "password": str(password),
+            "profilo": str(profilo).strip().upper(),
+            "nome": str(nome or ""),
+            "azienda": str(azienda or ""),
+            "telefono": str(telefono or ""),
+            "email": str(email or ""),
+            "ricarico": float(str(ricarico).replace(",", ".") or 50),
+        }
+        sb.table("utenti_satec").insert(dati).execute()
+        return True
+
+    except Exception as e:
+        st.sidebar.warning(f"Utente non salvato su Supabase. Uso backup CSV. Errore: {e}")
+        return False
+
+def salva_preventivo_supabase(dati):
+    if not supabase_attivo():
+        return False
+
+    try:
+        sb = get_supabase()
+
+        # Campi allineati alla tabella Supabase che hai creato.
+        dati_supabase = {
+            "data_ora": str(dati.get("data_ora", "")),
+            "utente": str(dati.get("utente", "")),
+            "profilo": str(dati.get("profilo", "")),
+            "cliente_nome": str(dati.get("cliente_nome", "")),
+            "cliente_azienda": str(dati.get("cliente_azienda", "")),
+            "cliente_telefono": str(dati.get("cliente_telefono", "")),
+            "cliente_email": str(dati.get("cliente_email", "")),
+            "configurazione": str(dati.get("configurazione", "")),
+            "imponibile": str(dati.get("imponibile", "")),
+            "iva": str(dati.get("iva", "")),
+            "totale": str(dati.get("totale_iva", dati.get("totale", ""))),
+        }
+
+        sb.table("preventivi_satec").insert(dati_supabase).execute()
+        return True
+
+    except Exception as e:
+        st.sidebar.warning(f"Preventivo non salvato su Supabase. Uso backup CSV. Errore: {e}")
+        return False
+
+def carica_preventivi_supabase():
+    if not supabase_attivo():
+        return []
+
+    try:
+        sb = get_supabase()
+        res = sb.table("preventivi_satec").select("*").order("id", desc=True).execute()
+        return res.data or []
+
+    except Exception as e:
+        st.sidebar.warning(f"Preventivi non letti da Supabase. Uso backup CSV. Errore: {e}")
+        return []
+
+
 # =========================
 # UTENTI CSV
 # =========================
@@ -222,7 +332,10 @@ def carica_utenti_csv():
                 }
     return utenti
 
-def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email, ricarico="35"):
+def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email, ricarico="50"):
+    if salva_utente_supabase(utente, password, profilo, nome, azienda, telefono, email, ricarico):
+        return
+
     file_exists = Path(UTENTI_CSV).exists()
     campi = ["utente", "password", "profilo", "nome", "azienda", "telefono", "email", "ricarico", "data_creazione"]
 
@@ -244,14 +357,16 @@ def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email, 
 
 def carica_tutti_utenti():
     utenti = dict(UTENTI_BASE)
-    utenti_csv = carica_utenti_csv()
 
-    # Non permettere al file CSV di sovrascrivere l'ADMIN base.
-    # Così ADMIN / SATEC-ADMIN funziona sempre.
-    if "ADMIN" in utenti_csv:
-        utenti_csv.pop("ADMIN", None)
+    utenti_db = carica_utenti_supabase()
+    if not utenti_db:
+        utenti_db = carica_utenti_csv()
 
-    utenti.update(utenti_csv)
+    # Non permettere al database/CSV di bloccare l'ADMIN base.
+    if "ADMIN" in utenti_db:
+        utenti_db.pop("ADMIN", None)
+
+    utenti.update(utenti_db)
     return utenti
 
 def genera_codice_progressivo(profilo, utenti):
@@ -277,6 +392,9 @@ def genera_codice_progressivo(profilo, utenti):
 # =========================
 
 def salva_preventivo(dati):
+    if salva_preventivo_supabase(dati):
+        return
+
     file_exists = Path(PREVENTIVI_CSV).exists()
     campi = [
         "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
@@ -291,6 +409,10 @@ def salva_preventivo(dati):
         writer.writerow(dati)
 
 def carica_preventivi():
+    preventivi_db = carica_preventivi_supabase()
+    if preventivi_db:
+        return preventivi_db
+
     path = Path(PREVENTIVI_CSV)
     if not path.exists():
         return []
@@ -615,6 +737,11 @@ st.markdown(f"""
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 RICARICO_ATTIVO = ricarico_effettivo
 
+if supabase_attivo():
+    st.sidebar.success("Database: Supabase attivo")
+else:
+    st.sidebar.warning("Database: CSV locale")
+
 # =========================
 # ADMIN
 # =========================
@@ -643,7 +770,7 @@ if profilo == "SA-TEC":
         st.markdown('<div class="admin-box"><h2 style="color:#06499b;">Dashboard SA-TEC</h2>', unsafe_allow_html=True)
 
         preventivi = carica_preventivi()
-        utenti_csv = carica_utenti_csv()
+        utenti_csv = carica_utenti_supabase() or carica_utenti_csv()
 
         tab1, tab2 = st.tabs(["Preventivi", "Utenti creati"])
 
@@ -660,8 +787,11 @@ if profilo == "SA-TEC":
                         pass
                 st.write(f"Valore totale IVA esclusa: **{euro(totale)}**")
                 st.markdown(tabella_html_sicura(preventivi), unsafe_allow_html=True)
-                with open(PREVENTIVI_CSV, "rb") as f:
-                    st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
+                if Path(PREVENTIVI_CSV).exists():
+                    with open(PREVENTIVI_CSV, "rb") as f:
+                        st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
+                else:
+                    st.caption("Archivio principale: Supabase")
 
         with tab2:
             if not utenti_csv:
@@ -680,8 +810,11 @@ if profilo == "SA-TEC":
                         "Ricarico %": d.get("ricarico", ""),
                     })
                 st.markdown(tabella_html_sicura(righe), unsafe_allow_html=True)
-                with open(UTENTI_CSV, "rb") as f:
-                    st.download_button("Scarica CSV utenti", data=f, file_name="utenti_satec.csv", mime="text/csv")
+                if Path(UTENTI_CSV).exists():
+                    with open(UTENTI_CSV, "rb") as f:
+                        st.download_button("Scarica CSV utenti", data=f, file_name="utenti_satec.csv", mime="text/csv")
+                else:
+                    st.caption("Archivio principale: Supabase")
 
         st.markdown("</div>", unsafe_allow_html=True)
 
