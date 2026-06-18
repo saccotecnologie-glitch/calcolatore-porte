@@ -7,8 +7,15 @@ import pandas as pd
 from supabase import create_client
 import random
 import string
+import smtplib
+from io import BytesIO
+from email.message import EmailMessage
 from pathlib import Path
 from datetime import datetime, date
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfgen import canvas
 
 # =========================================================
 # CONFIGURATORE SA-TEC PRO
@@ -36,6 +43,7 @@ PIVA = "P.IVA 04009610793"
 TELEFONO = "0968-036797"
 EMAIL = "sacco.tecnologie@gmail.com"
 PEC = "sa-tec@pec.it"
+CODICE_UNIVOCO = "M5UXCR1"
 IBAN = "IT30S0825842841007000002877"
 IVA = 0.22
 
@@ -349,6 +357,201 @@ def duplica_preventivo(p):
     nuovo["stato"] = "Nuovo"
     salva_preventivo(nuovo)
     return codice
+
+
+def aggiorna_invio_email(codice_preventivo, destinatario):
+    if not supabase_attivo() or not codice_preventivo:
+        return False
+    try:
+        sb = get_supabase()
+        sb.table("preventivi_satec").update({
+            "stato": "Inviato",
+            "data_invio_email": datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "email_destinatario": destinatario
+        }).eq("codice_preventivo", codice_preventivo).execute()
+        return True
+    except Exception:
+        return False
+
+def invia_email_preventivo(destinatario, codice_preventivo, oggetto, corpo, pdf_bytes):
+    try:
+        email_user = st.secrets["EMAIL_USER"]
+        email_password = st.secrets["EMAIL_PASSWORD"]
+        smtp_server = st.secrets.get("EMAIL_SMTP", "smtp.gmail.com")
+        smtp_port = int(st.secrets.get("EMAIL_PORT", "587"))
+
+        msg = EmailMessage()
+        msg["From"] = email_user
+        msg["To"] = destinatario
+        msg["Subject"] = oggetto
+        msg.set_content(corpo)
+        msg.add_attachment(
+            pdf_bytes,
+            maintype="application",
+            subtype="pdf",
+            filename=f"Preventivo_SA-TEC_{codice_preventivo}.pdf"
+        )
+
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(email_user, email_password)
+            server.send_message(msg)
+
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+def crea_pdf_preventivo_bytes(codice_preventivo, cliente_nome, cliente_azienda, cliente_telefono, cliente_email,
+                              scelta, luce_mm, altezza_mm, lunghezza_traversa, imponibile, iva, totale_iva, articoli):
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    y = height - 18 * mm
+
+    def draw_text(x, y, txt, size=9, bold=False):
+        c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
+        c.drawString(x, y, str(txt))
+        return y - (size + 4)
+
+    def new_page():
+        c.showPage()
+        return height - 18 * mm
+
+    try:
+        if logo_satec64:
+            logo_bytes = BytesIO(base64.b64decode(logo_satec64))
+            c.drawImage(ImageReader(logo_bytes), 15 * mm, y - 28 * mm, width=55 * mm, height=25 * mm, preserveAspectRatio=True, mask="auto")
+    except Exception:
+        pass
+
+    c.setFont("Helvetica-Bold", 15)
+    c.drawRightString(width - 15 * mm, y, AZIENDA)
+    c.setFont("Helvetica", 8.5)
+    c.drawRightString(width - 15 * mm, y - 5 * mm, SEDE)
+    c.drawRightString(width - 15 * mm, y - 10 * mm, f"{PIVA} - REA CZ-228835")
+    c.drawRightString(width - 15 * mm, y - 15 * mm, f"Codice Univoco: {CODICE_UNIVOCO}")
+    c.drawRightString(width - 15 * mm, y - 20 * mm, f"Tel. {TELEFONO} - Email: {EMAIL}")
+    c.drawRightString(width - 15 * mm, y - 25 * mm, f"PEC: {PEC}")
+
+    y -= 40 * mm
+    c.line(15 * mm, y, width - 15 * mm, y)
+    y -= 8 * mm
+
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(15 * mm, y, f"PREVENTIVO N° {codice_preventivo}")
+    y -= 8 * mm
+    y = draw_text(15 * mm, y, f"Data: {date.today().strftime('%d/%m/%Y')}    Validità offerta: 15 giorni", 10, True)
+    y -= 4 * mm
+
+    y = draw_text(15 * mm, y, "DATI CLIENTE", 11, True)
+    y = draw_text(15 * mm, y, f"Cliente: {cliente_nome}    Azienda: {cliente_azienda}", 9)
+    y = draw_text(15 * mm, y, f"Telefono: {cliente_telefono}    Email: {cliente_email}", 9)
+    y -= 3 * mm
+
+    y = draw_text(15 * mm, y, "DATI TECNICI", 11, True)
+    y = draw_text(15 * mm, y, f"Configurazione: {scelta}", 9)
+    y = draw_text(15 * mm, y, f"Luce passaggio: {luce_mm} mm    Altezza: {altezza_mm} mm    Traversa: {lunghezza_traversa:.2f} m", 9)
+    y -= 4 * mm
+
+    y = draw_text(15 * mm, y, "DESCRIZIONE FORNITURA", 11, True)
+    for a in articoli:
+        if y < 35 * mm:
+            y = new_page()
+        desc = f"- {a.get('descrizione_lunga', a.get('descrizione', ''))}"
+        max_len = 95
+        while len(desc) > max_len:
+            y = draw_text(17 * mm, y, desc[:max_len], 8)
+            desc = "  " + desc[max_len:]
+        y = draw_text(17 * mm, y, desc, 8)
+
+    if y < 65 * mm:
+        y = new_page()
+
+    y -= 5 * mm
+    c.setFont("Helvetica-Bold", 12)
+    c.drawRightString(width - 15 * mm, y, f"Totale IVA esclusa: {euro(imponibile)}")
+    y -= 7 * mm
+    c.drawRightString(width - 15 * mm, y, f"IVA 22%: {euro(iva)}")
+    y -= 7 * mm
+    c.drawRightString(width - 15 * mm, y, f"Totale IVA inclusa: {euro(totale_iva)}")
+    y -= 12 * mm
+
+    if y < 80 * mm:
+        y = new_page()
+
+    condizioni = [
+        "Validita offerta: 15 giorni dalla data di emissione",
+        "Pagamento: 50% all'ordine mediante bonifico bancario",
+        "Saldo: 50% alla consegna",
+        "Tempi di consegna: da confermare all'ordine",
+        "IVA esclusa, salvo diversa indicazione",
+        "Opere murarie escluse",
+        "Opere elettriche escluse",
+        "Predisposizione alimentazione automazione a carico del committente",
+        "Linea dedicata 230V con interruttore magnetotermico 10A a carico del committente",
+        "Trasporto escluso, salvo diversa indicazione nell'offerta",
+        "Eventuali opere aggiuntive non indicate saranno contabilizzate separatamente",
+        "Misure e caratteristiche da verificare definitivamente in fase di rilievo",
+        "La presente offerta e subordinata alla verifica tecnica finale",
+    ]
+
+    y = draw_text(15 * mm, y, "CONDIZIONI COMMERCIALI", 11, True)
+    for cond in condizioni:
+        if y < 30 * mm:
+            y = new_page()
+        y = draw_text(17 * mm, y, f"- {cond}", 8)
+
+    y -= 4 * mm
+    y = draw_text(15 * mm, y, "COORDINATE BANCARIE", 11, True)
+    y = draw_text(17 * mm, y, f"Intestatario: {AZIENDA}", 9)
+    y = draw_text(17 * mm, y, f"IBAN: {IBAN}", 9, True)
+    y = draw_text(17 * mm, y, f"Causale: Acconto preventivo {codice_preventivo}", 9)
+
+    y -= 10 * mm
+    c.setFont("Helvetica", 9)
+    c.drawString(17 * mm, y, "Firma Cliente")
+    c.drawString(110 * mm, y, AZIENDA)
+    y -= 15 * mm
+    c.drawString(17 * mm, y, "_____________________________")
+    c.drawString(110 * mm, y, "_____________________________")
+
+    c.save()
+    buffer.seek(0)
+    return buffer.read()
+
+def corpo_email_preventivo(codice_preventivo):
+    return f"""Gentile Cliente,
+
+in allegato trasmettiamo il preventivo SA-TEC relativo alla fornitura richiesta.
+
+Preventivo N° {codice_preventivo}
+Validità offerta: 15 giorni dalla data di emissione.
+
+Per qualsiasi chiarimento restiamo a completa disposizione.
+
+Cordiali saluti
+
+SA-TEC S.R.L.s
+
+Claudio Sacco
+Direzione Commerciale
+
+Tel. 0968 036797
+
+Email: sacco.tecnologie@gmail.com
+PEC: sa-tec@pec.it
+
+Via Luigi Settembrini 84
+88046 Lamezia Terme (CZ)
+
+P.IVA 04009610793
+REA CZ-228835
+Codice Univoco: M5UXCR1
+
+IBAN: IT30S0825842841007000002877
+
+Specialisti in ingressi automatici
+"""
 
 def genera_codice_preventivo():
     """
@@ -862,6 +1065,23 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
+
+# Ricarico personalizzato per ADMIN SA-TEC
+if profilo == "SA-TEC":
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### Ricarico preventivo")
+    usa_ricarico_personalizzato = st.sidebar.checkbox("Usa ricarico personalizzato", value=True)
+    if usa_ricarico_personalizzato:
+        ricarico_effettivo = st.sidebar.number_input(
+            "Ricarico % da applicare",
+            min_value=0.0,
+            max_value=150.0,
+            value=50.0,
+            step=1.0
+        )
+    else:
+        ricarico_effettivo = 0.0
+
 RICARICO_ATTIVO = ricarico_effettivo
 
 if supabase_attivo():
@@ -1249,6 +1469,8 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
     }
     salva_preventivo(dati)
     st.session_state.ultimo_codice_preventivo = codice_preventivo
+    st.session_state.ultimo_cliente_email = cliente_email
+    st.session_state.ultimo_cliente_nome = cliente_nome
     st.success(f"Preventivo {codice_preventivo} salvato correttamente. SA-TEC lo vedrà nella dashboard.")
 
 st.markdown("</div>", unsafe_allow_html=True)
@@ -1408,6 +1630,41 @@ win.document.close();
 }}
 </script>
 """, height=100)
+
+
+st.markdown('<div class="card"><div class="title-bar">INVIO EMAIL PREVENTIVO</div>', unsafe_allow_html=True)
+
+codice_email = st.session_state.get("ultimo_codice_preventivo", "")
+email_dest = st.text_input("Email destinatario", value=cliente_email or st.session_state.get("ultimo_cliente_email", ""))
+
+if not codice_email:
+    st.info("Prima salva il preventivo. Dopo il salvataggio comparirà il codice SAT e potrai inviarlo via email.")
+else:
+    st.write(f"Preventivo pronto per invio: **{codice_email}**")
+
+    if st.button("INVIA PREVENTIVO VIA EMAIL"):
+        if not email_dest:
+            st.error("Inserisci l'email del destinatario.")
+        else:
+            pdf_bytes = crea_pdf_preventivo_bytes(
+                codice_email, cliente_nome, cliente_azienda, cliente_telefono, cliente_email,
+                scelta, luce_mm, altezza_mm, lunghezza_traversa, imponibile, iva, totale_iva, articoli
+            )
+            ok, errore = invia_email_preventivo(
+                email_dest,
+                codice_email,
+                f"Preventivo SA-TEC N° {codice_email}",
+                corpo_email_preventivo(codice_email),
+                pdf_bytes
+            )
+            if ok:
+                aggiorna_invio_email(codice_email, email_dest)
+                st.success(f"Email inviata correttamente a {email_dest}. Stato preventivo aggiornato a Inviato.")
+            else:
+                st.error(f"Email non inviata: {errore}")
+
+st.markdown("</div>", unsafe_allow_html=True)
+
 
 st.markdown(f"""
 <div class="footer">
