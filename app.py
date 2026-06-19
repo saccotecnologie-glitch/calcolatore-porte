@@ -1133,6 +1133,24 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
+
+# Ricarico manuale solo per ADMIN SA-TEC
+if profilo == "SA-TEC":
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### Ricarico SA-TEC")
+    usa_ricarico_satec = st.sidebar.checkbox("Usa ricarico manuale SA-TEC", value=True, key="usa_ricarico_satec")
+    if usa_ricarico_satec:
+        ricarico_effettivo = st.sidebar.number_input(
+            "Ricarico SA-TEC %",
+            min_value=0.0,
+            max_value=200.0,
+            value=50.0,
+            step=1.0,
+            key="ricarico_satec_admin"
+        )
+    else:
+        ricarico_effettivo = 0.0
+
 RICARICO_ATTIVO = ricarico_effettivo
 
 # =========================
@@ -1831,7 +1849,7 @@ if profilo == "SA-TEC":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V33 - Stato preventivi")
+st.caption("Versione V34 - Ricarico SA-TEC Admin")
 
 st.markdown(f"""
 <div class="footer">
