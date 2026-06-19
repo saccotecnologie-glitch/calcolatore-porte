@@ -1983,7 +1983,7 @@ codice_stampa = st.session_state.get("ultimo_codice_preventivo", "DA SALVARE")
 resa_stampa = "Franco deposito SA-TEC Lamezia Terme" if profilo in ["SA-TEC", "CLIENTE"] else "Da concordare"
 brand_prodotto_stampa = "SESAMO POWERCORE PW100" if profilo in ["SA-TEC", "CLIENTE"] else "PORTE AUTOMATICHE"
 coord_bancarie_html = f"""
-{coord_bancarie_html}
+{"<h2>Coordinate bancarie</h2><p><b>Intestatario:</b> " + AZIENDA + "<br><b>IBAN:</b> " + IBAN + "<br><b>Causale:</b> Acconto preventivo " + codice_stampa + "</p>" if profilo in ["SA-TEC", "CLIENTE"] else ""}
 """ if profilo in ["SA-TEC", "CLIENTE"] else ""
 
 html_stampa = f"""
@@ -2048,7 +2048,7 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <li>La presente offerta è subordinata alla verifica tecnica finale</li>
 </ul>
 
-{coord_bancarie_html}
+{"<h2>Coordinate bancarie</h2><p><b>Intestatario:</b> " + AZIENDA + "<br><b>IBAN:</b> " + IBAN + "<br><b>Causale:</b> Acconto preventivo " + codice_stampa + "</p>" if profilo in ["SA-TEC", "CLIENTE"] else ""}
 
 <h2>Accettazione offerta</h2>
 <p>Per accettazione del presente preventivo e delle condizioni commerciali sopra indicate.</p>
