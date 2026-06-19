@@ -8,6 +8,7 @@ import random
 import string
 import smtplib
 from email.message import EmailMessage
+from supabase import create_client
 from pathlib import Path
 from datetime import datetime, date
 
@@ -192,6 +193,208 @@ def img_to_base64(paths):
     return ""
 
 
+# =========================
+# SUPABASE
+# =========================
+
+def supabase_client():
+    try:
+        url = st.secrets.get("SUPABASE_URL", "")
+        key = st.secrets.get("SUPABASE_KEY", "")
+        if not url or not key:
+            return None
+        return create_client(url, key)
+    except Exception as e:
+        st.sidebar.warning(f"Supabase non collegato: {e}")
+        return None
+
+def supabase_attivo():
+    return supabase_client() is not None
+
+def carica_utenti_supabase():
+    sb = supabase_client()
+    if sb is None:
+        return {}
+    try:
+        res = sb.table("utenti").select("*").execute()
+        utenti = {}
+        for r in res.data or []:
+            codice = str(r.get("username", "")).strip().upper()
+            if not codice:
+                continue
+            ruolo = str(r.get("ruolo", "CLIENTE")).strip().upper()
+            utenti[codice] = {
+                "password": r.get("password", ""),
+                "profilo": ruolo,
+                "nome": r.get("azienda", "") or codice,
+                "azienda": r.get("azienda", ""),
+                "telefono": r.get("telefono", ""),
+                "email": r.get("email", ""),
+                "ricarico": str(r.get("ricarico", "0") or "0"),
+                "logo_url": r.get("logo_url", "")
+            }
+        return utenti
+    except Exception as e:
+        st.sidebar.warning(f"Utenti Supabase non caricati: {e}")
+        return {}
+
+def cerca_utente_supabase(username):
+    sb = supabase_client()
+    if sb is None:
+        return None
+    try:
+        res = sb.table("utenti").select("*").eq("username", username).limit(1).execute()
+        if res.data:
+            return res.data[0]
+    except:
+        pass
+    return None
+
+def salva_cliente_supabase(nome, azienda, telefono, email, owner_utente, owner_profilo):
+    sb = supabase_client()
+    if sb is None:
+        return None
+
+    nome = str(nome or "").strip()
+    azienda = str(azienda or "").strip()
+    telefono = str(telefono or "").strip()
+    email = str(email or "").strip().lower()
+
+    if not nome and not azienda and not telefono and not email:
+        return None
+
+    try:
+        trovato = None
+        if email:
+            res = sb.table("clienti").select("*").eq("email", email).limit(1).execute()
+            if res.data:
+                trovato = res.data[0]
+
+        if not trovato and telefono:
+            res = sb.table("clienti").select("*").eq("telefono", telefono).limit(1).execute()
+            if res.data:
+                trovato = res.data[0]
+
+        utente_db = cerca_utente_supabase(owner_utente)
+        utente_id = utente_db.get("id") if utente_db else None
+
+        payload = {
+            "nome": nome,
+            "azienda": azienda,
+            "telefono": telefono,
+            "email": email,
+            "utente_id": utente_id
+        }
+
+        if trovato:
+            sb.table("clienti").update(payload).eq("id", trovato["id"]).execute()
+            return trovato["id"]
+
+        res = sb.table("clienti").insert(payload).execute()
+        if res.data:
+            return res.data[0].get("id")
+
+    except Exception as e:
+        st.sidebar.warning(f"Cliente non salvato su Supabase: {e}")
+
+    return None
+
+def salva_preventivo_supabase(dati, cliente_id=None, utente_codice=""):
+    sb = supabase_client()
+    if sb is None:
+        return False
+
+    try:
+        utente_db = cerca_utente_supabase(utente_codice)
+        utente_id = utente_db.get("id") if utente_db else None
+
+        def to_int(v):
+            try:
+                return int(float(str(v).replace(",", ".")))
+            except:
+                return None
+
+        def to_float(v):
+            try:
+                return float(str(v).replace(",", "."))
+            except:
+                return None
+
+        payload = {
+            "codice_preventivo": dati.get("codice_preventivo", ""),
+            "cliente_id": cliente_id,
+            "utente_id": utente_id,
+            "configurazione": dati.get("configurazione", ""),
+            "luce_mm": to_int(dati.get("luce_mm", "")),
+            "altezza_mm": to_int(dati.get("altezza_mm", "")),
+            "traversa_m": to_float(dati.get("traversa_m", "")),
+            "totale": to_float(dati.get("totale_iva", dati.get("imponibile", ""))),
+            "stato": dati.get("stato", "Bozza")
+        }
+
+        sb.table("preventivi").insert(payload).execute()
+        return True
+
+    except Exception as e:
+        st.sidebar.warning(f"Preventivo non salvato su Supabase: {e}")
+        return False
+
+def carica_preventivi_supabase():
+    sb = supabase_client()
+    if sb is None:
+        return []
+    try:
+        res = sb.table("preventivi").select("*").order("creato_il", desc=True).execute()
+        righe = []
+        for p in res.data or []:
+            righe.append({
+                "codice_preventivo": p.get("codice_preventivo", ""),
+                "data_ora": p.get("creato_il", ""),
+                "utente": p.get("utente_id", ""),
+                "profilo": "",
+                "cliente_nome": p.get("cliente_id", ""),
+                "cliente_azienda": "",
+                "configurazione": p.get("configurazione", ""),
+                "luce_mm": p.get("luce_mm", ""),
+                "altezza_mm": p.get("altezza_mm", ""),
+                "traversa_m": p.get("traversa_m", ""),
+                "totale_iva": p.get("totale", ""),
+                "stato": p.get("stato", ""),
+            })
+        return righe
+    except Exception as e:
+        st.sidebar.warning(f"Preventivi Supabase non caricati: {e}")
+        return []
+
+def carica_clienti_supabase():
+    sb = supabase_client()
+    if sb is None:
+        return []
+    try:
+        res = sb.table("clienti").select("*").order("creato_il", desc=True).execute()
+        righe = []
+        for c in res.data or []:
+            righe.append({
+                "nome": c.get("nome", ""),
+                "azienda": c.get("azienda", ""),
+                "telefono": c.get("telefono", ""),
+                "email": c.get("email", ""),
+                "primo_preventivo": "",
+                "ultimo_preventivo": "",
+                "data_primo_preventivo": c.get("creato_il", ""),
+                "data_ultimo_preventivo": c.get("creato_il", ""),
+                "numero_preventivi": "",
+                "totale_preventivi": "",
+                "owner_utente": c.get("utente_id", ""),
+                "owner_profilo": "",
+            })
+        return righe
+    except Exception as e:
+        st.sidebar.warning(f"Clienti Supabase non caricati: {e}")
+        return []
+
+
+
 def salva_logo_utente(utente_codice, file_caricato):
     if not file_caricato:
         return ""
@@ -327,13 +530,18 @@ def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email, 
 
 def carica_tutti_utenti():
     utenti = dict(UTENTI_BASE)
-    utenti_csv = carica_utenti_csv()
 
-    # Non permettere al file CSV di sovrascrivere l'ADMIN base.
-    # Così ADMIN / SATEC-ADMIN funziona sempre.
+    utenti_supabase = carica_utenti_supabase()
+    if "ADMIN" in utenti_supabase:
+        utenti["ADMIN"].update(utenti_supabase["ADMIN"])
+
+    for codice, dati in utenti_supabase.items():
+        if codice != "ADMIN":
+            utenti[codice] = dati
+
+    utenti_csv = carica_utenti_csv()
     if "ADMIN" in utenti_csv:
         utenti_csv.pop("ADMIN", None)
-
     utenti.update(utenti_csv)
     return utenti
 
@@ -555,6 +763,10 @@ def box_stati_html(stats):
 # =========================
 
 def carica_clienti():
+    clienti_sb = carica_clienti_supabase()
+    if clienti_sb:
+        return clienti_sb
+
     path = Path(CLIENTI_CSV)
     if not path.exists():
         return []
@@ -696,6 +908,10 @@ def salva_preventivo(dati):
         writer.writerow(dati)
 
 def carica_preventivi():
+    preventivi_sb = carica_preventivi_supabase()
+    if preventivi_sb:
+        return preventivi_sb
+
     path = Path(PREVENTIVI_CSV)
     if not path.exists():
         return []
@@ -1334,6 +1550,11 @@ if profilo == "SA-TEC":
 
 RICARICO_ATTIVO = ricarico_effettivo
 
+if supabase_attivo():
+    st.sidebar.success("Supabase collegato")
+else:
+    st.sidebar.warning("Supabase non collegato - uso CSV")
+
 # =========================
 # ADMIN
 # =========================
@@ -1768,8 +1989,15 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
     }
     salva_preventivo(dati)
     salva_cliente_csv(cliente_nome, cliente_azienda, cliente_telefono, cliente_email, codice_preventivo, imponibile, utente_codice, profilo)
+
+    cliente_id_supabase = salva_cliente_supabase(cliente_nome, cliente_azienda, cliente_telefono, cliente_email, utente_codice, profilo)
+    salvato_cloud = salva_preventivo_supabase(dati, cliente_id_supabase, utente_codice)
+
     st.session_state.ultimo_codice_preventivo = codice_preventivo
-    st.success(f"Preventivo {codice_preventivo} salvato correttamente. SA-TEC lo vedrà nella dashboard.")
+    if salvato_cloud:
+        st.success(f"Preventivo {codice_preventivo} salvato correttamente su Supabase e backup CSV.")
+    else:
+        st.warning(f"Preventivo {codice_preventivo} salvato in CSV. Supabase non disponibile o bloccato da policy.")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -2152,7 +2380,7 @@ st.markdown('<div class="card"><div class="title-bar">MANUALI TECNICI SESAMO</di
 mcol1, mcol2 = st.columns(2)
 
 with mcol1:
-    manuale_pw100 = Path("manuale_sesamo_pw100.pdf")
+    manuale_pw100 = Path("PW100 MANUALE ISTALLAZIONE.pdf")
     st.markdown("""
     <div class="option-box">
         <div class="option-title">Manuale Sesamo PowerCore PW100</div>
@@ -2175,7 +2403,7 @@ with mcol1:
         st.warning("Carica nel repository il file: manuale_sesamo_pw100.pdf")
 
 with mcol2:
-    manuale_er140 = Path("manuale_sesamo_er140.pdf")
+    manuale_er140 = Path("MANUALE ER 140 ISTALLAZIONE.pdf.pdf")
     st.markdown("""
     <div class="option-box">
         <div class="option-title">Manuale Sesamo ER140 Ridondante</div>
@@ -2200,7 +2428,7 @@ with mcol2:
 st.markdown("</div>", unsafe_allow_html=True)
 
 
-st.caption("Versione V42 - Manuali Sesamo scaricabili")
+st.caption("Versione V43 - Supabase reale + backup CSV")
 
 st.markdown(f"""
 <div class="footer">
