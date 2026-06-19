@@ -1359,19 +1359,29 @@ html_stampa = f"""
 <meta charset="UTF-8">
 <title>Preventivo SA-TEC</title>
 <style>
-body {{font-family:Arial,sans-serif;color:#18324f;margin:40px;}}
-.header {{display:flex;justify-content:space-between;border-bottom:4px solid #06499b;padding-bottom:20px;margin-bottom:25px;}}
-.company {{text-align:right;font-size:14px;line-height:1.5;}}
-h1,h2 {{color:#06499b;}}
-.box {{border:2px solid #d7e6f7;border-left:8px solid #06499b;border-radius:10px;padding:18px;margin-bottom:20px;}}
-.brand {{display:flex;justify-content:space-between;align-items:center;border:2px solid #d7e6f7;border-radius:10px;padding:16px;margin-bottom:20px;}}
-table {{width:100%;border-collapse:collapse;margin-top:15px;}}
-th {{background:#06499b;color:white;padding:12px;text-align:left;}}
-td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
-.total {{text-align:right;font-size:26px;font-weight:bold;color:#06499b;margin-top:25px;}}
-.conditions {{margin-top:30px;font-size:15px;line-height:1.6;}}
-.print-button {{background:#06499b;color:white;padding:14px 22px;border:none;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;}}
-@media print {{.print-button {{display:none;}}}}
+body {{font-family:Arial,sans-serif;color:#18324f;margin:28px;background:#ffffff;}}
+.header {{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:5px solid #06499b;padding-bottom:18px;margin-bottom:22px;}}
+.company {{text-align:right;font-size:13px;line-height:1.45;color:#111;}}
+h1 {{color:#06499b;font-size:30px;margin:10px 0 2px 0;}}
+h2 {{color:#06499b;font-size:20px;margin:18px 0 10px 0;}}
+.doc-code {{font-size:24px;font-weight:900;color:#111;margin-bottom:18px;}}
+.box {{border:2px solid #d7e6f7;border-left:8px solid #06499b;border-radius:12px;padding:16px;margin-bottom:18px;background:#f8fbff;}}
+.brand {{display:flex;justify-content:space-between;align-items:center;border:2px solid #d7e6f7;border-radius:12px;padding:15px;margin-bottom:18px;background:#ffffff;}}
+.grid-info {{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px;}}
+.info-card {{border:2px solid #d7e6f7;border-radius:12px;padding:14px;background:#f8fbff;min-height:88px;}}
+.info-title {{font-size:13px;font-weight:900;color:#06499b;text-transform:uppercase;margin-bottom:8px;}}
+.info-text {{font-size:14px;line-height:1.45;color:#111;}}
+table {{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px;}}
+th {{background:#06499b;color:white;padding:10px;text-align:left;}}
+td {{border:1px solid #d7e6f7;padding:9px;vertical-align:top;color:#111;}}
+.total-box {{margin-top:22px;border:3px solid #06499b;border-radius:14px;padding:16px;background:#f8fbff;}}
+.total-line {{display:flex;justify-content:space-between;font-size:16px;margin:6px 0;}}
+.total-main {{display:flex;justify-content:space-between;font-size:25px;font-weight:900;color:#06499b;margin-top:10px;border-top:2px solid #bdd4ef;padding-top:10px;}}
+.conditions {{margin-top:24px;font-size:14px;line-height:1.55;color:#111;}}
+.conditions ul {{margin-top:6px;}}
+.signature-table td {{height:75px;text-align:center;vertical-align:bottom;}}
+.print-button {{background:#06499b;color:white;padding:14px 22px;border:none;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;margin-bottom:18px;}}
+@media print {{.print-button {{display:none;}} body {{margin:18px;}}}}
 </style>
 </head>
 <body>
@@ -1379,24 +1389,51 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <div class="header"><div>{logo_print_finale}</div><div class="company">{intestazione_brand_html}</div></div>
 <div class="brand"><div><h2 style="margin:0;">SESAMO POWERCORE PW100</h2><div>Configuratore porte automatiche lineari</div></div><div>{sesamo_print}</div></div>
 <h1>Preventivo porta automatica</h1>
-<h2>N° {codice_stampa}</h2>
+<div class="doc-code">N° {codice_stampa}</div>
+
+<div class="grid-info">
+<div class="info-card">
+<div class="info-title">Cliente</div>
+<div class="info-text">
+<b>{cliente_nome}</b><br>
+{cliente_azienda}<br>
+Tel. {cliente_telefono}<br>
+Email: {cliente_email}
+</div>
+</div>
+
+<div class="info-card">
+<div class="info-title">Configurazione</div>
+<div class="info-text">
+<b>{scelta}</b><br>
+Profilo: {PROFILI[profilo]}<br>
+Utente: {utente_codice}<br>
+Validità offerta: 15 giorni
+</div>
+</div>
+
+<div class="info-card">
+<div class="info-title">Misure</div>
+<div class="info-text">
+Luce passaggio: <b>{luce_mm} mm</b><br>
+Altezza passaggio: <b>{altezza_mm} mm</b><br>
+Traversa: <b>{lunghezza_traversa:.2f} m</b><br>
+Data: {date.today().strftime("%d/%m/%Y")}
+</div>
+</div>
+</div>
+
 <div class="box">
-<b>Data:</b> {date.today().strftime("%d/%m/%Y")}<br>
-<b>Codice preventivo:</b> {codice_stampa}<br>
-<b>Validità offerta:</b> 15 giorni<br>
-<b>Profilo:</b> {PROFILI[profilo]}<br>
-<b>Utente:</b> {utente_codice}<br>
-<b>Cliente:</b> {cliente_nome} - {cliente_azienda}<br>
-<b>Configurazione:</b> {scelta}<br>
-<b>Luce passaggio:</b> {luce_mm} mm<br>
-<b>Altezza passaggio:</b> {altezza_mm} mm<br>
-<b>Misura traversa:</b> {lunghezza_traversa:.2f} metri<br>
-<b>Resa:</b> Franco deposito SA-TEC Lamezia Terme
+<b>Resa:</b> Franco deposito SA-TEC Lamezia Terme<br>
+<b>Codice preventivo:</b> {codice_stampa}
 </div>
 <h2>Descrizione fornitura</h2>
 <table><thead><tr><th>Voce</th><th>Descrizione</th></tr></thead><tbody>{righe_descrizione}</tbody></table>
-<div class="total">Totale preventivo IVA esclusa: {euro(imponibile)}</div>
-<div style="text-align:right;font-size:18px;margin-top:8px;">IVA 22%: {euro(iva)}<br>Totale IVA inclusa: {euro(totale_iva)}</div>
+<div class="total-box">
+<div class="total-line"><span>Totale preventivo IVA esclusa</span><b>{euro(imponibile)}</b></div>
+<div class="total-line"><span>IVA 22%</span><b>{euro(iva)}</b></div>
+<div class="total-main"><span>Totale IVA inclusa</span><span>{euro(totale_iva)}</span></div>
+</div>
 <div class="conditions">
 <h2>Condizioni commerciali</h2>
 <ul>
@@ -1417,9 +1454,12 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 {"<h2>Coordinate bancarie</h2><p><b>Intestatario:</b> " + AZIENDA + "<br><b>IBAN:</b> " + IBAN + "<br><b>Causale:</b> Acconto preventivo " + codice_stampa + "</p>" if brand_preventivo.get("mostra_satec") else ""}
 <h2>Accettazione offerta</h2>
 <p>Per accettazione del presente preventivo e delle condizioni commerciali sopra indicate.</p>
-<table>
-<tr><td style="height:70px;"><b>Firma Cliente</b><br><br>_____________________________</td><td style="height:70px;"><b>{nome_firma_azienda}</b><br><br>_____________________________</td></tr>
+<table class="signature-table">
+<tr><td><b>Firma Cliente</b><br><br>_____________________________</td><td><b>{nome_firma_azienda}</b><br><br>_____________________________</td></tr>
 </table>
+</div>
+<div style="margin-top:22px;border-top:2px solid #d7e6f7;padding-top:12px;font-size:12px;color:#555;text-align:center;">
+Documento generato con configuratore SA-TEC - Preventivo soggetto a verifica tecnica finale.
 </div>
 </body>
 </html>
@@ -1466,7 +1506,7 @@ if profilo == "SA-TEC":
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-st.caption("Versione V26 - Misure gialle + Brand Rivenditori/Grossisti")
+st.caption("Versione V27 - PDF professionale")
 
 st.markdown(f"""
 <div class="footer">
