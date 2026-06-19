@@ -861,6 +861,26 @@ th {
     -webkit-text-fill-color:#ffffff!important;
 }
 
+
+/* V26 - CAMPI MISURE INTERNI GIALLI */
+div[data-testid="stNumberInput"] input {
+    background:#fff3a3!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border:2px solid #06499b!important;
+    border-radius:8px!important;
+    text-align:center!important;
+    font-size:28px!important;
+    font-weight:900!important;
+    height:56px!important;
+}
+
+div[data-testid="stNumberInput"] label {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:900!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1446,7 +1466,7 @@ if profilo == "SA-TEC":
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-st.caption("Versione V25 - Brand Rivenditori/Grossisti")
+st.caption("Versione V26 - Misure gialle + Brand Rivenditori/Grossisti")
 
 st.markdown(f"""
 <div class="footer">
