@@ -2142,7 +2142,65 @@ if profilo == "SA-TEC":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V41 - Disegno automazione centrato")
+
+# =========================
+# MANUALI TECNICI SESAMO
+# =========================
+
+st.markdown('<div class="card"><div class="title-bar">MANUALI TECNICI SESAMO</div>', unsafe_allow_html=True)
+
+mcol1, mcol2 = st.columns(2)
+
+with mcol1:
+    manuale_pw100 = Path("manuale_sesamo_pw100.pdf")
+    st.markdown("""
+    <div class="option-box">
+        <div class="option-title">Manuale Sesamo PowerCore PW100</div>
+        <div class="option-note">
+        Manuale tecnico dell'automazione lineare Sesamo PowerCore PW100.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if manuale_pw100.exists():
+        with open(manuale_pw100, "rb") as f:
+            st.download_button(
+                "SCARICA MANUALE PW100",
+                data=f,
+                file_name="Manuale_Sesamo_PowerCore_PW100.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+    else:
+        st.warning("Carica nel repository il file: manuale_sesamo_pw100.pdf")
+
+with mcol2:
+    manuale_er140 = Path("manuale_sesamo_er140.pdf")
+    st.markdown("""
+    <div class="option-box">
+        <div class="option-title">Manuale Sesamo ER140 Ridondante</div>
+        <div class="option-note">
+        Manuale tecnico dell'automazione ridondante Sesamo ER140 per vie di fuga.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if manuale_er140.exists():
+        with open(manuale_er140, "rb") as f:
+            st.download_button(
+                "SCARICA MANUALE ER140",
+                data=f,
+                file_name="Manuale_Sesamo_ER140_Ridondante.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+    else:
+        st.warning("Carica nel repository il file: manuale_sesamo_er140.pdf")
+
+st.markdown("</div>", unsafe_allow_html=True)
+
+
+st.caption("Versione V42 - Manuali Sesamo scaricabili")
 
 st.markdown(f"""
 <div class="footer">
