@@ -136,6 +136,8 @@ LISTINI = {
     "PULSANTE_EMERGENZA": 130.00,
     "ELETTRO_RIDONDANTE": 290.00,
 
+    "RADAR_SICUREZZA_LATERALE": 280.00,
+
     "ASSEMBLAGGIO": 130.00,
     "ALLACCIO_COLLAUDO_STANDARD": 350.00,
     "ALLACCIO_COLLAUDO_RIDONDANTE": 400.00,
@@ -211,10 +213,9 @@ def normalizza_codice(testo):
 
 def dati_intestazione_preventivo(profilo, dati_utente):
     """
-    Regole branding PDF:
-    - SA-TEC: logo, dati, IBAN e codice univoco SA-TEC.
-    - CLIENTE finale: logo, dati, IBAN e codice univoco SA-TEC.
-    - RIVENDITORE/GROSSISTA: brand dell'azienda rivenditore/grossista, senza dati SA-TEC.
+    Branding:
+    - SA-TEC e CLIENTE finale: logo, dati, IBAN e codice univoco SA-TEC.
+    - RIVENDITORE/GROSSISTA: brand del rivenditore/grossista, senza dati SA-TEC.
     """
     if profilo in ["SA-TEC", "CLIENTE"]:
         return {
@@ -1187,53 +1188,17 @@ st.markdown("""
 div[data-testid="stNumberInput"] label {color:#111!important;font-size:15px!important;font-weight:800!important;}
 div[data-testid="stNumberInput"] input {border:2px solid #8998b0!important;border-radius:0!important;text-align:center!important;font-size:28px!important;font-weight:800!important;color:#06499b!important;height:54px!important;}
 div[data-testid="stTextInput"] input {
-    background-color:#ffffff!important;
+    background:#ffffff!important;
     color:#111111!important;
     -webkit-text-fill-color:#111111!important;
-    opacity:1!important;
     border:2px solid #8998b0!important;
     border-radius:6px!important;
     font-weight:800!important;
 }
 div[data-testid="stTextInput"] label {
     color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
     font-weight:800!important;
 }
-div[data-testid="stTextArea"] textarea {
-    background-color:#ffffff!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    opacity:1!important;
-    border:2px solid #8998b0!important;
-    border-radius:6px!important;
-    font-weight:700!important;
-}
-div[data-testid="stTextArea"] label {
-    color:#111111!important;
-    font-weight:800!important;
-}
-div[data-testid="stSelectbox"] label,
-div[data-testid="stNumberInput"] label,
-div[data-testid="stCheckbox"] label {
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    font-weight:800!important;
-}
-.option-box,
-.card,
-.side-card,
-.admin-box,
-.section-box {
-    color:#111111!important;
-}
-.option-title,
-.title-bar,
-.power-side-title,
-.desc-title {
-    color:#06499b!important;
-}
-
 .measure-total {border:2px solid #bdd4ef;background:#f8fbff;border-radius:10px;padding:14px;display:grid;grid-template-columns:1fr 200px;align-items:center;color:#06499b;margin-top:10px;}
 .measure-total .big {font-size:30px;font-weight:900;text-align:center;}
 .measure-total .small {font-size:18px;font-weight:900;text-align:center;}
@@ -1274,6 +1239,49 @@ td {
 }
 tr:nth-child(even) {
     background: #f3f7fd;
+}
+
+
+/* CORREZIONE VISIBILITÀ TESTI CAMPI E RETTANGOLI */
+div[data-testid="stTextInput"] input {
+    background-color:#ffffff!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    opacity:1!important;
+    border:2px solid #8998b0!important;
+    border-radius:6px!important;
+    font-weight:800!important;
+}
+div[data-testid="stTextInput"] label {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:800!important;
+}
+div[data-testid="stTextArea"] textarea {
+    background-color:#ffffff!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    opacity:1!important;
+    border:2px solid #8998b0!important;
+    border-radius:6px!important;
+    font-weight:700!important;
+}
+div[data-testid="stTextArea"] label {
+    color:#111111!important;
+    font-weight:800!important;
+}
+div[data-testid="stSelectbox"] label,
+div[data-testid="stNumberInput"] label,
+div[data-testid="stCheckbox"] label {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:800!important;
+}
+.option-box,.card,.side-card,.admin-box,.section-box {
+    color:#111111!important;
+}
+.option-title,.title-bar,.power-side-title,.desc-title {
+    color:#06499b!important;
 }
 
 </style>
@@ -1637,6 +1645,17 @@ with col_side:
     st.markdown('<div class="option-box"><div class="option-title">ALLACCIO E COLLAUDO</div>', unsafe_allow_html=True)
     allaccio = st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=False, key="allaccio")
 
+    st.markdown('<div class="option-box"><div class="option-title">RADAR SICUREZZA LATERALE</div>', unsafe_allow_html=True)
+    radar_sicurezza_laterale = st.checkbox("Aggiungi radar sicurezza laterale", value=False, key="radar_sicurezza_laterale")
+    st.markdown(f"""
+    <div class="option-note">
+    Prezzo listino radar sicurezza laterale: <b>{euro(LISTINI["RADAR_SICUREZZA_LATERALE"])}</b> IVA esclusa.<br><br>
+    Il radar di sicurezza laterale serve a prevenire lo schiacciamento e l\'impatto tra l\'anta della porta e gli ostacoli fissi, come la parete, o le persone.<br><br>
+    La soglia dei <b>20 cm</b> rappresenta lo spazio di sicurezza perimetrale critico, fondamentale per rispettare gli standard europei, inclusa la normativa <b>EN 16005</b>.
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
     st.markdown(f"""
     <div class="option-note">
     Prezzo allaccio e collaudo {testo_tipo_allaccio}: <b>{euro(prezzo_allaccio)}</b> IVA esclusa.<br><br>
@@ -1652,6 +1671,9 @@ with col_side:
 # =========================
 # ARTICOLI
 # =========================
+
+if 'radar_sicurezza_laterale' not in locals():
+    radar_sicurezza_laterale = False
 
 articoli = []
 
@@ -1687,6 +1709,15 @@ else:
     aggiungi(articoli, "PULSANTE_EMERGENZA", "Pulsante emergenza", "Pulsante emergenza")
     if elettroblocco:
         aggiungi(articoli, "ELETTRO_RIDONDANTE", "PF54.62 Elettroblocco Ridondante", "PF54.62 Elettroblocco Ridondante")
+
+if radar_sicurezza_laterale:
+    aggiungi(
+        articoli,
+        "RADAR_SICUREZZA_LATERALE",
+        "Radar sicurezza laterale EN16005",
+        "Radar di sicurezza laterale per prevenzione schiacciamento e impatto tra anta, ostacoli fissi o persone. Spazio perimetrale critico 20 cm conforme ai principi della normativa EN16005.",
+        1
+    )
 
 descr_assemblaggio = "Assemblaggio completo automatismo presso officina SA-TEC - Franco deposito SA-TEC Lamezia Terme" if profilo == "SA-TEC" else "Assemblaggio completo automatismo"
 aggiungi(articoli, "ASSEMBLAGGIO", "Assemblaggio automatismo", descr_assemblaggio, 1, scontato=False)
@@ -1801,6 +1832,7 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "tipo_automazione": tipo,
         "elettroblocco": "SI" if elettroblocco else "NO",
         "allaccio": "SI" if allaccio else "NO",
+        "radar_sicurezza_laterale": "SI" if radar_sicurezza_laterale else "NO",
         "accessori_selezionati": ", ".join([a["descrizione"] for a in articoli]),
         "ricarico_percento": f"{ricarico_effettivo:.0f}",
         "imponibile": f"{imponibile:.2f}",
