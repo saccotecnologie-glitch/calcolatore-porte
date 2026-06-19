@@ -192,6 +192,25 @@ def img_to_base64(paths):
             return base64.b64encode(f.read_bytes()).decode()
     return ""
 
+# =========================
+# RICERCA MANUALI ROBUSTA
+# =========================
+
+def trova_file_manuale(possibili_nomi, parole_chiave):
+    for nome in possibili_nomi:
+        p = Path(nome)
+        if p.exists() and p.is_file() and p.stat().st_size > 1000:
+            return p
+
+    for f in Path(".").glob("*"):
+        nome = f.name.lower()
+        if f.is_file() and ".pdf" in nome:
+            if all(k.lower() in nome for k in parole_chiave):
+                if f.stat().st_size > 1000:
+                    return f
+    return None
+
+
 
 # =========================
 # SUPABASE
@@ -2371,6 +2390,7 @@ if profilo == "SA-TEC":
     st.markdown("</div>", unsafe_allow_html=True)
 
 
+
 # =========================
 # MANUALI TECNICI SESAMO
 # =========================
@@ -2380,7 +2400,16 @@ st.markdown('<div class="card"><div class="title-bar">MANUALI TECNICI SESAMO</di
 mcol1, mcol2 = st.columns(2)
 
 with mcol1:
-    manuale_pw100 = Path("PW100 MANUALE ISTALLAZIONE.pdf")
+    manuale_pw100 = trova_file_manuale(
+        [
+            "PW100 MANUALE ISTALLAZIONE.pdf",
+            "PW100 MANUALE INSTALLAZIONE.pdf",
+            "manuale_sesamo_pw100.pdf",
+            "Manuale_Sesamo_PowerCore_PW100.pdf",
+        ],
+        ["pw100"]
+    )
+
     st.markdown("""
     <div class="option-box">
         <div class="option-title">Manuale Sesamo PowerCore PW100</div>
@@ -2390,7 +2419,8 @@ with mcol1:
     </div>
     """, unsafe_allow_html=True)
 
-    if manuale_pw100.exists():
+    if manuale_pw100:
+        st.success(f"Manuale trovato: {manuale_pw100.name}")
         with open(manuale_pw100, "rb") as f:
             st.download_button(
                 "SCARICA MANUALE PW100",
@@ -2400,10 +2430,21 @@ with mcol1:
                 use_container_width=True
             )
     else:
-        st.warning("Carica nel repository il file: manuale_sesamo_pw100.pdf")
+        st.error("Manuale PW100 non trovato. Il file deve essere PDF e contenere PW100 nel nome.")
 
 with mcol2:
-    manuale_er140 = Path("MANUALE ER 140 ISTALLAZIONE.pdf.pdf")
+    manuale_er140 = trova_file_manuale(
+        [
+            "MANUALE ER 140 ISTALLAZIONE.pdf.pdf",
+            "MANUALE ER 140 ISTALLAZIONE.pdf",
+            "ER140 ISTALLAZIONE.pdf",
+            "ER 140 ISTALLAZIONE.pdf",
+            "manuale_sesamo_er140.pdf",
+            "Manuale_Sesamo_ER140_Ridondante.pdf",
+        ],
+        ["140"]
+    )
+
     st.markdown("""
     <div class="option-box">
         <div class="option-title">Manuale Sesamo ER140 Ridondante</div>
@@ -2413,7 +2454,8 @@ with mcol2:
     </div>
     """, unsafe_allow_html=True)
 
-    if manuale_er140.exists():
+    if manuale_er140:
+        st.success(f"Manuale trovato: {manuale_er140.name}")
         with open(manuale_er140, "rb") as f:
             st.download_button(
                 "SCARICA MANUALE ER140",
@@ -2423,12 +2465,11 @@ with mcol2:
                 use_container_width=True
             )
     else:
-        st.warning("Carica nel repository il file: manuale_sesamo_er140.pdf")
+        st.error("Manuale ER140 non trovato. Il file deve essere PDF e contenere 140 nel nome.")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-
-st.caption("Versione V43 - Supabase reale + backup CSV")
+st.caption("Versione V44 - Manuali robusti + Supabase")
 
 st.markdown(f"""
 <div class="footer">
