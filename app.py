@@ -817,7 +817,7 @@ def aggiorna_stato_preventivo_csv(codice_preventivo, nuovo_stato, email_destinat
         return False
 
 
-STATI_PREVENTIVO = ["Bozza", "Inviato", "Accettato", "Perso", "Ordinato"]
+STATI_PREVENTIVO = ["Bozza", "Inviato", "Trattativa", "Accettato", "Perso", "Ordinato"]
 
 def aggiorna_stato_preventivo_admin(codice_preventivo, nuovo_stato):
     path = Path(PREVENTIVI_CSV)
@@ -866,11 +866,12 @@ def box_stati_html(stats):
     colori = {
         "Bozza": "#f7c948",
         "Inviato": "#2f80ed",
+        "Trattativa": "#f2994a",
         "Accettato": "#27ae60",
         "Perso": "#eb5757",
         "Ordinato": "#9b51e0",
     }
-    html = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0;">'
+    html = '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0;">'
     for stato in STATI_PREVENTIVO:
         colore = colori.get(stato, "#06499b")
         html += f"""
@@ -881,6 +882,76 @@ def box_stati_html(stats):
         """
     html += "</div>"
     return html
+
+
+def valore_preventivo_float(p):
+    for campo in ["imponibile", "totale_iva", "totale"]:
+        try:
+            return float(str(p.get(campo, "0")).replace(",", ".") or 0)
+        except:
+            pass
+    return 0.0
+
+def utile_preventivo_float(p):
+    try:
+        return float(str(p.get("utile_lordo", "0")).replace(",", ".") or 0)
+    except:
+        return 0.0
+
+def dashboard_crm_html(preventivi):
+    totale_preventivi = len(preventivi)
+    valore_totale = sum(valore_preventivo_float(p) for p in preventivi)
+    utile_totale = sum(utile_preventivo_float(p) for p in preventivi)
+
+    accettati = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "accettato")
+    ordinati = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "ordinato")
+    persi = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "perso")
+    conversione = ((accettati + ordinati) / totale_preventivi * 100) if totale_preventivi else 0
+
+    cards = [
+        ("Preventivi", str(totale_preventivi), "#06499b"),
+        ("Valore totale", euro(valore_totale), "#2f80ed"),
+        ("Utile lordo", euro(utile_totale), "#27ae60"),
+        ("Accettati/Ordinati", str(accettati + ordinati), "#219653"),
+        ("Persi", str(persi), "#eb5757"),
+        ("Conversione", f"{conversione:.1f}%", "#9b51e0"),
+    ]
+
+    html = '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0 20px 0;">'
+    for titolo, valore, colore in cards:
+        html += f"""
+        <div style="background:{colore};color:white;border-radius:14px;padding:14px;text-align:center;font-weight:900;min-height:86px;">
+            <div style="font-size:13px;opacity:0.95;">{titolo}</div>
+            <div style="font-size:22px;margin-top:8px;">{valore}</div>
+        </div>
+        """
+    html += "</div>"
+    return html
+
+def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
+    cerca = str(cerca or "").strip().lower()
+    stato = str(stato or "Tutti").strip()
+
+    out = []
+    for p in preventivi:
+        if stato != "Tutti" and str(p.get("stato", "")) != stato:
+            continue
+
+        if cerca:
+            testo = " ".join([
+                str(p.get("codice_preventivo", "")),
+                str(p.get("cliente_nome", "")),
+                str(p.get("cliente_azienda", "")),
+                str(p.get("cliente_email", "")),
+                str(p.get("utente", "")),
+                str(p.get("configurazione", "")),
+                str(p.get("stato", "")),
+            ]).lower()
+            if cerca not in testo:
+                continue
+
+        out.append(p)
+    return out
 
 
 
@@ -1762,17 +1833,30 @@ if profilo == "SA-TEC":
                 st.info("Nessun preventivo salvato ancora.")
             else:
                 st.write(f"Preventivi salvati: **{len(preventivi)}**")
+
+                st.markdown('<h3 style="color:#06499b;">CRM Commerciale</h3>', unsafe_allow_html=True)
+                st.markdown(dashboard_crm_html(preventivi), unsafe_allow_html=True)
+
                 stats_stati = statistiche_stati_preventivi(preventivi)
                 st.markdown(box_stati_html(stats_stati), unsafe_allow_html=True)
+
+                col_filtro1, col_filtro2 = st.columns([2, 1])
+                with col_filtro1:
+                    cerca_preventivo_dash = st.text_input("Cerca preventivo / cliente / utente", key="cerca_preventivo_dash")
+                with col_filtro2:
+                    stato_filtro_dash = st.selectbox("Filtra per stato", ["Tutti"] + STATI_PREVENTIVO, key="stato_filtro_dash")
+
+                preventivi_visualizzati = filtra_preventivi_dashboard(preventivi, cerca_preventivo_dash, stato_filtro_dash)
+
                 totale = 0.0
-                for p in preventivi:
+                for p in preventivi_visualizzati:
                     try:
-                        totale += float(p.get("imponibile", 0))
+                        totale += float(p.get("imponibile", p.get("totale_iva", 0)))
                     except:
                         pass
                 utile_totale = 0.0
                 costo_totale_dashboard = 0.0
-                for p in preventivi:
+                for p in preventivi_visualizzati:
                     try:
                         utile_totale += float(p.get("utile_lordo", 0) or 0)
                     except:
@@ -1783,16 +1867,17 @@ if profilo == "SA-TEC":
                         pass
                 margine_dash = (utile_totale / costo_totale_dashboard * 100) if costo_totale_dashboard > 0 else 0
 
-                st.write(f"Valore totale IVA esclusa: **{euro(totale)}**")
-                st.write(f"Utile lordo totale: **{euro(utile_totale)}**")
+                st.write(f"Preventivi visualizzati: **{len(preventivi_visualizzati)}**")
+                st.write(f"Valore visualizzato: **{euro(totale)}**")
+                st.write(f"Utile lordo visualizzato: **{euro(utile_totale)}**")
                 st.write(f"Margine medio su costo: **{margine_dash:.1f}%**")
-                st.markdown(tabella_html_sicura(preventivi), unsafe_allow_html=True)
+                st.markdown(tabella_html_sicura(preventivi_visualizzati), unsafe_allow_html=True)
 
                 st.markdown("<hr>", unsafe_allow_html=True)
                 st.markdown('<h3 style="color:#06499b;">Aggiorna stato preventivo</h3>', unsafe_allow_html=True)
 
                 codici_disponibili = [
-                    p.get("codice_preventivo", "") for p in preventivi
+                    p.get("codice_preventivo", "") for p in preventivi_visualizzati
                     if p.get("codice_preventivo", "")
                 ]
 
@@ -2683,7 +2768,7 @@ with mcol2:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V46.1 - Fix CSV dashboard")
+st.caption("Versione V47 - CRM commerciale")
 
 st.markdown(f"""
 <div class="footer">
