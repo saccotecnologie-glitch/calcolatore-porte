@@ -1152,6 +1152,25 @@ div[data-testid="stButton"] button {
     border:3px solid #06499b!important;
 }
 
+
+/* V36 - pulsante card integrato */
+div[data-testid="stButton"] button[kind="secondary"] {
+    background:#06499b!important;
+    color:#ffffff!important;
+    border-radius:0 0 16px 16px!important;
+    min-height:54px!important;
+    font-size:17px!important;
+    font-weight:900!important;
+    border:3px solid #06499b!important;
+    margin-top:-12px!important;
+}
+
+div[data-testid="stButton"] button[kind="secondary"]:hover {
+    background:#ffd400!important;
+    color:#111111!important;
+    border:3px solid #06499b!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1361,8 +1380,8 @@ with col_main:
         with c:
             active = st.session_state.scelta == key
             classe_card = "porta-card porta-card-attiva" if active else "porta-card"
-            classe_btn = "porta-btn porta-btn-attivo" if active else "porta-btn"
 
+            # Card visuale
             st.markdown(f"""
             <div class="{classe_card}">
                 <div class="porta-card-title">{titolo}</div>
@@ -1371,11 +1390,11 @@ with col_main:
             </div>
             """, unsafe_allow_html=True)
 
-            st.markdown(f'<div class="{classe_btn}">', unsafe_allow_html=True)
-            if st.button("SELEZIONA", key=f"select_{key}"):
+            # Pulsante grande quanto il riquadro: è lui il riquadro cliccabile reale in Streamlit
+            label_btn = "✓ SELEZIONATA" if active else "CLICCA QUI"
+            if st.button(label_btn, key=f"select_{key}", use_container_width=True):
                 st.session_state.scelta = key
                 st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
 
     scelta = st.session_state.scelta
 
@@ -1903,7 +1922,7 @@ if profilo == "SA-TEC":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V35 - Card porta cliccabili")
+st.caption("Versione V36 - Riquadri porta cliccabili")
 
 st.markdown(f"""
 <div class="footer">
