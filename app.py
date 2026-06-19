@@ -1903,6 +1903,115 @@ Data: {date.today().strftime("%d/%m/%Y")}
 </html>
 """
 
+
+# =========================
+# ORDINE FORNITORE / DISTINTA MATERIALI
+# =========================
+
+def codice_ordine_da_preventivo(codice_preventivo):
+    if not codice_preventivo or codice_preventivo == "DA SALVARE":
+        return "ORDINE-DA-SALVARE"
+    return codice_preventivo.replace("SAT-", "ORD-")
+
+def crea_html_ordine_fornitore(codice_preventivo, articoli, scelta, luce_mm, altezza_mm, lunghezza_traversa, cliente_nome, cliente_azienda):
+    codice_ordine = codice_ordine_da_preventivo(codice_preventivo)
+
+    righe = ""
+    totale_costo = 0.0
+
+    for a in articoli:
+        totale_costo += float(a.get("costo_totale_satec", 0) or 0)
+        righe += f"""
+        <tr>
+            <td>{a.get('codice','')}</td>
+            <td>{a.get('descrizione','')}</td>
+            <td style="text-align:center;">{round(float(a.get('quantita',0) or 0), 2)}</td>
+            <td>{a.get('descrizione_lunga','')}</td>
+        </tr>
+        """
+
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="UTF-8">
+    <title>Ordine Fornitore {codice_ordine}</title>
+    <style>
+    body {{font-family:Arial,sans-serif;margin:30px;color:#111;}}
+    .header {{display:flex;justify-content:space-between;border-bottom:5px solid #06499b;padding-bottom:18px;margin-bottom:22px;}}
+    h1 {{color:#06499b;margin:0;font-size:30px;}}
+    h2 {{color:#06499b;margin-top:20px;}}
+    .company {{text-align:right;font-size:13px;line-height:1.5;}}
+    .box {{border:2px solid #d7e6f7;border-left:8px solid #06499b;border-radius:12px;padding:16px;margin-bottom:18px;background:#f8fbff;}}
+    table {{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px;}}
+    th {{background:#06499b;color:#fff;text-align:left;padding:10px;}}
+    td {{border:1px solid #d7e6f7;padding:9px;vertical-align:top;}}
+    .note {{margin-top:22px;border:2px solid #06499b;border-radius:12px;padding:16px;background:#fff3a3;line-height:1.6;}}
+    .print-button {{background:#06499b;color:white;padding:14px 22px;border:none;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;margin-bottom:18px;}}
+    @media print {{.print-button {{display:none;}} body {{margin:18px;}}}}
+    </style>
+    </head>
+    <body>
+    <button class="print-button" onclick="window.print()">STAMPA / SALVA PDF ORDINE</button>
+
+    <div class="header">
+        <div>
+            <h1>ORDINE FORNITORE</h1>
+            <h2>{codice_ordine}</h2>
+        </div>
+        <div class="company">
+            <b>{AZIENDA}</b><br>
+            {SEDE}<br>
+            {PIVA}<br>
+            Tel. {TELEFONO}<br>
+            Email: {EMAIL}<br>
+            PEC: {PEC}
+        </div>
+    </div>
+
+    <div class="box">
+        <b>Preventivo collegato:</b> {codice_preventivo}<br>
+        <b>Data ordine:</b> {date.today().strftime("%d/%m/%Y")}<br>
+        <b>Cliente finale:</b> {cliente_nome} - {cliente_azienda}<br>
+        <b>Configurazione:</b> {scelta}<br>
+        <b>Luce passaggio:</b> {luce_mm} mm<br>
+        <b>Altezza passaggio:</b> {altezza_mm} mm<br>
+        <b>Misura traversa:</b> {lunghezza_traversa:.2f} m
+    </div>
+
+    <h2>Distinta materiali da ordinare</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Codice</th>
+                <th>Descrizione</th>
+                <th>Q.tà</th>
+                <th>Note tecniche</th>
+            </tr>
+        </thead>
+        <tbody>{righe}</tbody>
+    </table>
+
+    <div class="note">
+        <b>Note ordine</b><br>
+        Verificare disponibilità materiale, tempi di consegna e conferma prezzi prima dell'evasione ordine.<br>
+        Le misure di taglio profili, coperchi, guide e guarnizioni sono calcolate automaticamente dal configuratore.
+    </div>
+
+    <div style="margin-top:25px;">
+        <table>
+            <tr>
+                <td style="height:70px;text-align:center;"><b>Preparato da SA-TEC</b><br><br>_____________________________</td>
+                <td style="height:70px;text-align:center;"><b>Conferma fornitore</b><br><br>_____________________________</td>
+            </tr>
+        </table>
+    </div>
+    </body>
+    </html>
+    """
+    return html
+
+
 html_js = json.dumps(html_stampa)
 
 components.html(f"""
@@ -1962,7 +2071,7 @@ if profilo == "SA-TEC":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V37 - Riquadri automazione allineati")
+st.caption("Versione V38 - Ordine fornitore automatico")
 
 st.markdown(f"""
 <div class="footer">
