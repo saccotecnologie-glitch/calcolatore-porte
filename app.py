@@ -867,105 +867,111 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     blu = "#06499b"
     blu_scuro = "#073763"
     nero = "#111111"
-    vetro = "#eaf6ff"
-    vetro_sel = "#d5eaff"
+    vetro_chiaro = "#eaf6ff"
+    vetro_scuro = "#8fbbe8"
+    vetro_fisso = "#f8fbff"
     alluminio = "#d9e2ec"
     giallo = "#fff3a3"
     grigio = "#f7faff"
 
     traversa_mm = int(lunghezza_traversa * 1000)
     anta_mm = int(luce_mm) if ante == "1 anta" else int(luce_mm / 2)
-    vano_totale = traversa_mm
-    titolo = "SERRAMENTO AUTOMATICO 1 ANTA" if ante == "1 anta" else "SERRAMENTO AUTOMATICO 2 ANTE"
 
     if ante == "1 anta":
-        ante_svg = f"""
-        <rect x="125" y="145" width="235" height="185" fill="{vetro_sel}" stroke="{nero}" stroke-width="4"/>
-        <rect x="360" y="145" width="235" height="185" fill="{vetro}" stroke="{nero}" stroke-width="4"/>
-        <line x1="360" y1="145" x2="360" y2="330" stroke="{nero}" stroke-width="6"/>
-        <path d="M405 235 L535 235" stroke="{blu}" stroke-width="5" marker-end="url(#arrowR)"/>
-        <text x="242" y="355" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA MOBILE {anta_mm} mm</text>
+        titolo = "AUTOMAZIONE SCORREVOLE 1 ANTA"
+        schema_ante = f"""
+        <!-- pannello fisso sinistro chiaro -->
+        <rect x="165" y="180" width="205" height="175" rx="4" fill="{vetro_fisso}" stroke="{nero}" stroke-width="3"/>
+        <line x1="185" y1="198" x2="350" y2="337" stroke="#c7d9ed" stroke-width="2"/>
+
+        <!-- anta mobile scura destra -->
+        <rect x="370" y="180" width="205" height="175" rx="4" fill="{vetro_scuro}" stroke="{nero}" stroke-width="5"/>
+        <line x1="392" y1="198" x2="553" y2="337" stroke="#ffffff" stroke-width="2" opacity="0.7"/>
+
+        <line x1="370" y1="180" x2="370" y2="355" stroke="{nero}" stroke-width="6"/>
+        <text x="472" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA MOBILE SCURA {anta_mm} mm</text>
+        <text x="268" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="700">FISSO / PASSAGGIO</text>
         """
+        legenda = "1 ANTA MOBILE EVIDENZIATA IN BLU SCURO"
     else:
-        ante_svg = f"""
-        <rect x="125" y="145" width="235" height="185" fill="{vetro_sel}" stroke="{nero}" stroke-width="4"/>
-        <rect x="360" y="145" width="235" height="185" fill="{vetro_sel}" stroke="{nero}" stroke-width="4"/>
-        <rect x="348" y="145" width="12" height="185" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
-        <rect x="360" y="145" width="12" height="185" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
-        <path d="M325 235 L205 235" stroke="{blu}" stroke-width="5" marker-end="url(#arrowL)"/>
-        <path d="M395 235 L515 235" stroke="{blu}" stroke-width="5" marker-end="url(#arrowR)"/>
-        <text x="242" y="355" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA SX {anta_mm} mm</text>
-        <text x="477" y="355" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA DX {anta_mm} mm</text>
+        titolo = "AUTOMAZIONE SCORREVOLE 2 ANTE"
+        schema_ante = f"""
+        <!-- anta mobile sx scura -->
+        <rect x="165" y="180" width="205" height="175" rx="4" fill="{vetro_scuro}" stroke="{nero}" stroke-width="5"/>
+        <line x1="187" y1="198" x2="348" y2="337" stroke="#ffffff" stroke-width="2" opacity="0.7"/>
+
+        <!-- anta mobile dx scura -->
+        <rect x="370" y="180" width="205" height="175" rx="4" fill="{vetro_scuro}" stroke="{nero}" stroke-width="5"/>
+        <line x1="392" y1="198" x2="553" y2="337" stroke="#ffffff" stroke-width="2" opacity="0.7"/>
+
+        <!-- incontro centrale -->
+        <rect x="358" y="180" width="12" height="175" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
+        <rect x="370" y="180" width="12" height="175" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
+
+        <text x="267" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA 1 SCURA {anta_mm} mm</text>
+        <text x="472" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA 2 SCURA {anta_mm} mm</text>
         """
+        legenda = "2 ANTE MOBILI EVIDENZIATE IN BLU SCURO"
 
     return f"""
-    <div style="background:#ffffff;border:2px solid #b8d4f3;border-radius:14px;padding:14px;font-family:Arial;">
+    <div style="background:#ffffff;border:2px solid #b8d4f3;border-radius:14px;padding:16px;font-family:Arial;">
     <svg width="100%" height="520" viewBox="0 0 760 520">
 
-        <defs>
-            <marker id="arrowR" markerWidth="12" markerHeight="12" refX="6" refY="3" orient="auto">
-                <path d="M0,0 L0,6 L7,3 z" fill="{blu}"/>
-            </marker>
-            <marker id="arrowL" markerWidth="12" markerHeight="12" refX="1" refY="3" orient="auto">
-                <path d="M7,0 L7,6 L0,3 z" fill="{blu}"/>
-            </marker>
-        </defs>
+        <!-- titolo -->
+        <rect x="34" y="16" width="692" height="48" rx="12" fill="{blu}"/>
+        <text x="380" y="47" text-anchor="middle" font-size="22" fill="#ffffff" font-weight="900">{titolo}</text>
 
-        <rect x="18" y="12" width="724" height="48" rx="10" fill="{blu}"/>
-        <text x="380" y="43" text-anchor="middle" font-size="22" fill="#ffffff" font-weight="900">{titolo}</text>
+        <!-- corpo disegno centrato -->
+        <rect x="80" y="86" width="600" height="330" rx="14" fill="#ffffff" stroke="#d7e6f7" stroke-width="2"/>
 
         <!-- quota traversa -->
-        <text x="380" y="82" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900">MISURA TRAVERSA / AUTOMAZIONE</text>
-        <line x1="95" y1="98" x2="665" y2="98" stroke="{blu}" stroke-width="3"/>
-        <line x1="95" y1="86" x2="95" y2="110" stroke="{blu}" stroke-width="3"/>
-        <line x1="665" y1="86" x2="665" y2="110" stroke="{blu}" stroke-width="3"/>
-        <text x="380" y="123" text-anchor="middle" font-size="25" fill="{blu}" font-weight="900">{traversa_mm} mm</text>
+        <text x="380" y="112" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900">TRAVERSA / AUTOMAZIONE {traversa_mm} mm</text>
+        <line x1="130" y1="130" x2="630" y2="130" stroke="{blu}" stroke-width="3"/>
+        <line x1="130" y1="120" x2="130" y2="140" stroke="{blu}" stroke-width="3"/>
+        <line x1="630" y1="120" x2="630" y2="140" stroke="{blu}" stroke-width="3"/>
 
-        <!-- traversa -->
-        <rect x="95" y="130" width="570" height="42" rx="3" fill="{alluminio}" stroke="{nero}" stroke-width="3"/>
-        <rect x="110" y="140" width="540" height="9" fill="#ffffff" opacity="0.45"/>
-        <rect x="350" y="143" width="60" height="17" rx="4" fill="{nero}"/>
-        <text x="380" y="164" text-anchor="middle" font-size="11" fill="#ffffff" font-weight="900">MOTORE</text>
+        <!-- traversa centrata -->
+        <rect x="120" y="145" width="520" height="40" rx="5" fill="{alluminio}" stroke="{nero}" stroke-width="3"/>
+        <rect x="138" y="155" width="484" height="8" fill="#ffffff" opacity="0.55"/>
+        <rect x="330" y="158" width="100" height="18" rx="4" fill="{blu_scuro}"/>
+        <text x="380" y="172" text-anchor="middle" font-size="11" fill="#ffffff" font-weight="900">GRUPPO MOTORE</text>
 
-        <!-- serramento/telaio esterno -->
-        <rect x="105" y="172" width="550" height="190" fill="none" stroke="{blu_scuro}" stroke-width="5"/>
-        <rect x="115" y="135" width="12" height="230" fill="{alluminio}" stroke="{nero}" stroke-width="2"/>
-        <rect x="593" y="135" width="12" height="230" fill="{alluminio}" stroke="{nero}" stroke-width="2"/>
+        <!-- telaio laterale -->
+        <rect x="145" y="172" width="20" height="190" fill="{alluminio}" stroke="{nero}" stroke-width="2"/>
+        <rect x="575" y="172" width="20" height="190" fill="{alluminio}" stroke="{nero}" stroke-width="2"/>
+        <rect x="145" y="355" width="450" height="10" fill="{alluminio}" stroke="{nero}" stroke-width="2"/>
 
-        <!-- ante -->
-        {ante_svg}
+        <!-- serramento/ante -->
+        {schema_ante}
 
         <!-- quota luce passaggio -->
-        <line x1="160" y1="385" x2="560" y2="385" stroke="{blu}" stroke-width="3"/>
-        <line x1="160" y1="373" x2="160" y2="397" stroke="{blu}" stroke-width="3"/>
-        <line x1="560" y1="373" x2="560" y2="397" stroke="{blu}" stroke-width="3"/>
-        <text x="360" y="413" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">LUCE PASSAGGIO {luce_mm} mm</text>
+        <line x1="175" y1="402" x2="565" y2="402" stroke="{blu}" stroke-width="3"/>
+        <line x1="175" y1="392" x2="175" y2="412" stroke="{blu}" stroke-width="3"/>
+        <line x1="565" y1="392" x2="565" y2="412" stroke="{blu}" stroke-width="3"/>
+        <text x="370" y="429" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">LUCE PASSAGGIO {luce_mm} mm</text>
 
         <!-- quota altezza -->
-        <line x1="696" y1="145" x2="696" y2="330" stroke="{blu}" stroke-width="3"/>
-        <line x1="684" y1="145" x2="708" y2="145" stroke="{blu}" stroke-width="3"/>
-        <line x1="684" y1="330" x2="708" y2="330" stroke="{blu}" stroke-width="3"/>
-        <text x="725" y="240" text-anchor="middle" font-size="17" fill="{blu}" font-weight="900" transform="rotate(90 725,240)">H {altezza_mm} mm</text>
+        <line x1="665" y1="180" x2="665" y2="355" stroke="{blu}" stroke-width="3"/>
+        <line x1="653" y1="180" x2="677" y2="180" stroke="{blu}" stroke-width="3"/>
+        <line x1="653" y1="355" x2="677" y2="355" stroke="{blu}" stroke-width="3"/>
+        <text x="700" y="270" text-anchor="middle" font-size="17" fill="{blu}" font-weight="900" transform="rotate(90 700,270)">H {altezza_mm} mm</text>
 
         <!-- legenda tecnica -->
-        <rect x="35" y="438" width="690" height="58" rx="10" fill="{grigio}" stroke="{blu}" stroke-width="2"/>
-        <text x="55" y="462" font-size="14" fill="{nero}" font-weight="900">LUCE:</text>
-        <text x="110" y="462" font-size="14" fill="{blu}" font-weight="900">{luce_mm} mm</text>
+        <rect x="35" y="448" width="690" height="52" rx="10" fill="{grigio}" stroke="{blu}" stroke-width="2"/>
+        <text x="55" y="470" font-size="14" fill="{nero}" font-weight="900">LUCE:</text>
+        <text x="108" y="470" font-size="14" fill="{blu}" font-weight="900">{luce_mm} mm</text>
 
-        <text x="205" y="462" font-size="14" fill="{nero}" font-weight="900">ALTEZZA:</text>
-        <text x="285" y="462" font-size="14" fill="{blu}" font-weight="900">{altezza_mm} mm</text>
+        <text x="200" y="470" font-size="14" fill="{nero}" font-weight="900">H:</text>
+        <text x="225" y="470" font-size="14" fill="{blu}" font-weight="900">{altezza_mm} mm</text>
 
-        <text x="395" y="462" font-size="14" fill="{nero}" font-weight="900">TRAVERSA:</text>
-        <text x="488" y="462" font-size="14" fill="{blu}" font-weight="900">{traversa_mm} mm</text>
+        <text x="315" y="470" font-size="14" fill="{nero}" font-weight="900">TRAVERSA:</text>
+        <text x="410" y="470" font-size="14" fill="{blu}" font-weight="900">{traversa_mm} mm</text>
 
-        <text x="575" y="462" font-size="14" fill="{nero}" font-weight="900">ANTA:</text>
-        <text x="625" y="462" font-size="14" fill="{blu}" font-weight="900">{anta_mm} mm</text>
+        <text x="515" y="470" font-size="14" fill="{nero}" font-weight="900">ANTA:</text>
+        <text x="568" y="470" font-size="14" fill="{blu}" font-weight="900">{anta_mm} mm</text>
 
-        <rect x="55" y="472" width="140" height="14" fill="{vetro_sel}" stroke="{nero}" stroke-width="1"/>
-        <text x="205" y="484" font-size="12" fill="{nero}" font-weight="700">Vetro / anta mobile</text>
-
-        <rect x="355" y="472" width="140" height="14" fill="{alluminio}" stroke="{nero}" stroke-width="1"/>
-        <text x="505" y="484" font-size="12" fill="{nero}" font-weight="700">Profili alluminio / traversa</text>
+        <rect x="55" y="480" width="130" height="13" fill="{vetro_scuro}" stroke="{nero}" stroke-width="1"/>
+        <text x="195" y="492" font-size="12" fill="{nero}" font-weight="700">{legenda}</text>
 
     </svg>
     </div>
@@ -1528,7 +1534,7 @@ with col_main:
         altezza_mm = st.number_input("ALTEZZA PASSAGGIO IN MM", min_value=1800, max_value=3000, value=2200, step=50)
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
-    components.html(disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa), height=560)
+    components.html(disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa), height=555)
 
     st.markdown(f"""
     <div class="measure-total">
@@ -2136,7 +2142,7 @@ if profilo == "SA-TEC":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V40 - Disegno serramento completo")
+st.caption("Versione V41 - Disegno automazione centrato")
 
 st.markdown(f"""
 <div class="footer">
