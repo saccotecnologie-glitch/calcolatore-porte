@@ -1101,6 +1101,57 @@ div[data-testid="stButton"] button {
     width:100%!important;
 }
 
+
+/* V35 - CARD PORTA CLICCABILI */
+.porta-card {
+    border:3px solid #bdd4ef;
+    background:#ffffff;
+    border-radius:16px;
+    padding:14px;
+    min-height:235px;
+    text-align:center;
+    box-shadow:0 4px 12px rgba(6,73,155,0.10);
+    margin-bottom:8px;
+}
+
+.porta-card-attiva {
+    border:5px solid #06499b;
+    background:#fff3a3;
+    box-shadow:0 6px 18px rgba(6,73,155,0.25);
+}
+
+.porta-card-title {
+    color:#06499b;
+    font-size:19px;
+    font-weight:900;
+    line-height:1.15;
+    margin-bottom:8px;
+}
+
+.porta-card-desc {
+    color:#111111;
+    font-size:14px;
+    font-weight:700;
+    line-height:1.35;
+    margin-top:6px;
+}
+
+.porta-btn button {
+    background:#06499b!important;
+    color:#ffffff!important;
+    border-radius:10px!important;
+    height:48px!important;
+    font-size:15px!important;
+    font-weight:900!important;
+    width:100%!important;
+}
+
+.porta-btn-attivo button {
+    background:#ffd400!important;
+    color:#111111!important;
+    border:3px solid #06499b!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1296,20 +1347,35 @@ col_main, col_side = st.columns([0.69, 0.31], gap="large")
 
 with col_main:
     st.markdown('<div class="card"><div class="title-bar">1&nbsp;&nbsp; SCEGLI LA PORTA AUTOMATICA</div>', unsafe_allow_html=True)
-    b1, b2, b3, b4 = st.columns(4)
 
-    with b1:
-        if st.button("STANDARD 1 ANTA"):
-            st.session_state.scelta = "STANDARD 1 ANTA"
-    with b2:
-        if st.button("STANDARD 2 ANTE"):
-            st.session_state.scelta = "STANDARD 2 ANTE"
-    with b3:
-        if st.button("RIDONDANTE 1 ANTA"):
-            st.session_state.scelta = "RIDONDANTE 1 ANTA"
-    with b4:
-        if st.button("RIDONDANTE 2 ANTE"):
-            st.session_state.scelta = "RIDONDANTE 2 ANTE"
+    cards = [
+        ("STANDARD<br>1 ANTA", "STANDARD 1 ANTA", "Porta automatica lineare standard a una anta", "1 anta"),
+        ("STANDARD<br>2 ANTE", "STANDARD 2 ANTE", "Porta automatica lineare standard a due ante", "2 ante"),
+        ("RIDONDANTE<br>1 ANTA", "RIDONDANTE 1 ANTA", "Automazione lineare per via di fuga a una anta", "1 anta"),
+        ("RIDONDANTE<br>2 ANTE", "RIDONDANTE 2 ANTE", "Automazione lineare per via di fuga a due ante", "2 ante"),
+    ]
+
+    cols = st.columns(4)
+
+    for c, (titolo, key, desc, ante_mini) in zip(cols, cards):
+        with c:
+            active = st.session_state.scelta == key
+            classe_card = "porta-card porta-card-attiva" if active else "porta-card"
+            classe_btn = "porta-btn porta-btn-attivo" if active else "porta-btn"
+
+            st.markdown(f"""
+            <div class="{classe_card}">
+                <div class="porta-card-title">{titolo}</div>
+                <div>{mini_porta_html(ante_mini)}</div>
+                <div class="porta-card-desc">{desc}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            st.markdown(f'<div class="{classe_btn}">', unsafe_allow_html=True)
+            if st.button("SELEZIONA", key=f"select_{key}"):
+                st.session_state.scelta = key
+                st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
 
     scelta = st.session_state.scelta
 
@@ -1321,18 +1387,6 @@ with col_main:
         tipo, ante = "Ridondante", "1 anta"
     else:
         tipo, ante = "Ridondante", "2 ante"
-
-    cards = [
-        ("STANDARD<br>1 ANTA", "STANDARD 1 ANTA", "Porta automatica<br>lineare standard<br>a una anta", "1 anta"),
-        ("STANDARD<br>2 ANTE", "STANDARD 2 ANTE", "Porta automatica<br>lineare standard<br>a due ante", "2 ante"),
-        ("RIDONDANTE<br>1 ANTA", "RIDONDANTE 1 ANTA", "Automazione lineare<br>per via di fuga<br>a una anta", "1 anta"),
-        ("RIDONDANTE<br>2 ANTE", "RIDONDANTE 2 ANTE", "Automazione lineare<br>per via di fuga<br>a due ante", "2 ante"),
-    ]
-
-    cols = st.columns(4)
-    for c, (titolo, key, desc, ante_mini) in zip(cols, cards):
-        with c:
-            render_choice_card(titolo, desc, ante_mini, scelta == key)
 
     st.markdown("""
     <div class="section-row">
@@ -1849,7 +1903,7 @@ if profilo == "SA-TEC":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V34 - Ricarico SA-TEC Admin")
+st.caption("Versione V35 - Card porta cliccabili")
 
 st.markdown(f"""
 <div class="footer">
