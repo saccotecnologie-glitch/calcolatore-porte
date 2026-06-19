@@ -41,6 +41,7 @@ IVA = 0.22
 
 PREVENTIVI_CSV = "preventivi_satec.csv"
 UTENTI_CSV = "utenti_satec.csv"
+CLIENTI_CSV = "clienti_satec.csv"
 
 # =========================
 # UTENTI BASE
@@ -327,6 +328,117 @@ IBAN: IT30S0825842841007000002877
 
 Specialisti in ingressi automatici
 """
+
+
+
+# =========================
+# CLIENTI CSV
+# =========================
+
+def carica_clienti():
+    path = Path(CLIENTI_CSV)
+    if not path.exists():
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+def salva_o_aggiorna_cliente(nome, azienda, telefono, email, imponibile=0.0):
+    nome = str(nome or "").strip()
+    azienda = str(azienda or "").strip()
+    telefono = str(telefono or "").strip()
+    email = str(email or "").strip().lower()
+
+    if not nome and not azienda and not telefono and not email:
+        return False
+
+    clienti = carica_clienti()
+    trovato = False
+    oggi = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    for c in clienti:
+        stessa_email = email and str(c.get("email", "")).strip().lower() == email
+        stesso_tel = telefono and str(c.get("telefono", "")).strip() == telefono
+
+        if stessa_email or stesso_tel:
+            c["nome"] = nome or c.get("nome", "")
+            c["azienda"] = azienda or c.get("azienda", "")
+            c["telefono"] = telefono or c.get("telefono", "")
+            c["email"] = email or c.get("email", "")
+            c["ultimo_preventivo"] = oggi
+
+            try:
+                c["numero_preventivi"] = str(int(c.get("numero_preventivi", "0") or 0) + 1)
+            except:
+                c["numero_preventivi"] = "1"
+
+            try:
+                totale_prec = float(str(c.get("totale_preventivi", "0")).replace(",", ".") or 0)
+            except:
+                totale_prec = 0.0
+            c["totale_preventivi"] = f"{totale_prec + float(imponibile or 0):.2f}"
+
+            trovato = True
+            break
+
+    if not trovato:
+        clienti.append({
+            "nome": nome,
+            "azienda": azienda,
+            "telefono": telefono,
+            "email": email,
+            "primo_preventivo": oggi,
+            "ultimo_preventivo": oggi,
+            "numero_preventivi": "1",
+            "totale_preventivi": f"{float(imponibile or 0):.2f}",
+        })
+
+    campi = [
+        "nome", "azienda", "telefono", "email",
+        "primo_preventivo", "ultimo_preventivo",
+        "numero_preventivi", "totale_preventivi"
+    ]
+
+    with open(CLIENTI_CSV, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=campi)
+        writer.writeheader()
+        writer.writerows(clienti)
+
+    return True
+
+def filtra_clienti(clienti, testo):
+    testo = str(testo or "").strip().lower()
+    if not testo:
+        return clienti
+    risultati = []
+    for c in clienti:
+        campi = [
+            c.get("nome", ""),
+            c.get("azienda", ""),
+            c.get("telefono", ""),
+            c.get("email", ""),
+        ]
+        if testo in " ".join(str(x) for x in campi).lower():
+            risultati.append(c)
+    return risultati
+
+def formato_clienti_tabella(clienti):
+    righe = []
+    for c in clienti:
+        try:
+            totale = euro(float(str(c.get("totale_preventivi", "0")).replace(",", ".") or 0))
+        except:
+            totale = ""
+        righe.append({
+            "Nome": c.get("nome", ""),
+            "Azienda": c.get("azienda", ""),
+            "Telefono": c.get("telefono", ""),
+            "Email": c.get("email", ""),
+            "Primo preventivo": c.get("primo_preventivo", ""),
+            "Ultimo preventivo": c.get("ultimo_preventivo", ""),
+            "N. preventivi": c.get("numero_preventivi", ""),
+            "Totale preventivi": totale,
+        })
+    return righe
 
 
 # =========================
@@ -745,7 +857,7 @@ if profilo == "SA-TEC":
         preventivi = carica_preventivi()
         utenti_csv = carica_utenti_csv()
 
-        tab1, tab2 = st.tabs(["Preventivi", "Utenti creati"])
+        tab1, tab2, tab3 = st.tabs(["Preventivi", "Utenti creati", "Clienti"])
 
         with tab1:
             if not preventivi:
@@ -1004,15 +1116,29 @@ with col_side:
 
 st.markdown('<div class="card"><div class="title-bar">5&nbsp;&nbsp; DATI CLIENTE E RICHIESTA</div>', unsafe_allow_html=True)
 
+cliente_precaricato = {}
+if profilo == "SA-TEC":
+    clienti_archivio = carica_clienti()
+    if clienti_archivio:
+        opzioni_clienti = ["Nuovo cliente"] + [
+            f"{c.get('nome','')} - {c.get('azienda','')} - {c.get('telefono','')} - {c.get('email','')}"
+            for c in clienti_archivio
+        ]
+        cliente_scelto = st.selectbox("Seleziona cliente esistente", opzioni_clienti, key="cliente_esistente_select")
+        if cliente_scelto != "Nuovo cliente":
+            idx = opzioni_clienti.index(cliente_scelto) - 1
+            if 0 <= idx < len(clienti_archivio):
+                cliente_precaricato = clienti_archivio[idx]
+
 dc1, dc2, dc3, dc4 = st.columns(4)
 with dc1:
-    cliente_nome = st.text_input("Nome cliente", value=dati_utente.get("nome", ""))
+    cliente_nome = st.text_input("Nome cliente", value=cliente_precaricato.get("nome", dati_utente.get("nome", "")))
 with dc2:
-    cliente_azienda = st.text_input("Azienda", value=dati_utente.get("azienda", ""))
+    cliente_azienda = st.text_input("Azienda", value=cliente_precaricato.get("azienda", dati_utente.get("azienda", "")))
 with dc3:
-    cliente_telefono = st.text_input("Telefono", value=dati_utente.get("telefono", ""))
+    cliente_telefono = st.text_input("Telefono", value=cliente_precaricato.get("telefono", dati_utente.get("telefono", "")))
 with dc4:
-    cliente_email = st.text_input("Email", value=dati_utente.get("email", ""))
+    cliente_email = st.text_input("Email", value=cliente_precaricato.get("email", dati_utente.get("email", "")))
 
 if st.button("SALVA PREVENTIVO / RICHIESTA"):
     codice_preventivo = genera_codice_preventivo()
@@ -1039,6 +1165,7 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "stato": "Nuovo"
     }
     salva_preventivo(dati)
+    salva_o_aggiorna_cliente(cliente_nome, cliente_azienda, cliente_telefono, cliente_email, imponibile)
     st.session_state.ultimo_codice_preventivo = codice_preventivo
     st.success(f"Preventivo {codice_preventivo} salvato correttamente. SA-TEC lo vedrà nella dashboard.")
 
