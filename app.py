@@ -332,17 +332,20 @@ Specialisti in ingressi automatici
 
 
 # =========================
-# CLIENTI CSV - VERSIONE LIGHT
+# CLIENTI CSV
 # =========================
 
 def carica_clienti():
     path = Path(CLIENTI_CSV)
     if not path.exists():
         return []
-    with open(path, "r", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+    except:
+        return []
 
-def salva_cliente_light(nome, azienda, telefono, email, codice_preventivo, imponibile):
+def salva_cliente_csv(nome, azienda, telefono, email, codice_preventivo, imponibile):
     nome = str(nome or "").strip()
     azienda = str(azienda or "").strip()
     telefono = str(telefono or "").strip()
@@ -366,17 +369,15 @@ def salva_cliente_light(nome, azienda, telefono, email, codice_preventivo, impon
             c["email"] = email or c.get("email", "")
             c["ultimo_preventivo"] = codice_preventivo
             c["data_ultimo_preventivo"] = oggi
-
             try:
                 c["numero_preventivi"] = str(int(c.get("numero_preventivi", "0") or 0) + 1)
             except:
                 c["numero_preventivi"] = "1"
-
             try:
-                totale_prec = float(str(c.get("totale_preventivi", "0")).replace(",", ".") or 0)
+                totale_vecchio = float(str(c.get("totale_preventivi", "0")).replace(",", ".") or 0)
             except:
-                totale_prec = 0.0
-            c["totale_preventivi"] = f"{totale_prec + float(imponibile or 0):.2f}"
+                totale_vecchio = 0.0
+            c["totale_preventivi"] = f"{totale_vecchio + float(imponibile or 0):.2f}"
             trovato = True
             break
 
@@ -405,6 +406,42 @@ def salva_cliente_light(nome, azienda, telefono, email, codice_preventivo, impon
         writer = csv.DictWriter(f, fieldnames=campi)
         writer.writeheader()
         writer.writerows(clienti)
+
+def righe_clienti_dashboard(clienti):
+    righe = []
+    for c in clienti:
+        try:
+            totale = euro(float(str(c.get("totale_preventivi", "0")).replace(",", ".") or 0))
+        except:
+            totale = ""
+        righe.append({
+            "Nome": c.get("nome", ""),
+            "Azienda": c.get("azienda", ""),
+            "Telefono": c.get("telefono", ""),
+            "Email": c.get("email", ""),
+            "N. preventivi": c.get("numero_preventivi", ""),
+            "Totale": totale,
+            "Ultimo preventivo": c.get("ultimo_preventivo", ""),
+            "Data ultimo": c.get("data_ultimo_preventivo", ""),
+        })
+    return righe
+
+def filtra_clienti_dashboard(clienti, cerca):
+    cerca = str(cerca or "").strip().lower()
+    if not cerca:
+        return clienti
+    out = []
+    for c in clienti:
+        testo = " ".join([
+            str(c.get("nome", "")),
+            str(c.get("azienda", "")),
+            str(c.get("telefono", "")),
+            str(c.get("email", "")),
+            str(c.get("ultimo_preventivo", "")),
+        ]).lower()
+        if cerca in testo:
+            out.append(c)
+    return out
 
 
 # =========================
@@ -823,7 +860,7 @@ if profilo == "SA-TEC":
         preventivi = carica_preventivi()
         utenti_csv = carica_utenti_csv()
 
-        tab1, tab2, tab3 = st.tabs(["Preventivi", "Utenti creati", "Clienti"])
+        tab1, tab2 = st.tabs(["Preventivi", "Utenti creati"])
 
         with tab1:
             if not preventivi:
@@ -862,32 +899,24 @@ if profilo == "SA-TEC":
                     st.download_button("Scarica CSV utenti", data=f, file_name="utenti_satec.csv", mime="text/csv")
 
 
-        with tab3:
-            clienti = carica_clienti()
-            if not clienti:
-                st.info("Nessun cliente salvato ancora.")
-            else:
-                righe_clienti = []
-                for c in clienti:
-                    try:
-                        totale_cliente = euro(float(str(c.get("totale_preventivi", "0")).replace(",", ".") or 0))
-                    except:
-                        totale_cliente = ""
-                    righe_clienti.append({
-                        "Nome": c.get("nome", ""),
-                        "Azienda": c.get("azienda", ""),
-                        "Telefono": c.get("telefono", ""),
-                        "Email": c.get("email", ""),
-                        "N. preventivi": c.get("numero_preventivi", ""),
-                        "Totale preventivi": totale_cliente,
-                        "Ultimo preventivo": c.get("ultimo_preventivo", ""),
-                        "Data ultimo": c.get("data_ultimo_preventivo", ""),
-                    })
-                st.markdown(tabella_html_sicura(righe_clienti), unsafe_allow_html=True)
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown('<h3 style="color:#06499b;">Archivio Clienti</h3>', unsafe_allow_html=True)
 
-                if Path(CLIENTI_CSV).exists():
-                    with open(CLIENTI_CSV, "rb") as f:
-                        st.download_button("Scarica CSV clienti", data=f, file_name="clienti_satec.csv", mime="text/csv")
+        clienti = carica_clienti()
+        cerca_cliente_dash = st.text_input("Cerca cliente", placeholder="Nome, azienda, telefono, email o codice preventivo", key="cerca_cliente_dash")
+        clienti_filtrati = filtra_clienti_dashboard(clienti, cerca_cliente_dash)
+
+        if not clienti:
+            st.info("Nessun cliente salvato ancora. Verrà creato automaticamente al salvataggio del primo preventivo.")
+        elif not clienti_filtrati:
+            st.warning("Nessun cliente trovato con questo filtro.")
+        else:
+            st.write(f"Clienti trovati: **{len(clienti_filtrati)}**")
+            st.markdown(tabella_html_sicura(righe_clienti_dashboard(clienti_filtrati)), unsafe_allow_html=True)
+
+            if Path(CLIENTI_CSV).exists():
+                with open(CLIENTI_CSV, "rb") as f:
+                    st.download_button("Scarica CSV clienti", data=f, file_name="clienti_satec.csv", mime="text/csv")
 
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1145,7 +1174,7 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "stato": "Nuovo"
     }
     salva_preventivo(dati)
-    salva_cliente_light(cliente_nome, cliente_azienda, cliente_telefono, cliente_email, codice_preventivo, imponibile)
+    salva_cliente_csv(cliente_nome, cliente_azienda, cliente_telefono, cliente_email, codice_preventivo, imponibile)
     st.session_state.ultimo_codice_preventivo = codice_preventivo
     st.success(f"Preventivo {codice_preventivo} salvato correttamente. SA-TEC lo vedrà nella dashboard.")
 
