@@ -483,6 +483,72 @@ def aggiorna_stato_preventivo_csv(codice_preventivo, nuovo_stato, email_destinat
         return False
 
 
+STATI_PREVENTIVO = ["Bozza", "Inviato", "Accettato", "Perso", "Ordinato"]
+
+def aggiorna_stato_preventivo_admin(codice_preventivo, nuovo_stato):
+    path = Path(PREVENTIVI_CSV)
+    if not path.exists():
+        return False
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+
+        if not righe:
+            return False
+
+        fieldnames = list(righe[0].keys())
+        for campo in ["stato", "data_modifica_stato"]:
+            if campo not in fieldnames:
+                fieldnames.append(campo)
+
+        trovato = False
+        for r in righe:
+            if str(r.get("codice_preventivo", "")).strip() == str(codice_preventivo).strip():
+                r["stato"] = nuovo_stato
+                r["data_modifica_stato"] = datetime.now().strftime("%d/%m/%Y %H:%M")
+                trovato = True
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(righe)
+
+        return trovato
+    except Exception as e:
+        st.warning(f"Stato non aggiornato: {e}")
+        return False
+
+def statistiche_stati_preventivi(preventivi):
+    stats = {s: 0 for s in STATI_PREVENTIVO}
+    for p in preventivi:
+        stato = str(p.get("stato", "Bozza") or "Bozza")
+        if stato not in stats:
+            stats[stato] = 0
+        stats[stato] += 1
+    return stats
+
+def box_stati_html(stats):
+    colori = {
+        "Bozza": "#f7c948",
+        "Inviato": "#2f80ed",
+        "Accettato": "#27ae60",
+        "Perso": "#eb5757",
+        "Ordinato": "#9b51e0",
+    }
+    html = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0;">'
+    for stato in STATI_PREVENTIVO:
+        colore = colori.get(stato, "#06499b")
+        html += f"""
+        <div style="background:{colore};color:white;border-radius:12px;padding:14px;text-align:center;font-weight:900;">
+            <div style="font-size:15px;">{stato}</div>
+            <div style="font-size:28px;">{stats.get(stato,0)}</div>
+        </div>
+        """
+    html += "</div>"
+    return html
+
+
 
 # =========================
 # CLIENTI CSV
@@ -1106,6 +1172,8 @@ if profilo == "SA-TEC":
                 st.info("Nessun preventivo salvato ancora.")
             else:
                 st.write(f"Preventivi salvati: **{len(preventivi)}**")
+                stats_stati = statistiche_stati_preventivi(preventivi)
+                st.markdown(box_stati_html(stats_stati), unsafe_allow_html=True)
                 totale = 0.0
                 for p in preventivi:
                     try:
@@ -1129,6 +1197,31 @@ if profilo == "SA-TEC":
                 st.write(f"Utile lordo totale: **{euro(utile_totale)}**")
                 st.write(f"Margine medio su costo: **{margine_dash:.1f}%**")
                 st.markdown(tabella_html_sicura(preventivi), unsafe_allow_html=True)
+
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown('<h3 style="color:#06499b;">Aggiorna stato preventivo</h3>', unsafe_allow_html=True)
+
+                codici_disponibili = [
+                    p.get("codice_preventivo", "") for p in preventivi
+                    if p.get("codice_preventivo", "")
+                ]
+
+                if codici_disponibili:
+                    col_stato_1, col_stato_2, col_stato_3 = st.columns([2, 1, 1])
+                    with col_stato_1:
+                        codice_da_modificare = st.selectbox("Preventivo", codici_disponibili, key="codice_stato_admin")
+                    with col_stato_2:
+                        nuovo_stato_admin = st.selectbox("Nuovo stato", STATI_PREVENTIVO, key="nuovo_stato_admin")
+                    with col_stato_3:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        if st.button("AGGIORNA STATO"):
+                            if aggiorna_stato_preventivo_admin(codice_da_modificare, nuovo_stato_admin):
+                                st.success(f"Stato {codice_da_modificare} aggiornato a {nuovo_stato_admin}.")
+                            else:
+                                st.error("Preventivo non trovato.")
+                else:
+                    st.info("Salva almeno un preventivo con codice SAT per aggiornare lo stato.")
+
                 with open(PREVENTIVI_CSV, "rb") as f:
                     st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
 
@@ -1469,7 +1562,7 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "costo_satec": f"{costo_satec_totale:.2f}",
         "utile_lordo": f"{utile_lordo:.2f}",
         "margine_percento": f"{margine_percento:.1f}",
-        "stato": "Nuovo"
+        "stato": "Bozza"
     }
     salva_preventivo(dati)
     salva_cliente_csv(cliente_nome, cliente_azienda, cliente_telefono, cliente_email, codice_preventivo, imponibile, utente_codice, profilo)
@@ -1738,7 +1831,7 @@ if profilo == "SA-TEC":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V32 - Margine nascosto SA-TEC")
+st.caption("Versione V33 - Stato preventivi")
 
 st.markdown(f"""
 <div class="footer">
