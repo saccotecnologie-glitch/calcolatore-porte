@@ -863,25 +863,7 @@ def statistiche_stati_preventivi(preventivi):
     return stats
 
 def box_stati_html(stats):
-    colori = {
-        "Bozza": "#f7c948",
-        "Inviato": "#2f80ed",
-        "Trattativa": "#f2994a",
-        "Accettato": "#27ae60",
-        "Perso": "#eb5757",
-        "Ordinato": "#9b51e0",
-    }
-    html = '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0;">'
-    for stato in STATI_PREVENTIVO:
-        colore = colori.get(stato, "#06499b")
-        html += f"""
-        <div style="background:{colore};color:white;border-radius:12px;padding:14px;text-align:center;font-weight:900;">
-            <div style="font-size:15px;">{stato}</div>
-            <div style="font-size:28px;">{stats.get(stato,0)}</div>
-        </div>
-        """
-    html += "</div>"
-    return html
+    return ""
 
 
 def valore_preventivo_float(p):
@@ -899,34 +881,7 @@ def utile_preventivo_float(p):
         return 0.0
 
 def dashboard_crm_html(preventivi):
-    totale_preventivi = len(preventivi)
-    valore_totale = sum(valore_preventivo_float(p) for p in preventivi)
-    utile_totale = sum(utile_preventivo_float(p) for p in preventivi)
-
-    accettati = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "accettato")
-    ordinati = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "ordinato")
-    persi = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "perso")
-    conversione = ((accettati + ordinati) / totale_preventivi * 100) if totale_preventivi else 0
-
-    cards = [
-        ("Preventivi", str(totale_preventivi), "#06499b"),
-        ("Valore totale", euro(valore_totale), "#2f80ed"),
-        ("Utile lordo", euro(utile_totale), "#27ae60"),
-        ("Accettati/Ordinati", str(accettati + ordinati), "#219653"),
-        ("Persi", str(persi), "#eb5757"),
-        ("Conversione", f"{conversione:.1f}%", "#9b51e0"),
-    ]
-
-    html = '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0 20px 0;">'
-    for titolo, valore, colore in cards:
-        html += f"""
-        <div style="background:{colore};color:white;border-radius:14px;padding:14px;text-align:center;font-weight:900;min-height:86px;">
-            <div style="font-size:13px;opacity:0.95;">{titolo}</div>
-            <div style="font-size:22px;margin-top:8px;">{valore}</div>
-        </div>
-        """
-    html += "</div>"
-    return html
+    return ""
 
 def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
     cerca = str(cerca or "").strip().lower()
@@ -1835,10 +1790,10 @@ if profilo == "SA-TEC":
                 st.write(f"Preventivi salvati: **{len(preventivi)}**")
 
                 st.markdown('<h3 style="color:#06499b;">CRM Commerciale</h3>', unsafe_allow_html=True)
-                st.markdown(dashboard_crm_html(preventivi), unsafe_allow_html=True)
+                render_dashboard_crm(preventivi)
 
                 stats_stati = statistiche_stati_preventivi(preventivi)
-                st.markdown(box_stati_html(stats_stati), unsafe_allow_html=True)
+                render_stati_preventivi(stats_stati)
 
                 col_filtro1, col_filtro2 = st.columns([2, 1])
                 with col_filtro1:
@@ -2768,7 +2723,7 @@ with mcol2:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V47 - CRM commerciale")
+st.caption("Versione V47.1 - Fix CRM senza HTML visibile")
 
 st.markdown(f"""
 <div class="footer">
