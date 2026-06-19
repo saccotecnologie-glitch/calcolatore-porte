@@ -621,7 +621,7 @@ def salva_preventivo(dati):
         "codice_preventivo", "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
         "cliente_telefono", "cliente_email", "configurazione", "luce_mm",
         "altezza_mm", "traversa_m", "elettroblocco", "allaccio", "radar_sicurezza_laterale",
-        "ricarico_percento", "imponibile", "iva", "totale_iva", "stato"
+        "ricarico_percento", "imponibile", "iva", "totale_iva", "costo_satec", "utile_lordo", "margine_percento", "stato"
     ]
     with open(PREVENTIVI_CSV, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=campi)
@@ -1112,7 +1112,22 @@ if profilo == "SA-TEC":
                         totale += float(p.get("imponibile", 0))
                     except:
                         pass
+                utile_totale = 0.0
+                costo_totale_dashboard = 0.0
+                for p in preventivi:
+                    try:
+                        utile_totale += float(p.get("utile_lordo", 0) or 0)
+                    except:
+                        pass
+                    try:
+                        costo_totale_dashboard += float(p.get("costo_satec", 0) or 0)
+                    except:
+                        pass
+                margine_dash = (utile_totale / costo_totale_dashboard * 100) if costo_totale_dashboard > 0 else 0
+
                 st.write(f"Valore totale IVA esclusa: **{euro(totale)}**")
+                st.write(f"Utile lordo totale: **{euro(utile_totale)}**")
+                st.write(f"Margine medio su costo: **{margine_dash:.1f}%**")
                 st.markdown(tabella_html_sicura(preventivi), unsafe_allow_html=True)
                 with open(PREVENTIVI_CSV, "rb") as f:
                     st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
@@ -1342,6 +1357,7 @@ if allaccio:
 imponibile = sum(a["totale"] for a in articoli)
 costo_satec_totale = sum(a["costo_totale_satec"] for a in articoli)
 utile_lordo = imponibile - costo_satec_totale
+margine_percento = (utile_lordo / costo_satec_totale * 100) if costo_satec_totale > 0 else 0
 iva = imponibile * IVA
 totale_iva = imponibile + iva
 
@@ -1360,9 +1376,12 @@ with col_side:
 
     if profilo == "SA-TEC":
         st.markdown(f"""
-        <div class="vat-box" style="margin-top:12px;">
-        Costo reale SA-TEC: <span style="float:right;">{euro(costo_satec_totale)}</span><br>
-        Utile lordo: <span style="float:right;">{euro(utile_lordo)}</span>
+        <div class="vat-box" style="margin-top:12px;background:#fff3a3;border:2px solid #06499b;">
+        <b>Margine interno SA-TEC</b><br><br>
+        Costo netto totale: <span style="float:right;">{euro(costo_satec_totale)}</span><br>
+        Vendita totale: <span style="float:right;">{euro(imponibile)}</span><br>
+        Utile lordo: <span style="float:right;">{euro(utile_lordo)}</span><br>
+        Margine su costo: <span style="float:right;">{margine_percento:.1f}%</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1447,6 +1466,9 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "imponibile": f"{imponibile:.2f}",
         "iva": f"{iva:.2f}",
         "totale_iva": f"{totale_iva:.2f}",
+        "costo_satec": f"{costo_satec_totale:.2f}",
+        "utile_lordo": f"{utile_lordo:.2f}",
+        "margine_percento": f"{margine_percento:.1f}",
         "stato": "Nuovo"
     }
     salva_preventivo(dati)
@@ -1483,11 +1505,16 @@ st.markdown(f"""
 </div></div>
 """, unsafe_allow_html=True)
 
+if profilo != "SA-TEC":
+    st.caption("Dettaglio costi e margini visibile solo a SA-TEC.")
+
 if profilo == "SA-TEC":
     st.markdown('<div class="card"><div class="title-bar">DETTAGLIO INTERNO SA-TEC</div>', unsafe_allow_html=True)
     st.info(f"Ricarico applicato al profilo/utente: {ricarico_effettivo:.0f}%")
     tabella = []
     for a in articoli:
+        utile_articolo = a["totale"] - a["costo_totale_satec"]
+        margine_articolo = (utile_articolo / a["costo_totale_satec"] * 100) if a["costo_totale_satec"] > 0 else 0
         tabella.append({
             "Codice": a["codice"],
             "Descrizione": a["descrizione"],
@@ -1497,8 +1524,19 @@ if profilo == "SA-TEC":
             "Prezzo unit.": euro(a["prezzo_unitario"]),
             "Totale vendita": euro(a["totale"]),
             "Costo totale": euro(a["costo_totale_satec"]),
+            "Utile €": euro(utile_articolo),
+            "Margine %": f"{margine_articolo:.1f}%",
         })
     st.markdown(tabella_html_sicura(tabella), unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="vat-box" style="margin-top:16px;background:#fff3a3;border:2px solid #06499b;">
+    <b>Totale interno SA-TEC</b><br><br>
+    Costo netto totale: <span style="float:right;">{euro(costo_satec_totale)}</span><br>
+    Vendita IVA esclusa: <span style="float:right;">{euro(imponibile)}</span><br>
+    Utile lordo: <span style="float:right;">{euro(utile_lordo)}</span><br>
+    Margine su costo: <span style="float:right;">{margine_percento:.1f}%</span>
+    </div>
+    """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================
@@ -1700,7 +1738,7 @@ if profilo == "SA-TEC":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V31 - Bottoni email uniformi")
+st.caption("Versione V32 - Margine nascosto SA-TEC")
 
 st.markdown(f"""
 <div class="footer">
