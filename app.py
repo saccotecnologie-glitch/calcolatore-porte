@@ -257,6 +257,66 @@ def carica_utenti_supabase():
         st.sidebar.warning(f"Utenti Supabase non caricati: {e}")
         return {}
 
+def salva_utente_supabase(username, password, ruolo, azienda, telefono, email, ricarico=0, logo_url=""):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato"
+
+    username = str(username or "").strip().upper()
+    if not username:
+        return False, "Username mancante"
+
+    try:
+        payload = {
+            "username": username,
+            "password": str(password or "").strip(),
+            "ruolo": str(ruolo or "CLIENTE").strip().upper(),
+            "azienda": str(azienda or "").strip(),
+            "telefono": str(telefono or "").strip(),
+            "email": str(email or "").strip().lower(),
+            "ricarico": float(ricarico or 0),
+            "logo_url": str(logo_url or "").strip()
+        }
+
+        esistente = cerca_utente_supabase(username)
+        if esistente:
+            sb.table("utenti").update(payload).eq("username", username).execute()
+        else:
+            sb.table("utenti").insert(payload).execute()
+
+        return True, ""
+
+    except Exception as e:
+        return False, str(e)
+
+def aggiorna_ricarico_utente_supabase(username, nuovo_ricarico):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato"
+
+    try:
+        sb.table("utenti").update({"ricarico": float(nuovo_ricarico or 0)}).eq("username", username).execute()
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+def utenti_rivenditori_grossisti():
+    utenti = carica_tutti_utenti()
+    righe = []
+    for codice, d in utenti.items():
+        prof = str(d.get("profilo", "")).upper()
+        if prof in ["RIVENDITORE", "GROSSISTA"]:
+            righe.append({
+                "utente": codice,
+                "profilo": prof,
+                "azienda": d.get("azienda", ""),
+                "telefono": d.get("telefono", ""),
+                "email": d.get("email", ""),
+                "ricarico": d.get("ricarico", "0"),
+            })
+    return righe
+
+
 def cerca_utente_supabase(username):
     sb = supabase_client()
     if sb is None:
@@ -1102,6 +1162,50 @@ def login_box():
             st.success("Accesso cliente creato.")
             st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
 
+    with st.sidebar.expander("Registrati come rivenditore"):
+        st.caption("Richiesta accesso commerciale. SA-TEC potrà assegnare il ricarico dalla dashboard.")
+        riv_azienda = st.text_input("Ragione sociale", key="riv_reg_azienda")
+        riv_ref = st.text_input("Referente", key="riv_reg_ref")
+        riv_tel = st.text_input("Telefono", key="riv_reg_tel")
+        riv_email = st.text_input("Email", key="riv_reg_email")
+        riv_password = st.text_input("Password desiderata", type="password", key="riv_reg_pwd")
+
+        if st.button("INVIA REGISTRAZIONE RIVENDITORE"):
+            if not riv_azienda or not riv_email or not riv_password:
+                st.error("Inserisci almeno ragione sociale, email e password.")
+            else:
+                utenti_now = carica_tutti_utenti()
+                nuovo_user = genera_codice_progressivo("RIVENDITORE", utenti_now)
+
+                # Backup CSV
+                salva_utente_csv(
+                    nuovo_user,
+                    riv_password,
+                    "RIVENDITORE",
+                    riv_ref,
+                    riv_azienda,
+                    riv_tel,
+                    riv_email,
+                    "0"
+                )
+
+                ok_sb, err_sb = salva_utente_supabase(
+                    nuovo_user,
+                    riv_password,
+                    "RIVENDITORE",
+                    riv_azienda,
+                    riv_tel,
+                    riv_email,
+                    0
+                )
+
+                if ok_sb:
+                    st.success("Registrazione rivenditore inviata e salvata su Supabase.")
+                else:
+                    st.warning(f"Registrazione salvata in CSV. Supabase non disponibile: {err_sb}")
+
+                st.code(f"Utente: {nuovo_user}\nPassword: {riv_password}\nStato: in attesa ricarico SA-TEC")
+
     try:
         ricarico_effettivo = float(str(dati_utente.get("ricarico", "")).replace(",", "."))
     except:
@@ -1730,6 +1834,32 @@ if profilo == "SA-TEC":
                 st.markdown(tabella_html_sicura(righe), unsafe_allow_html=True)
                 with open(UTENTI_CSV, "rb") as f:
                     st.download_button("Scarica CSV utenti", data=f, file_name="utenti_satec.csv", mime="text/csv")
+
+
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown('<h3 style="color:#06499b;">Gestione Rivenditori / Grossisti</h3>', unsafe_allow_html=True)
+
+        righe_riv = utenti_rivenditori_grossisti()
+        if not righe_riv:
+            st.info("Nessun rivenditore o grossista presente.")
+        else:
+            st.markdown(tabella_html_sicura(righe_riv), unsafe_allow_html=True)
+
+            codici_riv = [r["utente"] for r in righe_riv]
+            col_riv1, col_riv2, col_riv3 = st.columns([2, 1, 1])
+            with col_riv1:
+                utente_riv_mod = st.selectbox("Utente rivenditore/grossista", codici_riv, key="utente_riv_mod")
+            with col_riv2:
+                nuovo_ricarico_riv = st.number_input("Nuovo ricarico %", min_value=0.0, max_value=200.0, value=30.0, step=1.0, key="nuovo_ricarico_riv")
+            with col_riv3:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("AGGIORNA RICARICO"):
+                    ok_riv, err_riv = aggiorna_ricarico_utente_supabase(utente_riv_mod, nuovo_ricarico_riv)
+                    if ok_riv:
+                        st.success(f"Ricarico aggiornato per {utente_riv_mod}: {nuovo_ricarico_riv:.0f}%")
+                    else:
+                        st.error(f"Ricarico non aggiornato: {err_riv}")
 
 
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -2547,7 +2677,7 @@ with mcol2:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V45 - Cliente finale libero")
+st.caption("Versione V46 - Registrazione rivenditori")
 
 st.markdown(f"""
 <div class="footer">
