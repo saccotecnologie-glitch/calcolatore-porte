@@ -1138,6 +1138,67 @@ def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
     return out
 
 
+
+# =========================
+# CRM AVANZATO V48
+# =========================
+
+def crm_nome_cliente(p):
+    nome = str(p.get("cliente_nome", "") or "").strip()
+    azienda = str(p.get("cliente_azienda", "") or "").strip()
+    if nome and azienda:
+        return f"{nome} - {azienda}"
+    return nome or azienda or "Cliente non indicato"
+
+def crm_nome_utente(p):
+    return str(p.get("utente", "") or "Non indicato").strip() or "Non indicato"
+
+def top_aggregati(preventivi, campo_nome_fn, limite=10):
+    agg = {}
+    for p in preventivi:
+        nome = campo_nome_fn(p)
+        if nome not in agg:
+            agg[nome] = {"N.": 0, "Valore": 0.0, "Utile": 0.0}
+        agg[nome]["N."] += 1
+        agg[nome]["Valore"] += crm_valore_float(p)
+        agg[nome]["Utile"] += crm_utile_float(p)
+
+    righe = []
+    for nome, d in agg.items():
+        righe.append({
+            "Nome": nome,
+            "N. preventivi": d["N."],
+            "Valore": euro(d["Valore"]),
+            "Utile": euro(d["Utile"]),
+        })
+    righe.sort(key=lambda r: float(str(r["Valore"]).replace("€", "").replace(".", "").replace(",", ".").strip() or 0), reverse=True)
+    return righe[:limite]
+
+def render_crm_avanzato(preventivi):
+    st.markdown('<h3 style="color:#06499b;">Analisi commerciale avanzata</h3>', unsafe_allow_html=True)
+
+    stati = statistiche_stati_preventivi(preventivi)
+    dati_stati = []
+    for stato in STATI_PREVENTIVO:
+        dati_stati.append({"Stato": stato, "Numero": stati.get(stato, 0)})
+
+    try:
+        st.bar_chart(pd.DataFrame(dati_stati).set_index("Stato"))
+    except:
+        pass
+
+    ctop1, ctop2 = st.columns(2)
+    with ctop1:
+        st.markdown("### Top clienti")
+        righe_clienti = top_aggregati(preventivi, crm_nome_cliente, 10)
+        st.markdown(tabella_html_sicura(righe_clienti), unsafe_allow_html=True)
+
+    with ctop2:
+        st.markdown("### Top utenti / rivenditori")
+        righe_utenti = top_aggregati(preventivi, crm_nome_utente, 10)
+        st.markdown(tabella_html_sicura(righe_utenti), unsafe_allow_html=True)
+
+
 # =========================
 # LOGIN + REGISTRAZIONE
 # =========================
@@ -2713,85 +2774,86 @@ if profilo == "SA-TEC":
 
 
 
-# =========================
-# MANUALI TECNICI SESAMO
-# =========================
+if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
+    # =========================
+    # MANUALI TECNICI SESAMO
+    # =========================
 
-st.markdown('<div class="card"><div class="title-bar">MANUALI TECNICI SESAMO</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card"><div class="title-bar">MANUALI TECNICI SESAMO</div>', unsafe_allow_html=True)
 
-mcol1, mcol2 = st.columns(2)
+    mcol1, mcol2 = st.columns(2)
 
-with mcol1:
-    manuale_pw100 = trova_file_manuale(
-        [
-            "PW100 MANUALE ISTALLAZIONE.pdf",
-            "PW100 MANUALE INSTALLAZIONE.pdf",
-            "manuale_sesamo_pw100.pdf",
-            "Manuale_Sesamo_PowerCore_PW100.pdf",
-        ],
-        ["pw100"]
-    )
+    with mcol1:
+        manuale_pw100 = trova_file_manuale(
+            [
+                "PW100 MANUALE ISTALLAZIONE.pdf",
+                "PW100 MANUALE INSTALLAZIONE.pdf",
+                "manuale_sesamo_pw100.pdf",
+                "Manuale_Sesamo_PowerCore_PW100.pdf",
+            ],
+            ["pw100"]
+        )
 
-    st.markdown("""
-    <div class="option-box">
-        <div class="option-title">Manuale Sesamo PowerCore PW100</div>
-        <div class="option-note">
-        Manuale tecnico dell'automazione lineare Sesamo PowerCore PW100.
+        st.markdown("""
+        <div class="option-box">
+            <div class="option-title">Manuale Sesamo PowerCore PW100</div>
+            <div class="option-note">
+            Manuale tecnico dell'automazione lineare Sesamo PowerCore PW100.
+            </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
-    if manuale_pw100:
-        st.success(f"Manuale trovato: {manuale_pw100.name}")
-        with open(manuale_pw100, "rb") as f:
-            st.download_button(
-                "SCARICA MANUALE PW100",
-                data=f,
-                file_name="Manuale_Sesamo_PowerCore_PW100.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-    else:
-        st.error("Manuale PW100 non trovato. Il file deve essere PDF e contenere PW100 nel nome.")
+        if manuale_pw100:
+            st.success(f"Manuale trovato: {manuale_pw100.name}")
+            with open(manuale_pw100, "rb") as f:
+                st.download_button(
+                    "SCARICA MANUALE PW100",
+                    data=f,
+                    file_name="Manuale_Sesamo_PowerCore_PW100.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+        else:
+            st.error("Manuale PW100 non trovato. Il file deve essere PDF e contenere PW100 nel nome.")
 
-with mcol2:
-    manuale_er140 = trova_file_manuale(
-        [
-            "MANUALE ER 140 ISTALLAZIONE.pdf.pdf",
-            "MANUALE ER 140 ISTALLAZIONE.pdf",
-            "ER140 ISTALLAZIONE.pdf",
-            "ER 140 ISTALLAZIONE.pdf",
-            "manuale_sesamo_er140.pdf",
-            "Manuale_Sesamo_ER140_Ridondante.pdf",
-        ],
-        ["140"]
-    )
+    with mcol2:
+        manuale_er140 = trova_file_manuale(
+            [
+                "MANUALE ER 140 ISTALLAZIONE.pdf.pdf",
+                "MANUALE ER 140 ISTALLAZIONE.pdf",
+                "ER140 ISTALLAZIONE.pdf",
+                "ER 140 ISTALLAZIONE.pdf",
+                "manuale_sesamo_er140.pdf",
+                "Manuale_Sesamo_ER140_Ridondante.pdf",
+            ],
+            ["140"]
+        )
 
-    st.markdown("""
-    <div class="option-box">
-        <div class="option-title">Manuale Sesamo ER140 Ridondante</div>
-        <div class="option-note">
-        Manuale tecnico dell'automazione ridondante Sesamo ER140 per vie di fuga.
+        st.markdown("""
+        <div class="option-box">
+            <div class="option-title">Manuale Sesamo ER140 Ridondante</div>
+            <div class="option-note">
+            Manuale tecnico dell'automazione ridondante Sesamo ER140 per vie di fuga.
+            </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
-    if manuale_er140:
-        st.success(f"Manuale trovato: {manuale_er140.name}")
-        with open(manuale_er140, "rb") as f:
-            st.download_button(
-                "SCARICA MANUALE ER140",
-                data=f,
-                file_name="Manuale_Sesamo_ER140_Ridondante.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-    else:
-        st.error("Manuale ER140 non trovato. Il file deve essere PDF e contenere 140 nel nome.")
+        if manuale_er140:
+            st.success(f"Manuale trovato: {manuale_er140.name}")
+            with open(manuale_er140, "rb") as f:
+                st.download_button(
+                    "SCARICA MANUALE ER140",
+                    data=f,
+                    file_name="Manuale_Sesamo_ER140_Ridondante.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+        else:
+            st.error("Manuale ER140 non trovato. Il file deve essere PDF e contenere 140 nel nome.")
 
-st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V47.2 - Fix CRM dashboard")
+st.caption("Versione V48 - CRM avanzato + manuali protetti")
 
 st.markdown(f"""
 <div class="footer">
