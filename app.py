@@ -200,6 +200,57 @@ def normalizza_codice(testo):
     pulito = "".join(ch for ch in testo.upper().strip() if ch.isalnum())
     return pulito[:14] if pulito else "CLIENTE"
 
+
+def dati_brand_preventivo(profilo, dati_utente):
+    """
+    SA-TEC e CLIENTE finale: preventivo intestato SA-TEC.
+    RIVENDITORE/GROSSISTA: preventivo intestato con i dati della loro azienda, senza riferimenti SA-TEC.
+    """
+    if profilo in ["RIVENDITORE", "GROSSISTA"]:
+        azienda_brand = dati_utente.get("azienda", "") or dati_utente.get("nome", "") or PROFILI.get(profilo, profilo)
+        telefono_brand = dati_utente.get("telefono", "") or ""
+        email_brand = dati_utente.get("email", "") or ""
+        return {
+            "azienda": azienda_brand,
+            "sede": "",
+            "piva": "",
+            "telefono": telefono_brand,
+            "email": email_brand,
+            "pec": "",
+            "iban": "",
+            "codice_univoco": "",
+            "mostra_satec": False
+        }
+
+    return {
+        "azienda": AZIENDA,
+        "sede": SEDE,
+        "piva": PIVA,
+        "telefono": TELEFONO,
+        "email": EMAIL,
+        "pec": PEC,
+        "iban": IBAN,
+        "codice_univoco": CODICE_UNIVOCO,
+        "mostra_satec": True
+    }
+
+def html_intestazione_brand(brand):
+    righe = [f"<b>{brand.get('azienda','')}</b>"]
+    if brand.get("sede"):
+        righe.append(brand["sede"])
+    if brand.get("piva"):
+        righe.append(brand["piva"])
+    if brand.get("codice_univoco"):
+        righe.append(f"Codice Univoco: {brand['codice_univoco']}")
+    if brand.get("telefono"):
+        righe.append(f"Tel. {brand['telefono']}")
+    if brand.get("email"):
+        righe.append(f"Email: {brand['email']}")
+    if brand.get("pec"):
+        righe.append(f"PEC: {brand['pec']}")
+    return "<br>".join(righe)
+
+
 # =========================
 # UTENTI CSV
 # =========================
@@ -345,7 +396,7 @@ def carica_clienti():
     except:
         return []
 
-def salva_cliente_csv(nome, azienda, telefono, email, codice_preventivo, imponibile):
+def salva_cliente_csv(nome, azienda, telefono, email, codice_preventivo, imponibile, owner_utente='CLIENTE', owner_profilo='CLIENTE'):
     nome = str(nome or "").strip()
     azienda = str(azienda or "").strip()
     telefono = str(telefono or "").strip()
@@ -369,6 +420,8 @@ def salva_cliente_csv(nome, azienda, telefono, email, codice_preventivo, imponib
             c["email"] = email or c.get("email", "")
             c["ultimo_preventivo"] = codice_preventivo
             c["data_ultimo_preventivo"] = oggi
+            c["owner_utente"] = c.get("owner_utente", owner_utente) or owner_utente
+            c["owner_profilo"] = c.get("owner_profilo", owner_profilo) or owner_profilo
             try:
                 c["numero_preventivi"] = str(int(c.get("numero_preventivi", "0") or 0) + 1)
             except:
@@ -393,13 +446,15 @@ def salva_cliente_csv(nome, azienda, telefono, email, codice_preventivo, imponib
             "data_ultimo_preventivo": oggi,
             "numero_preventivi": "1",
             "totale_preventivi": f"{float(imponibile or 0):.2f}",
+            "owner_utente": owner_utente,
+            "owner_profilo": owner_profilo,
         })
 
     campi = [
         "nome", "azienda", "telefono", "email",
         "primo_preventivo", "ultimo_preventivo",
         "data_primo_preventivo", "data_ultimo_preventivo",
-        "numero_preventivi", "totale_preventivi"
+        "numero_preventivi", "totale_preventivi", "owner_utente", "owner_profilo"
     ]
 
     with open(CLIENTI_CSV, "w", newline="", encoding="utf-8") as f:
@@ -423,6 +478,8 @@ def righe_clienti_dashboard(clienti):
             "Totale": totale,
             "Ultimo preventivo": c.get("ultimo_preventivo", ""),
             "Data ultimo": c.get("data_ultimo_preventivo", ""),
+            "Utente": c.get("owner_utente", ""),
+            "Profilo": c.get("owner_profilo", ""),
         })
     return righe
 
@@ -442,6 +499,14 @@ def filtra_clienti_dashboard(clienti, cerca):
         if cerca in testo:
             out.append(c)
     return out
+
+def clienti_visibili_per_profilo(clienti, profilo, utente_codice):
+    if profilo == "SA-TEC":
+        return clienti
+    return [
+        c for c in clienti
+        if str(c.get("owner_utente", "")).strip().upper() == str(utente_codice).strip().upper()
+    ]
 
 
 # =========================
@@ -1141,8 +1206,8 @@ st.markdown('<div class="card"><div class="title-bar">5&nbsp;&nbsp; DATI CLIENTE
 
 cliente_precaricato = {}
 
-if profilo == "SA-TEC":
-    clienti_archivio_preventivo = carica_clienti()
+if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
+    clienti_archivio_preventivo = clienti_visibili_per_profilo(carica_clienti(), profilo, utente_codice)
     if clienti_archivio_preventivo:
         opzioni_clienti_preventivo = ["Nuovo cliente"] + [
             f"{c.get('nome','')} | {c.get('azienda','')} | {c.get('telefono','')} | {c.get('email','')}"
@@ -1199,7 +1264,7 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "stato": "Nuovo"
     }
     salva_preventivo(dati)
-    salva_cliente_csv(cliente_nome, cliente_azienda, cliente_telefono, cliente_email, codice_preventivo, imponibile)
+    salva_cliente_csv(cliente_nome, cliente_azienda, cliente_telefono, cliente_email, codice_preventivo, imponibile, utente_codice, profilo)
     st.session_state.ultimo_codice_preventivo = codice_preventivo
     st.success(f"Preventivo {codice_preventivo} salvato correttamente. SA-TEC lo vedrà nella dashboard.")
 
@@ -1262,6 +1327,10 @@ logo_print = f'<img src="data:image/jpeg;base64,{logo_satec64}" style="width:240
 sesamo_print = f'<img src="data:image/png;base64,{logo_sesamo64}" style="height:90px;">' if logo_sesamo64 else "<b>SESAMO POWERCORE PW100</b>"
 
 codice_stampa = st.session_state.get("ultimo_codice_preventivo", "DA SALVARE")
+brand_preventivo = dati_brand_preventivo(profilo, dati_utente)
+intestazione_brand_html = html_intestazione_brand(brand_preventivo)
+logo_print_finale = logo_print if brand_preventivo.get("mostra_satec") else f"<h1 style='color:#06499b;'>{brand_preventivo.get('azienda','')}</h1>"
+nome_firma_azienda = brand_preventivo.get("azienda", AZIENDA)
 
 html_stampa = f"""
 <!DOCTYPE html>
@@ -1287,7 +1356,7 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 </head>
 <body>
 <button class="print-button" onclick="window.print()">STAMPA / SALVA PDF</button>
-<div class="header"><div>{logo_print}</div><div class="company"><b>{AZIENDA}</b><br>{SEDE}<br>{PIVA}<br>Codice Univoco: {CODICE_UNIVOCO}<br>Tel. {TELEFONO}<br>Email: {EMAIL}<br>PEC: {PEC}</div></div>
+<div class="header"><div>{logo_print_finale}</div><div class="company">{intestazione_brand_html}</div></div>
 <div class="brand"><div><h2 style="margin:0;">SESAMO POWERCORE PW100</h2><div>Configuratore porte automatiche lineari</div></div><div>{sesamo_print}</div></div>
 <h1>Preventivo porta automatica</h1>
 <h2>N° {codice_stampa}</h2>
@@ -1325,14 +1394,11 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <li>Misure e caratteristiche da verificare definitivamente in fase di rilievo</li>
 <li>La presente offerta è subordinata alla verifica tecnica finale</li>
 </ul>
-<h2>Coordinate bancarie</h2>
-<p><b>Intestatario:</b> {AZIENDA}<br>
-<b>IBAN:</b> {IBAN}<br>
-<b>Causale:</b> Acconto preventivo {codice_stampa}</p>
+{"<h2>Coordinate bancarie</h2><p><b>Intestatario:</b> " + AZIENDA + "<br><b>IBAN:</b> " + IBAN + "<br><b>Causale:</b> Acconto preventivo " + codice_stampa + "</p>" if brand_preventivo.get("mostra_satec") else ""}
 <h2>Accettazione offerta</h2>
 <p>Per accettazione del presente preventivo e delle condizioni commerciali sopra indicate.</p>
 <table>
-<tr><td style="height:70px;"><b>Firma Cliente</b><br><br>_____________________________</td><td style="height:70px;"><b>SA-TEC S.R.L.s</b><br><br>_____________________________</td></tr>
+<tr><td style="height:70px;"><b>Firma Cliente</b><br><br>_____________________________</td><td style="height:70px;"><b>{nome_firma_azienda}</b><br><br>_____________________________</td></tr>
 </table>
 </div>
 </body>
@@ -1380,7 +1446,7 @@ if profilo == "SA-TEC":
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-st.caption("Versione V24 - Richiamo Clienti")
+st.caption("Versione V25 - Brand Rivenditori/Grossisti")
 
 st.markdown(f"""
 <div class="footer">
