@@ -1284,6 +1284,77 @@ div[data-testid="stCheckbox"] label {
     color:#06499b!important;
 }
 
+
+/* FIX DEFINITIVO COLORI RETTANGOLI E DESCRIZIONI */
+.title-bar {
+    background:#06499b!important;
+    color:#ffffff!important;
+}
+
+.title-bar * {
+    color:#ffffff!important;
+}
+
+.option-title,
+.power-side-title,
+.desc-title {
+    color:#06499b!important;
+}
+
+.option-note,
+.option-note *,
+.section-box,
+.section-box *,
+.card,
+.card *,
+.side-card,
+.side-card *,
+.admin-box,
+.admin-box * {
+    color:#111111!important;
+}
+
+.section-box {
+    background:#eef6ff!important;
+}
+
+.section-box.green {
+    background:#eefaf2!important;
+}
+
+.section-box b,
+.section-box span,
+.option-note b {
+    color:#111111!important;
+}
+
+div[data-testid="stTextInput"] input,
+div[data-testid="stTextArea"] textarea {
+    background:#ffffff!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    opacity:1!important;
+}
+
+div[data-testid="stTextInput"] label,
+div[data-testid="stTextArea"] label,
+div[data-testid="stNumberInput"] label,
+div[data-testid="stSelectbox"] label,
+div[data-testid="stCheckbox"] label {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:800!important;
+}
+
+table td {
+    color:#111111!important;
+}
+
+table th {
+    background:#06499b!important;
+    color:#ffffff!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1869,7 +1940,7 @@ st.markdown(f"""
 <b>Luce passaggio:</b> {luce_mm} mm<br><br>
 <b>Altezza passaggio:</b> {altezza_mm} mm<br><br>
 <b>Misura traversa:</b> {lunghezza_traversa:.2f} metri<br><br>
-<b>Resa:</b> {resa_stampa}
+<b>Resa:</b> {"Franco deposito SA-TEC Lamezia Terme" if profilo in ["SA-TEC", "CLIENTE"] else "Da concordare"}
 </div>
 <div><ul>{lista_sx}</ul></div>
 <div><ul>{lista_dx}</ul></div>
@@ -1940,7 +2011,7 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <body>
 <button class="print-button" onclick="window.print()">STAMPA / SALVA PDF</button>
 <div class="header"><div>{logo_print_finale}</div><div class="company">{intestazione_stampa_html}</div></div>
-<div class="brand"><div><h2 style="margin:0;">{brand_prodotto_stampa}</h2><div>Configuratore porte automatiche lineari</div></div><div>{sesamo_print if profilo == "SA-TEC" else ""}</div></div>
+<div class="brand"><div><h2 style="margin:0;">{"SESAMO POWERCORE PW100" if profilo in ["SA-TEC", "CLIENTE"] else "PORTE AUTOMATICHE"}</h2><div>Configuratore porte automatiche lineari</div></div><div>{sesamo_print if profilo == "SA-TEC" else ""}</div></div>
 <h1>Preventivo porta automatica</h1>\n<h2 style="margin-top:-8px;">N° {codice_stampa}</h2>
 <div class="box">
 <b>Data:</b> {date.today().strftime("%d/%m/%Y")}<br>
@@ -1953,7 +2024,7 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <b>Luce passaggio:</b> {luce_mm} mm<br>
 <b>Altezza passaggio:</b> {altezza_mm} mm<br>
 <b>Misura traversa:</b> {lunghezza_traversa:.2f} metri<br>
-<b>Resa:</b> {resa_stampa}
+<b>Resa:</b> {"Franco deposito SA-TEC Lamezia Terme" if profilo in ["SA-TEC", "CLIENTE"] else "Da concordare"}
 </div>
 <h2>Descrizione fornitura</h2>
 <table><thead><tr><th>Voce</th><th>Descrizione</th></tr></thead><tbody>{righe_descrizione}</tbody></table>
