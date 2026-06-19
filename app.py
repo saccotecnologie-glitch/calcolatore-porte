@@ -1070,6 +1070,74 @@ def carica_preventivi():
     with open(path, "r", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
+
+# =========================
+# CRM DASHBOARD NATIVA - FIX SICURO
+# =========================
+
+def crm_valore_float(p):
+    for campo in ["imponibile", "totale_iva", "totale"]:
+        try:
+            return float(str(p.get(campo, "0")).replace(",", ".") or 0)
+        except:
+            pass
+    return 0.0
+
+def crm_utile_float(p):
+    try:
+        return float(str(p.get("utile_lordo", "0")).replace(",", ".") or 0)
+    except:
+        return 0.0
+
+def render_dashboard_crm(preventivi):
+    totale_preventivi = len(preventivi)
+    valore_totale = sum(crm_valore_float(p) for p in preventivi)
+    utile_totale = sum(crm_utile_float(p) for p in preventivi)
+
+    accettati = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "accettato")
+    ordinati = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "ordinato")
+    persi = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "perso")
+    conversione = ((accettati + ordinati) / totale_preventivi * 100) if totale_preventivi else 0
+
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("Preventivi", totale_preventivi)
+    c2.metric("Valore totale", euro(valore_totale))
+    c3.metric("Utile lordo", euro(utile_totale))
+    c4.metric("Accettati/Ordinati", accettati + ordinati)
+    c5.metric("Persi", persi)
+    c6.metric("Conversione", f"{conversione:.1f}%")
+
+def render_stati_preventivi(stats):
+    cols = st.columns(len(STATI_PREVENTIVO))
+    for col, stato in zip(cols, STATI_PREVENTIVO):
+        col.metric(stato, stats.get(stato, 0))
+
+def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
+    cerca = str(cerca or "").strip().lower()
+    stato = str(stato or "Tutti").strip()
+
+    out = []
+    for p in preventivi:
+        if stato != "Tutti" and str(p.get("stato", "")) != stato:
+            continue
+
+        if cerca:
+            testo = " ".join([
+                str(p.get("codice_preventivo", "")),
+                str(p.get("cliente_nome", "")),
+                str(p.get("cliente_azienda", "")),
+                str(p.get("cliente_email", "")),
+                str(p.get("utente", "")),
+                str(p.get("configurazione", "")),
+                str(p.get("stato", "")),
+            ]).lower()
+            if cerca not in testo:
+                continue
+
+        out.append(p)
+    return out
+
+
 # =========================
 # LOGIN + REGISTRAZIONE
 # =========================
@@ -2723,7 +2791,7 @@ with mcol2:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V47.1 - Fix CRM senza HTML visibile")
+st.caption("Versione V47.2 - Fix CRM dashboard")
 
 st.markdown(f"""
 <div class="footer">
