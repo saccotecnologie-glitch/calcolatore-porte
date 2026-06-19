@@ -1022,6 +1022,19 @@ div[data-testid="stCheckbox"] {
     margin-bottom:10px!important;
 }
 
+
+/* V31 - Bottoni email stessa dimensione e colore */
+div[data-testid="stButton"] button {
+    background:#06499b!important;
+    color:#ffffff!important;
+    border:none!important;
+    border-radius:10px!important;
+    height:48px!important;
+    font-size:18px!important;
+    font-weight:900!important;
+    width:100%!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1681,13 +1694,13 @@ if profilo == "SA-TEC":
             oggetto = f"Preventivo SA-TEC N° {codice_email}"
             corpo = testo_email_preventivo(codice_email)
             mailto = "mailto:" + urllib.parse.quote(email_dest) + "?subject=" + urllib.parse.quote(oggetto) + "&body=" + urllib.parse.quote(corpo)
-            st.markdown(f'<a href="{mailto}" target="_blank"><button style="background:#777;color:white;border:none;padding:14px 22px;border-radius:10px;font-size:18px;font-weight:bold;cursor:pointer;width:100%;">PREPARA EMAIL MANUALE</button></a>', unsafe_allow_html=True)
+            st.markdown(f'<a href="{mailto}" target="_blank"><button style="background:#06499b;color:white;border:none;padding:14px 22px;border-radius:10px;font-size:18px;font-weight:bold;cursor:pointer;width:100%;height:48px;">PREPARA EMAIL MANUALE</button></a>', unsafe_allow_html=True)
 
         st.caption("L'invio automatico allega il preventivo in formato HTML stampabile. Il cliente può aprirlo e salvarlo in PDF.")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V30 - Invio email automatico")
+st.caption("Versione V31 - Bottoni email uniformi")
 
 st.markdown(f"""
 <div class="footer">
