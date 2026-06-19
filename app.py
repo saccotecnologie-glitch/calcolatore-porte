@@ -42,6 +42,8 @@ IVA = 0.22
 PREVENTIVI_CSV = "preventivi_satec.csv"
 UTENTI_CSV = "utenti_satec.csv"
 CLIENTI_CSV = "clienti_satec.csv"
+LOGHI_DIR = Path("loghi_utenti")
+LOGHI_DIR.mkdir(exist_ok=True)
 
 # =========================
 # UTENTI BASE
@@ -186,6 +188,30 @@ def img_to_base64(paths):
         if f.exists():
             return base64.b64encode(f.read_bytes()).decode()
     return ""
+
+
+def salva_logo_utente(utente_codice, file_caricato):
+    if not file_caricato:
+        return ""
+    try:
+        est = Path(file_caricato.name).suffix.lower()
+        if est not in [".png", ".jpg", ".jpeg"]:
+            est = ".png"
+        nome_file = f"{utente_codice.upper()}{est}"
+        path_logo = LOGHI_DIR / nome_file
+        path_logo.write_bytes(file_caricato.getbuffer())
+        return str(path_logo)
+    except Exception as e:
+        st.sidebar.warning(f"Logo non salvato: {e}")
+        return ""
+
+def trova_logo_utente(utente_codice):
+    for est in [".png", ".jpg", ".jpeg"]:
+        p = LOGHI_DIR / f"{utente_codice.upper()}{est}"
+        if p.exists():
+            return str(p)
+    return ""
+
 
 def calcola_traversa(luce_mm, ante):
     if ante == "1 anta":
@@ -616,6 +642,17 @@ def login_box():
     st.sidebar.markdown("---")
     st.sidebar.write(f"Profilo attivo: **{PROFILI.get(profilo, 'Cliente finale')}**")
     st.sidebar.caption(f"Utente attivo: {utente_codice}")
+
+    if profilo in ["RIVENDITORE", "GROSSISTA"]:
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("### Logo azienda")
+        logo_presente = trova_logo_utente(utente_codice)
+        if logo_presente:
+            st.sidebar.success("Logo caricato")
+        logo_upload = st.sidebar.file_uploader("Carica logo PDF", type=["png", "jpg", "jpeg"], key=f"logo_upload_{utente_codice}")
+        if logo_upload is not None:
+            if salva_logo_utente(utente_codice, logo_upload):
+                st.sidebar.success("Logo salvato. Ricarica la pagina se non lo vedi nel PDF.")
 
     with st.sidebar.expander("Registrazione cliente"):
         st.caption("Crea automaticamente una password cliente.")
@@ -1082,37 +1119,49 @@ with col_main:
 with col_side:
     st.markdown('<div class="side-card"><div class="title-bar">3&nbsp;&nbsp; ACCESSORI E SERVIZI</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="option-box"><div class="option-title">ELETTROBLOCCO</div>', unsafe_allow_html=True)
     elettroblocco = st.checkbox("Aggiungi elettroblocco", value=False, key="elettro")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown('<div class="option-box"><div class="option-title">RADAR SICUREZZA LATERALE</div>', unsafe_allow_html=True)
-    radar_sicurezza_laterale = st.checkbox("Aggiungi radar sicurezza laterale", value=False, key="radar_sicurezza_laterale")
-    st.markdown("""
-    <div class="option-note">
-    Il radar di sicurezza laterale serve a prevenire lo schiacciamento e l'impatto tra l'anta della porta e gli ostacoli fissi, come la parete, o le persone.<br><br>
-    La soglia dei <b>20 cm</b> rappresenta lo spazio di sicurezza perimetrale critico, fondamentale per rispettare gli standard europei, inclusa la normativa <b>EN 16005</b>.
+    stile_elettro = "background:#fff3a3;border:3px solid #06499b;" if elettroblocco else "background:white;border:2px solid #06499b;"
+    st.markdown(f"""
+    <div class="option-box" style="{stile_elettro}">
+        <div class="option-title">ELETTROBLOCCO</div>
+        <div class="option-note">
+        Accessorio per blocco anta in chiusura. Se selezionato, viene inserito automaticamente nel preventivo in base alla configurazione scelta.
+        </div>
     </div>
     """, unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+
+    radar_sicurezza_laterale = st.checkbox("Aggiungi radar sicurezza laterale", value=False, key="radar_sicurezza_laterale")
+    stile_radar = "background:#fff3a3;border:3px solid #06499b;" if radar_sicurezza_laterale else "background:white;border:2px solid #06499b;"
+    st.markdown(f"""
+    <div class="option-box" style="{stile_radar}">
+        <div class="option-title">RADAR SICUREZZA LATERALE</div>
+        <div class="option-note">
+        Il radar di sicurezza laterale serve a prevenire lo schiacciamento e l'impatto tra l'anta della porta e gli ostacoli fissi, come la parete, o le persone.<br><br>
+        La soglia dei <b>20 cm</b> rappresenta lo spazio di sicurezza perimetrale critico, fondamentale per rispettare gli standard europei, inclusa la normativa <b>EN 16005</b>.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     prezzo_allaccio = LISTINI["ALLACCIO_COLLAUDO_STANDARD"] if tipo == "Standard" else LISTINI["ALLACCIO_COLLAUDO_RIDONDANTE"]
     testo_tipo_allaccio = "Standard" if tipo == "Standard" else "Ridondante"
 
-    st.markdown('<div class="option-box"><div class="option-title">ALLACCIO E COLLAUDO</div>', unsafe_allow_html=True)
     allaccio = st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=False, key="allaccio")
-
+    stile_allaccio = "background:#fff3a3;border:3px solid #06499b;" if allaccio else "background:white;border:2px solid #06499b;"
     st.markdown(f"""
-    <div class="option-note">
-    Prezzo allaccio e collaudo {testo_tipo_allaccio}: <b>{euro(prezzo_allaccio)}</b> IVA esclusa.<br><br>
-    <b>Vantaggi inclusi se il servizio è eseguito da SA-TEC</b><br><br>
-    Scegliendo SA-TEC per l'allaccio e il collaudo, sono inclusi nel prezzo i seguenti benefici:<br><br>
-    <b>Libretto di manutenzione:</b><br>Rilascio della documentazione ufficiale dell'apparecchio/impianto.<br><br>
-    <b>Certificazione:</b><br>Rilascio delle certificazioni di conformità e corretta installazione a norma di legge.<br><br>
-    <b>Assistenza prioritaria:</b><br>Garanzia di un intervento risolutivo in caso di guasti o problemi entro 48 ore.
+    <div class="option-box" style="{stile_allaccio}">
+        <div class="option-title">ALLACCIO E COLLAUDO</div>
+        <div class="option-note">
+        Prezzo allaccio e collaudo {testo_tipo_allaccio}: <b>{euro(prezzo_allaccio)}</b> IVA esclusa.<br><br>
+        <b>Vantaggi inclusi se il servizio è eseguito da SA-TEC</b><br><br>
+        Scegliendo SA-TEC per l'allaccio e il collaudo, sono inclusi nel prezzo i seguenti benefici:<br><br>
+        <b>Libretto di manutenzione:</b><br>Rilascio della documentazione ufficiale dell'apparecchio/impianto.<br><br>
+        <b>Certificazione:</b><br>Rilascio delle certificazioni di conformità e corretta installazione a norma di legge.<br><br>
+        <b>Assistenza prioritaria:</b><br>Garanzia di un intervento risolutivo in caso di guasti o problemi entro 48 ore.
+        </div>
     </div>
     """, unsafe_allow_html=True)
-    st.markdown("</div></div>", unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================
 # ARTICOLI
@@ -1349,7 +1398,17 @@ sesamo_print = f'<img src="data:image/png;base64,{logo_sesamo64}" style="height:
 codice_stampa = st.session_state.get("ultimo_codice_preventivo", "DA SALVARE")
 brand_preventivo = dati_brand_preventivo(profilo, dati_utente)
 intestazione_brand_html = html_intestazione_brand(brand_preventivo)
-logo_print_finale = logo_print if brand_preventivo.get("mostra_satec") else f"<h1 style='color:#06499b;'>{brand_preventivo.get('azienda','')}</h1>"
+
+logo_utente_path = trova_logo_utente(utente_codice) if profilo in ["RIVENDITORE", "GROSSISTA"] else ""
+logo_utente64 = img_to_base64([logo_utente_path]) if logo_utente_path else ""
+
+if brand_preventivo.get("mostra_satec"):
+    logo_print_finale = logo_print
+elif logo_utente64:
+    logo_print_finale = f'<img src="data:image/png;base64,{logo_utente64}" style="max-width:240px;max-height:105px;object-fit:contain;">'
+else:
+    logo_print_finale = f"<h1 style='color:#06499b;'>{brand_preventivo.get('azienda','')}</h1>"
+
 nome_firma_azienda = brand_preventivo.get("azienda", AZIENDA)
 
 html_stampa = f"""
@@ -1424,7 +1483,7 @@ Data: {date.today().strftime("%d/%m/%Y")}
 </div>
 
 <div class="box">
-<b>Resa:</b> Franco deposito SA-TEC Lamezia Terme<br>
+<b>Resa:</b> {"Franco deposito SA-TEC Lamezia Terme" if brand_preventivo.get("mostra_satec") else "Da concordare"}<br>
 <b>Codice preventivo:</b> {codice_stampa}
 </div>
 <h2>Descrizione fornitura</h2>
@@ -1459,7 +1518,7 @@ Data: {date.today().strftime("%d/%m/%Y")}
 </table>
 </div>
 <div style="margin-top:22px;border-top:2px solid #d7e6f7;padding-top:12px;font-size:12px;color:#555;text-align:center;">
-Documento generato con configuratore SA-TEC - Preventivo soggetto a verifica tecnica finale.
+{"Documento generato con configuratore SA-TEC - Preventivo soggetto a verifica tecnica finale." if brand_preventivo.get("mostra_satec") else "Preventivo soggetto a verifica tecnica finale."}
 </div>
 </body>
 </html>
@@ -1506,7 +1565,7 @@ if profilo == "SA-TEC":
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-st.caption("Versione V27 - PDF professionale")
+st.caption("Versione V28 - Logo Rivenditore + Accessori gialli")
 
 st.markdown(f"""
 <div class="footer">
