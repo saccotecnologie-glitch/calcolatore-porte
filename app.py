@@ -1139,15 +1139,40 @@ with col_side:
 
 st.markdown('<div class="card"><div class="title-bar">5&nbsp;&nbsp; DATI CLIENTE E RICHIESTA</div>', unsafe_allow_html=True)
 
+cliente_precaricato = {}
+
+if profilo == "SA-TEC":
+    clienti_archivio_preventivo = carica_clienti()
+    if clienti_archivio_preventivo:
+        opzioni_clienti_preventivo = ["Nuovo cliente"] + [
+            f"{c.get('nome','')} | {c.get('azienda','')} | {c.get('telefono','')} | {c.get('email','')}"
+            for c in clienti_archivio_preventivo
+        ]
+
+        cliente_scelto_preventivo = st.selectbox(
+            "Richiama cliente esistente",
+            opzioni_clienti_preventivo,
+            key="richiama_cliente_preventivo"
+        )
+
+        if cliente_scelto_preventivo != "Nuovo cliente":
+            idx_cliente = opzioni_clienti_preventivo.index(cliente_scelto_preventivo) - 1
+            if 0 <= idx_cliente < len(clienti_archivio_preventivo):
+                cliente_precaricato = clienti_archivio_preventivo[idx_cliente]
+                st.success(
+                    f"Cliente caricato: {cliente_precaricato.get('nome','')} - "
+                    f"{cliente_precaricato.get('azienda','')}"
+                )
+
 dc1, dc2, dc3, dc4 = st.columns(4)
 with dc1:
-    cliente_nome = st.text_input("Nome cliente", value=dati_utente.get("nome", ""))
+    cliente_nome = st.text_input("Nome cliente", value=cliente_precaricato.get("nome", dati_utente.get("nome", "")))
 with dc2:
-    cliente_azienda = st.text_input("Azienda", value=dati_utente.get("azienda", ""))
+    cliente_azienda = st.text_input("Azienda", value=cliente_precaricato.get("azienda", dati_utente.get("azienda", "")))
 with dc3:
-    cliente_telefono = st.text_input("Telefono", value=dati_utente.get("telefono", ""))
+    cliente_telefono = st.text_input("Telefono", value=cliente_precaricato.get("telefono", dati_utente.get("telefono", "")))
 with dc4:
-    cliente_email = st.text_input("Email", value=dati_utente.get("email", ""))
+    cliente_email = st.text_input("Email", value=cliente_precaricato.get("email", dati_utente.get("email", "")))
 
 if st.button("SALVA PREVENTIVO / RICHIESTA"):
     codice_preventivo = genera_codice_preventivo()
@@ -1354,6 +1379,8 @@ if profilo == "SA-TEC":
         st.caption("Si apre il programma email con testo già pronto. Allega il PDF salvato manualmente.")
     st.markdown("</div>", unsafe_allow_html=True)
 
+
+st.caption("Versione V24 - Richiamo Clienti")
 
 st.markdown(f"""
 <div class="footer">
