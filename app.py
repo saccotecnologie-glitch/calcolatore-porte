@@ -1171,6 +1171,46 @@ div[data-testid="stButton"] button[kind="secondary"]:hover {
     border:3px solid #06499b!important;
 }
 
+
+/* V37 - allineamento riquadri scelta automazione */
+.porta-card {
+    height:285px!important;
+    min-height:285px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:space-between!important;
+    align-items:center!important;
+    box-sizing:border-box!important;
+}
+
+.porta-card-title {
+    min-height:46px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+}
+
+.porta-card-desc {
+    min-height:54px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+    padding:0 6px!important;
+}
+
+.porta-card svg {
+    height:120px!important;
+    max-height:120px!important;
+}
+
+div[data-testid="stButton"] button[kind="secondary"] {
+    height:54px!important;
+    min-height:54px!important;
+    margin-top:-8px!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1922,7 +1962,7 @@ if profilo == "SA-TEC":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V36 - Riquadri porta cliccabili")
+st.caption("Versione V37 - Riquadri automazione allineati")
 
 st.markdown(f"""
 <div class="footer">
