@@ -677,6 +677,53 @@ def invia_email_automatica(destinatario, codice_preventivo, html_preventivo):
     except Exception as e:
         return False, str(e)
 
+
+def invia_notifica_richiesta_satec(codice_preventivo, cliente_nome, cliente_azienda, cliente_telefono, cliente_email, scelta, luce_mm, altezza_mm, totale_iva):
+    """
+    Invia notifica interna a SA-TEC quando un cliente finale libero invia una richiesta.
+    Se SMTP non è configurato correttamente, la richiesta resta comunque salvata.
+    """
+    try:
+        email_user = st.secrets["EMAIL_USER"]
+        email_password = st.secrets["EMAIL_PASSWORD"]
+        smtp_server = st.secrets.get("EMAIL_SMTP", "smtp.gmail.com")
+        smtp_port = int(st.secrets.get("EMAIL_PORT", "587"))
+
+        corpo = f"""Nuova richiesta preventivo dal configuratore SA-TEC.
+
+Codice: {codice_preventivo}
+
+Cliente:
+Nome: {cliente_nome}
+Azienda: {cliente_azienda}
+Telefono: {cliente_telefono}
+Email: {cliente_email}
+
+Configurazione:
+{scelta}
+Luce passaggio: {luce_mm} mm
+Altezza passaggio: {altezza_mm} mm
+Totale indicativo IVA inclusa: {euro(totale_iva)}
+
+La richiesta è stata salvata nel configuratore.
+"""
+
+        msg = EmailMessage()
+        msg["From"] = email_user
+        msg["To"] = EMAIL
+        msg["Subject"] = f"Nuova richiesta configuratore SA-TEC - {codice_preventivo}"
+        msg.set_content(corpo)
+
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(email_user, email_password)
+            server.send_message(msg)
+
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
 def aggiorna_stato_preventivo_csv(codice_preventivo, nuovo_stato, email_destinatario=""):
     path = Path(PREVENTIVI_CSV)
     if not path.exists():
@@ -958,7 +1005,7 @@ def login_box():
         }
 
     st.sidebar.markdown("## Accesso")
-    st.sidebar.info("Cliente finale: può entrare libero oppure registrarsi.")
+    st.sidebar.info("Cliente finale: può usare il configuratore senza login e inviare una richiesta a SA-TEC.")
 
     username = st.sidebar.text_input("Utente", value="", key="login_user")
     password = st.sidebar.text_input("Password", value="", type="password", key="login_pwd")
@@ -1942,7 +1989,13 @@ with col_side:
 # DATI CLIENTE
 # =========================
 
-st.markdown('<div class="card"><div class="title-bar">5&nbsp;&nbsp; DATI CLIENTE E RICHIESTA</div>', unsafe_allow_html=True)
+titolo_dati_cliente = "5&nbsp;&nbsp; DATI CLIENTE E RICHIESTA"
+if profilo == "CLIENTE":
+    titolo_dati_cliente = "5&nbsp;&nbsp; INVIA RICHIESTA A SA-TEC"
+st.markdown(f'<div class="card"><div class="title-bar">{titolo_dati_cliente}</div>', unsafe_allow_html=True)
+
+if profilo == "CLIENTE":
+    st.info("Compila i tuoi dati e invia la richiesta. SA-TEC riceverà il preventivo e ti ricontatterà.")
 
 cliente_precaricato = {}
 
@@ -1979,7 +2032,8 @@ with dc3:
 with dc4:
     cliente_email = st.text_input("Email", value=cliente_precaricato.get("email", dati_utente.get("email", "")))
 
-if st.button("SALVA PREVENTIVO / RICHIESTA"):
+testo_bottone_salva = "INVIA RICHIESTA A SA-TEC" if profilo == "CLIENTE" else "SALVA PREVENTIVO / RICHIESTA"
+if st.button(testo_bottone_salva):
     codice_preventivo = genera_codice_preventivo()
     dati = {
         "codice_preventivo": codice_preventivo,
@@ -2004,7 +2058,7 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "costo_satec": f"{costo_satec_totale:.2f}",
         "utile_lordo": f"{utile_lordo:.2f}",
         "margine_percento": f"{margine_percento:.1f}",
-        "stato": "Bozza"
+        "stato": "Richiesta web" if profilo == "CLIENTE" else "Bozza"
     }
     salva_preventivo(dati)
     salva_cliente_csv(cliente_nome, cliente_azienda, cliente_telefono, cliente_email, codice_preventivo, imponibile, utente_codice, profilo)
@@ -2013,10 +2067,34 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
     salvato_cloud = salva_preventivo_supabase(dati, cliente_id_supabase, utente_codice)
 
     st.session_state.ultimo_codice_preventivo = codice_preventivo
-    if salvato_cloud:
-        st.success(f"Preventivo {codice_preventivo} salvato correttamente su Supabase e backup CSV.")
+
+    if profilo == "CLIENTE":
+        ok_mail_satec, errore_mail_satec = invia_notifica_richiesta_satec(
+            codice_preventivo,
+            cliente_nome,
+            cliente_azienda,
+            cliente_telefono,
+            cliente_email,
+            scelta,
+            luce_mm,
+            altezza_mm,
+            totale_iva
+        )
+
+        if salvato_cloud:
+            st.success(f"Richiesta {codice_preventivo} inviata e salvata correttamente. SA-TEC ti ricontatterà.")
+        else:
+            st.warning(f"Richiesta {codice_preventivo} salvata in backup. SA-TEC ti ricontatterà.")
+
+        if ok_mail_satec:
+            st.info("Notifica inviata a SA-TEC.")
+        else:
+            st.caption("Notifica email non inviata, ma la richiesta è stata salvata.")
     else:
-        st.warning(f"Preventivo {codice_preventivo} salvato in CSV. Supabase non disponibile o bloccato da policy.")
+        if salvato_cloud:
+            st.success(f"Preventivo {codice_preventivo} salvato correttamente su Supabase e backup CSV.")
+        else:
+            st.warning(f"Preventivo {codice_preventivo} salvato in CSV. Supabase non disponibile o bloccato da policy.")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -2469,7 +2547,7 @@ with mcol2:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V44 - Manuali robusti + Supabase")
+st.caption("Versione V45 - Cliente finale libero")
 
 st.markdown(f"""
 <div class="footer">
