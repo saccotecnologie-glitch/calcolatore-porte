@@ -918,6 +918,34 @@ div[data-testid="stNumberInput"] label {
     font-weight:900!important;
 }
 
+
+/* V29 - CHECKBOX ACCESSORI GIALLI */
+div[data-testid="stCheckbox"] input[type="checkbox"] {
+    accent-color:#ffd400!important;
+}
+
+div[data-testid="stCheckbox"] label {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:900!important;
+    font-size:18px!important;
+}
+
+div[data-testid="stCheckbox"] [data-testid="stMarkdownContainer"] p {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:900!important;
+}
+
+/* evidenzia meglio la zona dei checkbox */
+div[data-testid="stCheckbox"] {
+    background:#fff3a3!important;
+    border:2px solid #06499b!important;
+    border-radius:10px!important;
+    padding:10px 12px!important;
+    margin-bottom:10px!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -1565,7 +1593,7 @@ if profilo == "SA-TEC":
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-st.caption("Versione V28 - Logo Rivenditore + Accessori gialli")
+st.caption("Versione V29 - Checkbox gialli + Logo Rivenditore")
 
 st.markdown(f"""
 <div class="footer">
