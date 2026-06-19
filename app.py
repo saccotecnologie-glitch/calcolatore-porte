@@ -1812,8 +1812,11 @@ if profilo == "SA-TEC":
                 else:
                     st.info("Salva almeno un preventivo con codice SAT per aggiornare lo stato.")
 
-                with open(PREVENTIVI_CSV, "rb") as f:
-                    st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
+                if Path(PREVENTIVI_CSV).exists():
+                    with open(PREVENTIVI_CSV, "rb") as f:
+                        st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
+                else:
+                    st.caption("Backup CSV preventivi non ancora creato.")
 
         with tab2:
             if not utenti_csv:
@@ -1832,8 +1835,11 @@ if profilo == "SA-TEC":
                         "Ricarico %": d.get("ricarico", ""),
                     })
                 st.markdown(tabella_html_sicura(righe), unsafe_allow_html=True)
-                with open(UTENTI_CSV, "rb") as f:
-                    st.download_button("Scarica CSV utenti", data=f, file_name="utenti_satec.csv", mime="text/csv")
+                if Path(UTENTI_CSV).exists():
+                    with open(UTENTI_CSV, "rb") as f:
+                        st.download_button("Scarica CSV utenti", data=f, file_name="utenti_satec.csv", mime="text/csv")
+                else:
+                    st.caption("Backup CSV utenti non ancora creato.")
 
 
 
@@ -2677,7 +2683,7 @@ with mcol2:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V46 - Registrazione rivenditori")
+st.caption("Versione V46.1 - Fix CSV dashboard")
 
 st.markdown(f"""
 <div class="footer">
