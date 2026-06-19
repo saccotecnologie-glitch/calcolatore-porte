@@ -124,6 +124,8 @@ LISTINI = {
     "PULSANTE_EMERGENZA": 130.00,
     "ELETTRO_RIDONDANTE": 290.00,
 
+    "RADAR_SICUREZZA_LATERALE": 280.00,
+
     "ASSEMBLAGGIO": 130.00,
     "ALLACCIO_COLLAUDO_STANDARD": 350.00,
     "ALLACCIO_COLLAUDO_RIDONDANTE": 400.00,
@@ -281,7 +283,7 @@ def salva_preventivo(dati):
     campi = [
         "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
         "cliente_telefono", "cliente_email", "configurazione", "luce_mm",
-        "altezza_mm", "traversa_m", "elettroblocco", "allaccio",
+        "altezza_mm", "traversa_m", "elettroblocco", "allaccio", "radar_sicurezza_laterale",
         "ricarico_percento", "imponibile", "iva", "totale_iva", "stato"
     ]
     with open(PREVENTIVI_CSV, "a", newline="", encoding="utf-8") as f:
@@ -581,6 +583,49 @@ tr:nth-child(even) {
     background: #f3f7fd;
 }
 
+
+/* FIX SA-TEC: rettangoli blu e campi leggibili */
+.title-bar,
+.title-bar * {
+    background:#06499b!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+div[data-testid="stTextInput"] input {
+    background:#ffffff!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border:2px solid #8998b0!important;
+    border-radius:6px!important;
+    font-weight:800!important;
+}
+
+div[data-testid="stTextInput"] label,
+div[data-testid="stNumberInput"] label,
+div[data-testid="stCheckbox"] label {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:800!important;
+}
+
+.option-note,
+.option-note *,
+.section-box span,
+.power-side-text,
+.power-side-list li,
+.desc-grid,
+.desc-grid *,
+td {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+}
+
+th {
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -763,14 +808,24 @@ with col_side:
     st.markdown('<div class="side-card"><div class="title-bar">3&nbsp;&nbsp; ACCESSORI E SERVIZI</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="option-box"><div class="option-title">ELETTROBLOCCO</div>', unsafe_allow_html=True)
-    elettroblocco = st.checkbox("Aggiungi elettroblocco", value=True, key="elettro")
+    elettroblocco = st.checkbox("Aggiungi elettroblocco", value=False, key="elettro")
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<div class="option-box"><div class="option-title">RADAR SICUREZZA LATERALE</div>', unsafe_allow_html=True)
+    radar_sicurezza_laterale = st.checkbox("Aggiungi radar sicurezza laterale", value=False, key="radar_sicurezza_laterale")
+    st.markdown("""
+    <div class="option-note">
+    Il radar di sicurezza laterale serve a prevenire lo schiacciamento e l'impatto tra l'anta della porta e gli ostacoli fissi, come la parete, o le persone.<br><br>
+    La soglia dei <b>20 cm</b> rappresenta lo spazio di sicurezza perimetrale critico, fondamentale per rispettare gli standard europei, inclusa la normativa <b>EN 16005</b>.
+    </div>
+    """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
     prezzo_allaccio = LISTINI["ALLACCIO_COLLAUDO_STANDARD"] if tipo == "Standard" else LISTINI["ALLACCIO_COLLAUDO_RIDONDANTE"]
     testo_tipo_allaccio = "Standard" if tipo == "Standard" else "Ridondante"
 
     st.markdown('<div class="option-box"><div class="option-title">ALLACCIO E COLLAUDO</div>', unsafe_allow_html=True)
-    allaccio = st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=True, key="allaccio")
+    allaccio = st.checkbox("Aggiungi allaccio e collaudo SA-TEC", value=False, key="allaccio")
 
     st.markdown(f"""
     <div class="option-note">
@@ -787,6 +842,9 @@ with col_side:
 # =========================
 # ARTICOLI
 # =========================
+
+if 'radar_sicurezza_laterale' not in locals():
+    radar_sicurezza_laterale = False
 
 articoli = []
 
@@ -822,6 +880,15 @@ else:
     aggiungi(articoli, "PULSANTE_EMERGENZA", "Pulsante emergenza", "Pulsante emergenza")
     if elettroblocco:
         aggiungi(articoli, "ELETTRO_RIDONDANTE", "PF54.62 Elettroblocco Ridondante", "PF54.62 Elettroblocco Ridondante")
+
+if radar_sicurezza_laterale:
+    aggiungi(
+        articoli,
+        "RADAR_SICUREZZA_LATERALE",
+        "Radar sicurezza laterale EN16005",
+        "Radar di sicurezza laterale per prevenire schiacciamento e impatto tra anta, ostacoli fissi o persone. Spazio perimetrale critico 20 cm conforme ai principi della normativa EN16005.",
+        1
+    )
 
 aggiungi(articoli, "ASSEMBLAGGIO", "Assemblaggio automatismo", "Assemblaggio completo automatismo presso officina SA-TEC - Franco deposito SA-TEC Lamezia Terme", 1, scontato=False)
 
@@ -907,6 +974,7 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "traversa_m": f"{lunghezza_traversa:.2f}",
         "elettroblocco": "SI" if elettroblocco else "NO",
         "allaccio": "SI" if allaccio else "NO",
+        "radar_sicurezza_laterale": "SI" if radar_sicurezza_laterale else "NO",
         "ricarico_percento": f"{ricarico_effettivo:.0f}",
         "imponibile": f"{imponibile:.2f}",
         "iva": f"{iva:.2f}",
