@@ -6,6 +6,8 @@ import csv
 import pandas as pd
 import random
 import string
+import smtplib
+from email.message import EmailMessage
 from pathlib import Path
 from datetime import datetime, date
 
@@ -405,6 +407,80 @@ IBAN: IT30S0825842841007000002877
 
 Specialisti in ingressi automatici
 """
+
+
+def invia_email_automatica(destinatario, codice_preventivo, html_preventivo):
+    """
+    Invia email automatica tramite Gmail SMTP.
+    Richiede in Streamlit Secrets:
+    EMAIL_USER
+    EMAIL_PASSWORD
+    EMAIL_SMTP = smtp.gmail.com
+    EMAIL_PORT = 587
+    """
+    try:
+        email_user = st.secrets["EMAIL_USER"]
+        email_password = st.secrets["EMAIL_PASSWORD"]
+        smtp_server = st.secrets.get("EMAIL_SMTP", "smtp.gmail.com")
+        smtp_port = int(st.secrets.get("EMAIL_PORT", "587"))
+
+        msg = EmailMessage()
+        msg["From"] = email_user
+        msg["To"] = destinatario
+        msg["Cc"] = EMAIL
+        msg["Subject"] = f"Preventivo SA-TEC N° {codice_preventivo}"
+        msg.set_content(testo_email_preventivo(codice_preventivo))
+
+        # Allegato HTML stampabile: il cliente lo può aprire e stampare/salvare PDF.
+        nome_file = f"Preventivo_SA-TEC_{codice_preventivo}.html"
+        msg.add_attachment(
+            html_preventivo.encode("utf-8"),
+            maintype="text",
+            subtype="html",
+            filename=nome_file
+        )
+
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(email_user, email_password)
+            server.send_message(msg)
+
+        return True, ""
+
+    except Exception as e:
+        return False, str(e)
+
+def aggiorna_stato_preventivo_csv(codice_preventivo, nuovo_stato, email_destinatario=""):
+    path = Path(PREVENTIVI_CSV)
+    if not path.exists():
+        return False
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+
+        if not righe:
+            return False
+
+        fieldnames = list(righe[0].keys())
+        for campo in ["stato", "email_invio", "data_invio"]:
+            if campo not in fieldnames:
+                fieldnames.append(campo)
+
+        for r in righe:
+            if str(r.get("codice_preventivo", "")) == str(codice_preventivo):
+                r["stato"] = nuovo_stato
+                r["email_invio"] = email_destinatario
+                r["data_invio"] = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(righe)
+
+        return True
+    except:
+        return False
 
 
 
@@ -1578,22 +1654,40 @@ win.document.close();
 
 codice_email = st.session_state.get("ultimo_codice_preventivo", "")
 if profilo == "SA-TEC":
-    st.markdown('<div class="card"><div class="title-bar">INVIO / PREPARA EMAIL</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card"><div class="title-bar">INVIO EMAIL PREVENTIVO</div>', unsafe_allow_html=True)
     email_dest = st.text_input("Email destinatario preventivo", value=cliente_email, key="email_dest_preventivo")
 
     if not codice_email:
-        st.info("Prima salva il preventivo. Dopo il salvataggio comparirà il codice SAT e potrai preparare l'email.")
+        st.info("Prima salva il preventivo. Dopo il salvataggio comparirà il codice SAT e potrai inviare l'email.")
     else:
-        import urllib.parse
-        oggetto = f"Preventivo SA-TEC N° {codice_email}"
-        corpo = testo_email_preventivo(codice_email)
-        mailto = "mailto:" + urllib.parse.quote(email_dest) + "?subject=" + urllib.parse.quote(oggetto) + "&body=" + urllib.parse.quote(corpo)
-        st.markdown(f'<a href="{mailto}" target="_blank"><button style="background:#06499b;color:white;border:none;padding:14px 22px;border-radius:10px;font-size:18px;font-weight:bold;cursor:pointer;">PREPARA EMAIL CLIENTE</button></a>', unsafe_allow_html=True)
-        st.caption("Si apre il programma email con testo già pronto. Allega il PDF salvato manualmente.")
+        st.write(f"Preventivo pronto per invio: **{codice_email}**")
+
+        col_email1, col_email2 = st.columns(2)
+
+        with col_email1:
+            if st.button("INVIA PREVENTIVO VIA EMAIL"):
+                if not email_dest:
+                    st.error("Inserisci l'email del destinatario.")
+                else:
+                    ok, errore = invia_email_automatica(email_dest, codice_email, html_stampa)
+                    if ok:
+                        aggiorna_stato_preventivo_csv(codice_email, "Inviato", email_dest)
+                        st.success(f"Email inviata correttamente a {email_dest}. Copia inviata anche a SA-TEC.")
+                    else:
+                        st.error(f"Email non inviata: {errore}")
+
+        with col_email2:
+            import urllib.parse
+            oggetto = f"Preventivo SA-TEC N° {codice_email}"
+            corpo = testo_email_preventivo(codice_email)
+            mailto = "mailto:" + urllib.parse.quote(email_dest) + "?subject=" + urllib.parse.quote(oggetto) + "&body=" + urllib.parse.quote(corpo)
+            st.markdown(f'<a href="{mailto}" target="_blank"><button style="background:#777;color:white;border:none;padding:14px 22px;border-radius:10px;font-size:18px;font-weight:bold;cursor:pointer;width:100%;">PREPARA EMAIL MANUALE</button></a>', unsafe_allow_html=True)
+
+        st.caption("L'invio automatico allega il preventivo in formato HTML stampabile. Il cliente può aprirlo e salvarlo in PDF.")
+
     st.markdown("</div>", unsafe_allow_html=True)
 
-
-st.caption("Versione V29 - Checkbox gialli + Logo Rivenditore")
+st.caption("Versione V30 - Invio email automatico")
 
 st.markdown(f"""
 <div class="footer">
