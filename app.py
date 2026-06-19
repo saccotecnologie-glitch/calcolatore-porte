@@ -35,6 +35,7 @@ PIVA = "P.IVA 04009610793"
 TELEFONO = "0968-036797"
 EMAIL = "sacco.tecnologie@gmail.com"
 PEC = "sa-tec@pec.it"
+CODICE_UNIVOCO = "M5UXCR1"
 IBAN = "IT30S0825842841007000002877"
 IVA = 0.22
 
@@ -274,6 +275,60 @@ def genera_codice_progressivo(profilo, utenti):
     prossimo = max(numeri) + 1 if numeri else 1
     return f"{prefisso}{prossimo:04d}"
 
+
+# =========================
+# CODICE PREVENTIVO
+# =========================
+
+def genera_codice_preventivo():
+    anno = datetime.now().year
+    preventivi = carica_preventivi()
+    numeri = []
+    for p in preventivi:
+        codice = str(p.get("codice_preventivo", ""))
+        if codice.startswith(f"SAT-{anno}-"):
+            try:
+                numeri.append(int(codice.split("-")[-1]))
+            except:
+                pass
+    prossimo = max(numeri) + 1 if numeri else 1
+    return f"SAT-{anno}-{prossimo:04d}"
+
+def testo_email_preventivo(codice_preventivo):
+    return f"""Gentile Cliente,
+
+in allegato / di seguito trasmettiamo il preventivo SA-TEC relativo alla fornitura richiesta.
+
+Preventivo N° {codice_preventivo}
+Validità offerta: 15 giorni dalla data di emissione.
+
+Per qualsiasi chiarimento restiamo a completa disposizione.
+
+Cordiali saluti
+
+SA-TEC S.R.L.s
+
+Claudio Sacco
+Direzione Commerciale
+
+Tel. 0968 036797
+
+Email: sacco.tecnologie@gmail.com
+PEC: sa-tec@pec.it
+
+Via Luigi Settembrini 84
+88046 Lamezia Terme (CZ)
+
+P.IVA 04009610793
+REA CZ-228835
+Codice Univoco: M5UXCR1
+
+IBAN: IT30S0825842841007000002877
+
+Specialisti in ingressi automatici
+"""
+
+
 # =========================
 # PREVENTIVI CSV
 # =========================
@@ -281,7 +336,7 @@ def genera_codice_progressivo(profilo, utenti):
 def salva_preventivo(dati):
     file_exists = Path(PREVENTIVI_CSV).exists()
     campi = [
-        "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
+        "codice_preventivo", "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
         "cliente_telefono", "cliente_email", "configurazione", "luce_mm",
         "altezza_mm", "traversa_m", "elettroblocco", "allaccio", "radar_sicurezza_laterale",
         "ricarico_percento", "imponibile", "iva", "totale_iva", "stato"
@@ -960,7 +1015,9 @@ with dc4:
     cliente_email = st.text_input("Email", value=dati_utente.get("email", ""))
 
 if st.button("SALVA PREVENTIVO / RICHIESTA"):
+    codice_preventivo = genera_codice_preventivo()
     dati = {
+        "codice_preventivo": codice_preventivo,
         "data_ora": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "utente": utente_codice,
         "profilo": profilo,
@@ -982,7 +1039,8 @@ if st.button("SALVA PREVENTIVO / RICHIESTA"):
         "stato": "Nuovo"
     }
     salva_preventivo(dati)
-    st.success("Preventivo salvato correttamente. SA-TEC lo vedrà nella dashboard.")
+    st.session_state.ultimo_codice_preventivo = codice_preventivo
+    st.success(f"Preventivo {codice_preventivo} salvato correttamente. SA-TEC lo vedrà nella dashboard.")
 
 st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1042,6 +1100,8 @@ for art in articoli:
 logo_print = f'<img src="data:image/jpeg;base64,{logo_satec64}" style="width:240px;">' if logo_satec64 else f"<h1>{AZIENDA}</h1>"
 sesamo_print = f'<img src="data:image/png;base64,{logo_sesamo64}" style="height:90px;">' if logo_sesamo64 else "<b>SESAMO POWERCORE PW100</b>"
 
+codice_stampa = st.session_state.get("ultimo_codice_preventivo", "DA SALVARE")
+
 html_stampa = f"""
 <!DOCTYPE html>
 <html>
@@ -1066,11 +1126,14 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 </head>
 <body>
 <button class="print-button" onclick="window.print()">STAMPA / SALVA PDF</button>
-<div class="header"><div>{logo_print}</div><div class="company"><b>{AZIENDA}</b><br>{SEDE}<br>{PIVA}<br>Tel. {TELEFONO}<br>Email: {EMAIL}<br>PEC: {PEC}</div></div>
+<div class="header"><div>{logo_print}</div><div class="company"><b>{AZIENDA}</b><br>{SEDE}<br>{PIVA}<br>Codice Univoco: {CODICE_UNIVOCO}<br>Tel. {TELEFONO}<br>Email: {EMAIL}<br>PEC: {PEC}</div></div>
 <div class="brand"><div><h2 style="margin:0;">SESAMO POWERCORE PW100</h2><div>Configuratore porte automatiche lineari</div></div><div>{sesamo_print}</div></div>
 <h1>Preventivo porta automatica</h1>
+<h2>N° {codice_stampa}</h2>
 <div class="box">
 <b>Data:</b> {date.today().strftime("%d/%m/%Y")}<br>
+<b>Codice preventivo:</b> {codice_stampa}<br>
+<b>Validità offerta:</b> 15 giorni<br>
 <b>Profilo:</b> {PROFILI[profilo]}<br>
 <b>Utente:</b> {utente_codice}<br>
 <b>Cliente:</b> {cliente_nome} - {cliente_azienda}<br>
@@ -1085,17 +1148,31 @@ td {{border:1px solid #d7e6f7;padding:12px;vertical-align:top;}}
 <div class="total">Totale preventivo IVA esclusa: {euro(imponibile)}</div>
 <div style="text-align:right;font-size:18px;margin-top:8px;">IVA 22%: {euro(iva)}<br>Totale IVA inclusa: {euro(totale_iva)}</div>
 <div class="conditions">
-<h2>Condizioni di pagamento</h2>
-<p>Pagamento tramite bonifico bancario intestato a <b>{AZIENDA}</b>.<br>IBAN: <b>{IBAN}</b></p>
-<p>Condizioni proposte: 50% all’ordine e saldo 50% prima della consegna o al collaudo.</p>
-<p><b>Prezzi IVA esclusa. Merce resa franco deposito SA-TEC S.R.L.s - Lamezia Terme (CZ). Trasporto escluso salvo diversa indicazione.</b></p>
-<p><b>Vantaggi inclusi se il servizio è eseguito da SA-TEC:</b><br>
-Scegliendo SA-TEC per l'allaccio e il collaudo, sono inclusi nel prezzo i seguenti benefici:<br><br>
-<b>Libretto di manutenzione:</b> rilascio della documentazione ufficiale dell'apparecchio/impianto.<br>
-<b>Certificazione:</b> rilascio delle certificazioni di conformità e corretta installazione a norma di legge.<br>
-<b>Assistenza prioritaria:</b> garanzia di un intervento risolutivo in caso di guasti o problemi entro 48 ore.</p>
-<p>Preventivo indicativo soggetto a verifica tecnica e conferma definitiva SA-TEC S.R.L.s.</p>
-<p>Validità offerta: 15 giorni.</p>
+<h2>Condizioni commerciali</h2>
+<ul>
+<li>Validità offerta: 15 giorni dalla data di emissione</li>
+<li>Pagamento: 50% all'ordine mediante bonifico bancario</li>
+<li>Saldo: 50% alla consegna</li>
+<li>Tempi di consegna: da confermare all'ordine</li>
+<li>IVA esclusa, salvo diversa indicazione</li>
+<li>Opere murarie escluse</li>
+<li>Opere elettriche escluse</li>
+<li>Predisposizione alimentazione automazione a carico del committente</li>
+<li>Linea dedicata 230V con interruttore magnetotermico 10A a carico del committente</li>
+<li>Trasporto escluso, salvo diversa indicazione nell'offerta</li>
+<li>Eventuali opere aggiuntive non indicate nel presente preventivo saranno contabilizzate separatamente</li>
+<li>Misure e caratteristiche da verificare definitivamente in fase di rilievo</li>
+<li>La presente offerta è subordinata alla verifica tecnica finale</li>
+</ul>
+<h2>Coordinate bancarie</h2>
+<p><b>Intestatario:</b> {AZIENDA}<br>
+<b>IBAN:</b> {IBAN}<br>
+<b>Causale:</b> Acconto preventivo {codice_stampa}</p>
+<h2>Accettazione offerta</h2>
+<p>Per accettazione del presente preventivo e delle condizioni commerciali sopra indicate.</p>
+<table>
+<tr><td style="height:70px;"><b>Firma Cliente</b><br><br>_____________________________</td><td style="height:70px;"><b>SA-TEC S.R.L.s</b><br><br>_____________________________</td></tr>
+</table>
 </div>
 </body>
 </html>
@@ -1119,6 +1196,28 @@ win.document.close();
 }}
 </script>
 """, height=100)
+
+
+# =========================
+# EMAIL PREVENTIVO
+# =========================
+
+codice_email = st.session_state.get("ultimo_codice_preventivo", "")
+if profilo == "SA-TEC":
+    st.markdown('<div class="card"><div class="title-bar">INVIO / PREPARA EMAIL</div>', unsafe_allow_html=True)
+    email_dest = st.text_input("Email destinatario preventivo", value=cliente_email, key="email_dest_preventivo")
+
+    if not codice_email:
+        st.info("Prima salva il preventivo. Dopo il salvataggio comparirà il codice SAT e potrai preparare l'email.")
+    else:
+        import urllib.parse
+        oggetto = f"Preventivo SA-TEC N° {codice_email}"
+        corpo = testo_email_preventivo(codice_email)
+        mailto = "mailto:" + urllib.parse.quote(email_dest) + "?subject=" + urllib.parse.quote(oggetto) + "&body=" + urllib.parse.quote(corpo)
+        st.markdown(f'<a href="{mailto}" target="_blank"><button style="background:#06499b;color:white;border:none;padding:14px 22px;border-radius:10px;font-size:18px;font-weight:bold;cursor:pointer;">PREPARA EMAIL CLIENTE</button></a>', unsafe_allow_html=True)
+        st.caption("Si apre il programma email con testo già pronto. Allega il PDF salvato manualmente.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 st.markdown(f"""
 <div class="footer">
