@@ -2344,6 +2344,38 @@ div[data-testid="stImage"] img {
     margin-bottom:10px;
 }
 
+
+/* V59 - CRM ADMIN ALLINEATO */
+.admin-preventivo-row {
+    background:#ffffff!important;
+    border:2px solid #bdd4ef!important;
+    border-radius:14px!important;
+    padding:14px!important;
+    margin:16px 0 8px 0!important;
+    box-shadow:0 4px 12px rgba(6,73,155,0.08)!important;
+}
+.admin-preventivo-code {
+    color:#06499b!important;
+    font-size:20px!important;
+    font-weight:900!important;
+    margin-bottom:6px!important;
+}
+.admin-preventivo-line {
+    color:#111!important;
+    font-size:15px!important;
+    font-weight:700!important;
+    line-height:1.45!important;
+}
+.admin-action-spacer {
+    height:31px!important;
+}
+.admin-delete-note {
+    color:#eb5757!important;
+    font-size:13px!important;
+    font-weight:900!important;
+    margin-top:4px!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -2504,23 +2536,24 @@ if profilo == "SA-TEC":
 
                     st.markdown(f"""
                     <div class="admin-preventivo-row">
-                        <b style="color:#06499b;font-size:17px;">{codice}</b><br>
-                        <span><b>Rivenditore/Utente:</b> {utente_prev}</span><br>
-                        <span><b>Cliente:</b> {cliente}</span><br>
-                        <span><b>Configurazione:</b> {config_prev}</span><br>
-                        <span><b>Totale:</b> {totale_prev} &nbsp; | &nbsp; <b>Stato:</b> {stato_prev}</span>
+                        <div class="admin-preventivo-code">{codice}</div>
+                        <div class="admin-preventivo-line"><b>Rivenditore/Utente:</b> {utente_prev}</div>
+                        <div class="admin-preventivo-line"><b>Cliente:</b> {cliente}</div>
+                        <div class="admin-preventivo-line"><b>Configurazione:</b> {config_prev}</div>
+                        <div class="admin-preventivo-line"><b>Totale:</b> {totale_prev} &nbsp; | &nbsp; <b>Stato:</b> {stato_prev}</div>
                     </div>
                     """, unsafe_allow_html=True)
 
                     c_apri, c_stato, c_elimina = st.columns([1, 1, 1])
 
                     with c_apri:
+                        st.markdown('<div class="admin-action-spacer"></div>', unsafe_allow_html=True)
                         if st.button("APRI DETTAGLIO", key=f"apri_dettaglio_{codice}_{idx}", use_container_width=True):
                             st.session_state.preventivo_dettaglio_admin = codice
 
                     with c_stato:
                         nuovo_stato = st.selectbox(
-                            "Stato",
+                            "Cambia stato",
                             STATI_PREVENTIVO,
                             index=STATI_PREVENTIVO.index(stato_prev) if stato_prev in STATI_PREVENTIVO else 0,
                             key=f"stato_select_{codice}_{idx}"
@@ -2534,12 +2567,12 @@ if profilo == "SA-TEC":
 
                     with c_elimina:
                         conferma = st.checkbox(
-                            f"Confermo eliminazione {codice}",
+                            "Conferma eliminazione",
                             key=f"conferma_elimina_{codice}_{idx}"
                         )
                         if st.button("ELIMINA", key=f"elimina_prev_{codice}_{idx}", use_container_width=True):
                             if not conferma:
-                                st.warning("Prima spunta la conferma eliminazione.")
+                                st.warning("Spunta prima 'Conferma eliminazione'.")
                             else:
                                 ok_del, msg_del = elimina_preventivo_admin(codice)
                                 if ok_del:
@@ -2549,6 +2582,7 @@ if profilo == "SA-TEC":
                                     st.rerun()
                                 else:
                                     st.error(msg_del)
+                        st.markdown(f'<div class="admin-delete-note">Elimina definitivamente {codice}</div>', unsafe_allow_html=True)
 
                     if st.session_state.get("preventivo_dettaglio_admin") == codice:
                         render_dettaglio_preventivo_admin(p)
@@ -3474,7 +3508,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V58 - Dettaglio e cancellazione preventivi ADMIN")
+st.caption("Versione V59 - CRM ADMIN allineato")
 
 st.markdown(f"""
 <div class="footer">
