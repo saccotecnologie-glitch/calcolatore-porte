@@ -1327,25 +1327,6 @@ def login_box():
     st.sidebar.markdown("## Accesso")
     st.sidebar.info("Cliente finale: può usare il configuratore senza login e inviare una richiesta a SA-TEC.")
 
-    with st.sidebar.expander("Codici test accesso"):
-        st.markdown("""
-        **Rivenditore test**  
-        Utente: `ROSSI01`  
-        Password: `R2026#`
-
-        **Rivenditore test 2**  
-        Utente: `VERDI01`  
-        Password: `V2026#`
-
-        **Grossista test**  
-        Utente: `GROS001`  
-        Password: `G2026#`
-
-        **Admin SA-TEC**  
-        Utente: `ADMIN`  
-        Password: `SATEC-ADMIN`
-        """)
-
     username = st.sidebar.text_input("Utente", value="", key="login_user")
     password = st.sidebar.text_input("Password", value="", type="password", key="login_pwd")
 
@@ -1417,79 +1398,81 @@ def login_box():
             if salva_logo_utente(utente_codice, logo_upload):
                 st.sidebar.success("Logo salvato. Ricarica la pagina se non lo vedi nel PDF.")
 
-    with st.sidebar.expander("Registrazione cliente"):
-        st.caption("Crea automaticamente una password cliente.")
-        reg_nome = st.text_input("Nome", key="reg_nome")
-        reg_azienda = st.text_input("Azienda", key="reg_azienda")
-        reg_tel = st.text_input("Telefono", key="reg_tel")
-        reg_email = st.text_input("Email", key="reg_email")
+    if profilo not in ["RIVENDITORE", "GROSSISTA"]:
+        with st.sidebar.expander("Registrazione cliente"):
+            st.caption("Crea automaticamente una password cliente.")
+            reg_nome = st.text_input("Nome", key="reg_nome")
+            reg_azienda = st.text_input("Azienda", key="reg_azienda")
+            reg_tel = st.text_input("Telefono", key="reg_tel")
+            reg_email = st.text_input("Email", key="reg_email")
 
-        if st.button("GENERA ACCESSO CLIENTE"):
-            utenti_now = carica_tutti_utenti()
-            nuovo_user = genera_codice_progressivo("CLIENTE", utenti_now)
-            nuova_pwd = genera_password()
-            salva_utente_csv(
-                nuovo_user,
-                nuova_pwd,
-                "CLIENTE",
-                reg_nome,
-                reg_azienda,
-                reg_tel,
-                reg_email,
-                "35"
-            )
-            st.success("Accesso cliente creato.")
-            st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
-
-    with st.sidebar.expander("Richiesta accesso commerciale"):
-        st.caption("Compila il modulo. SA-TEC valuterà la richiesta e assegnerà il livello commerciale con relativo ricarico.")
-        tipo_richiesta = st.selectbox("Tipo richiesta", ["RIVENDITORE", "GROSSISTA"], key="riv_tipo_richiesta")
-        riv_azienda = st.text_input("Ragione sociale", key="riv_reg_azienda")
-        riv_ref = st.text_input("Referente", key="riv_reg_ref")
-        riv_tel = st.text_input("Telefono", key="riv_reg_tel")
-        riv_email = st.text_input("Email", key="riv_reg_email")
-        riv_zona = st.text_input("Zona di competenza", key="riv_reg_zona")
-        riv_password = st.text_input("Password desiderata", type="password", key="riv_reg_pwd")
-
-        if st.button("INVIA RICHIESTA COMMERCIALE"):
-            if not riv_azienda or not riv_email or not riv_password:
-                st.error("Inserisci almeno ragione sociale, email e password.")
-            else:
+            if st.button("GENERA ACCESSO CLIENTE"):
                 utenti_now = carica_tutti_utenti()
-                nuovo_user = genera_codice_progressivo(tipo_richiesta, utenti_now)
-
-                azienda_con_zona = riv_azienda
-                if riv_zona:
-                    azienda_con_zona = f"{riv_azienda} - Zona: {riv_zona}"
-
-                # Backup CSV
+                nuovo_user = genera_codice_progressivo("CLIENTE", utenti_now)
+                nuova_pwd = genera_password()
                 salva_utente_csv(
                     nuovo_user,
-                    riv_password,
-                    tipo_richiesta,
-                    riv_ref,
-                    azienda_con_zona,
-                    riv_tel,
-                    riv_email,
-                    "0"
+                    nuova_pwd,
+                    "CLIENTE",
+                    reg_nome,
+                    reg_azienda,
+                    reg_tel,
+                    reg_email,
+                    "35"
                 )
+                st.success("Accesso cliente creato.")
+                st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
 
-                ok_sb, err_sb = salva_utente_supabase(
-                    nuovo_user,
-                    riv_password,
-                    tipo_richiesta,
-                    azienda_con_zona,
-                    riv_tel,
-                    riv_email,
-                    0
-                )
+    if profilo not in ["RIVENDITORE", "GROSSISTA"]:
+        with st.sidebar.expander("Richiesta accesso commerciale"):
+            st.caption("Compila il modulo. SA-TEC valuterà la richiesta e assegnerà il livello commerciale con relativo ricarico.")
+            tipo_richiesta = st.selectbox("Tipo richiesta", ["RIVENDITORE", "GROSSISTA"], key="riv_tipo_richiesta")
+            riv_azienda = st.text_input("Ragione sociale", key="riv_reg_azienda")
+            riv_ref = st.text_input("Referente", key="riv_reg_ref")
+            riv_tel = st.text_input("Telefono", key="riv_reg_tel")
+            riv_email = st.text_input("Email", key="riv_reg_email")
+            riv_zona = st.text_input("Zona di competenza", key="riv_reg_zona")
+            riv_password = st.text_input("Password desiderata", type="password", key="riv_reg_pwd")
 
-                if ok_sb:
-                    st.success("Richiesta commerciale inviata e salvata su Supabase.")
+            if st.button("INVIA RICHIESTA COMMERCIALE"):
+                if not riv_azienda or not riv_email or not riv_password:
+                    st.error("Inserisci almeno ragione sociale, email e password.")
                 else:
-                    st.warning(f"Richiesta salvata in CSV. Supabase non disponibile: {err_sb}")
+                    utenti_now = carica_tutti_utenti()
+                    nuovo_user = genera_codice_progressivo(tipo_richiesta, utenti_now)
 
-                st.code(f"Utente: {nuovo_user}\nPassword: {riv_password}\nProfilo richiesto: {tipo_richiesta}\nStato: in attesa ricarico SA-TEC")
+                    azienda_con_zona = riv_azienda
+                    if riv_zona:
+                        azienda_con_zona = f"{riv_azienda} - Zona: {riv_zona}"
+
+                    # Backup CSV
+                    salva_utente_csv(
+                        nuovo_user,
+                        riv_password,
+                        tipo_richiesta,
+                        riv_ref,
+                        azienda_con_zona,
+                        riv_tel,
+                        riv_email,
+                        "0"
+                    )
+
+                    ok_sb, err_sb = salva_utente_supabase(
+                        nuovo_user,
+                        riv_password,
+                        tipo_richiesta,
+                        azienda_con_zona,
+                        riv_tel,
+                        riv_email,
+                        0
+                    )
+
+                    if ok_sb:
+                        st.success("Richiesta commerciale inviata e salvata su Supabase.")
+                    else:
+                        st.warning(f"Richiesta salvata in CSV. Supabase non disponibile: {err_sb}")
+
+                    st.code(f"Utente: {nuovo_user}\nPassword: {riv_password}\nProfilo richiesto: {tipo_richiesta}\nStato: in attesa ricarico SA-TEC")
 
     try:
         ricarico_effettivo = float(str(dati_utente.get("ricarico", "")).replace(",", "."))
@@ -2402,7 +2385,7 @@ div[data-testid="stImage"] img {
 }
 
 
-/* V61 - RICARICO STEP 10 FINO A CLIENTE FINALE */
+/* V63 - AREA RIVENDITORI PULITA */
 .extra-ricarico-box {
     background:#fff8c7;
     border:3px solid #06499b;
@@ -2481,16 +2464,14 @@ st.markdown(f"""
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
 
-# V61 - Ricarico extra a step del 10% fino al prezzo cliente finale
+# V63 - Incremento prezzo vendita nascosto per rivenditore/grossista
 ricarico_base_assegnato = float(ricarico_effettivo or 0)
 ricarico_cliente_finale = float(ricarico_default("CLIENTE"))
 
 if profilo in ["RIVENDITORE", "GROSSISTA"]:
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### Ricarico vendita")
-    st.sidebar.caption(
-        "Puoi aumentare il prezzo solo a step del 10%, senza superare il prezzo cliente finale."
-    )
+    st.sidebar.markdown("### Prezzo vendita")
+    st.sidebar.caption("Puoi aumentare il prezzo di vendita a step del 10%.")
 
     extra_massimo = max(0.0, ricarico_cliente_finale - ricarico_base_assegnato)
 
@@ -2503,7 +2484,7 @@ if profilo in ["RIVENDITORE", "GROSSISTA"]:
     labels_extra = [f"+{x:.0f}%" for x in step_extra]
 
     scelta_extra_label = st.sidebar.selectbox(
-        "Ricarico extra consentito",
+        "Incremento prezzo vendita",
         labels_extra,
         index=0,
         key="ricarico_extra_utente_step10"
@@ -2516,10 +2497,7 @@ if profilo in ["RIVENDITORE", "GROSSISTA"]:
         ricarico_cliente_finale
     )
 
-    st.sidebar.success(
-        f"Base: {ricarico_base_assegnato:.0f}% | Extra: {ricarico_extra_utente:.0f}% | Totale: {ricarico_effettivo:.0f}%"
-    )
-    st.sidebar.caption(f"Limite massimo: prezzo cliente finale = {ricarico_cliente_finale:.0f}%")
+    st.sidebar.success(f"Incremento applicato: {ricarico_extra_utente:.0f}%")
 elif profilo == "CLIENTE":
     ricarico_extra_utente = 0.0
 else:
@@ -3624,7 +3602,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V62 - Codici test e richiesta commerciale")
+st.caption("Versione V63 - Area Rivenditori/Grossisti pulita")
 
 st.markdown(f"""
 <div class="footer">
