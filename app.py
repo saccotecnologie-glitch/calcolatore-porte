@@ -177,7 +177,7 @@ def ricarico_default(profilo):
         return 20.0
     if profilo == "RIVENDITORE":
         return 30.0
-    return 35.0
+    return 60.0
 
 RICARICO_ATTIVO = 35.0
 
@@ -1321,7 +1321,7 @@ def login_box():
             "azienda": "",
             "telefono": "",
             "email": "",
-            "ricarico": "35"
+            "ricarico": "60"
         }
 
     st.sidebar.markdown("## Accesso")
@@ -1347,7 +1347,7 @@ def login_box():
             "azienda": "",
             "telefono": "",
             "email": "",
-            "ricarico": "35"
+            "ricarico": "60"
         }
         st.sidebar.success("Accesso cliente finale")
 
@@ -1418,7 +1418,7 @@ def login_box():
                     reg_azienda,
                     reg_tel,
                     reg_email,
-                    "35"
+                    "60"
                 )
                 st.success("Accesso cliente creato.")
                 st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
@@ -3616,7 +3616,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V65 - Cliente finale 60 percento")
+st.caption("Versione V66 - Cliente finale realmente 60 percento")
 
 st.markdown(f"""
 <div class="footer">
