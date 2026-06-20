@@ -192,13 +192,6 @@ def img_to_base64(paths):
             return base64.b64encode(f.read_bytes()).decode()
     return ""
 
-def immagine_prodotto_base64(nome_file):
-    p = Path(nome_file)
-    if p.exists():
-        return base64.b64encode(p.read_bytes()).decode()
-    return ""
-
-
 # =========================
 # RICERCA MANUALI ROBUSTA
 # =========================
@@ -1831,58 +1824,48 @@ div[data-testid="stButton"] button[kind="secondary"] {
 }
 
 
-/* V51 - GRAFICA PROFESSIONALE PW100 / ER140 */
-.product-card {
+/* V51.2 - card native immagini */
+.pro-card-box {
     background:#ffffff;
     border:2px solid #bdd4ef;
     border-radius:18px;
     padding:18px;
-    margin-bottom:16px;
+    margin-bottom:12px;
     box-shadow:0 6px 18px rgba(6,73,155,0.12);
 }
-.product-card-active {
+.pro-card-active {
     border:4px solid #06499b!important;
     background:#fff8c7!important;
 }
-.product-img {
-    width:100%;
-    max-height:170px;
-    object-fit:contain;
-    background:#050505;
-    border-radius:14px;
-    padding:8px;
-    margin-bottom:12px;
+.pro-badge-standard {
+    display:inline-block;
+    background:#06499b;
+    color:#ffffff;
+    font-weight:900;
+    border-radius:8px;
+    padding:7px 12px;
+    margin:8px 0;
 }
-.product-title {
+.pro-badge-ridondante {
+    display:inline-block;
+    background:#ff7900;
+    color:#ffffff;
+    font-weight:900;
+    border-radius:8px;
+    padding:7px 12px;
+    margin:8px 0;
+}
+.pro-title {
     color:#06499b;
     font-size:26px;
     font-weight:900;
-    margin-bottom:6px;
+    margin:8px 0;
 }
-.product-badge-standard {
-    display:inline-block;
-    background:#06499b;
-    color:white;
-    font-weight:900;
-    border-radius:8px;
-    padding:7px 12px;
-    margin-bottom:10px;
-}
-.product-badge-ridondante {
-    display:inline-block;
-    background:#ff7900;
-    color:white;
-    font-weight:900;
-    border-radius:8px;
-    padding:7px 12px;
-    margin-bottom:10px;
-}
-.product-desc {
-    color:#111;
+.pro-desc {
+    color:#111111;
     font-size:15px;
     font-weight:700;
     line-height:1.45;
-    min-height:72px;
 }
 .summary-pro {
     background:#ffffff;
@@ -2166,10 +2149,6 @@ if profilo == "SA-TEC":
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-# Immagini prodotto PW100 / ER140
-pw100_b64 = immagine_prodotto_base64("pw100.png")
-er140_b64 = immagine_prodotto_base64("er140.png")
-
 # =========================
 # CONFIGURATORE
 # =========================
@@ -2188,20 +2167,23 @@ with col_main:
     pcol1, pcol2 = st.columns(2)
 
     with pcol1:
-        classe = "product-card product-card-active" if pw_active else "product-card"
-        img_html = f'<img class="product-img" src="data:image/png;base64,{pw100_b64}">' if pw100_b64 else ""
-        st.markdown(f"""
-        <div class="{classe}">
-            {img_html}
-            <div class="product-badge-standard">STANDARD</div>
-            <div class="product-title">Sesamo PowerCore PW100</div>
-            <div class="product-desc">
-                Automazione lineare per porte scorrevoli automatiche.
-                Soluzione ideale per ingressi commerciali, uffici e attività.
-                Compatibile con normativa EN16005.
-            </div>
+        classe_pw = "pro-card-box pro-card-active" if pw_active else "pro-card-box"
+        st.markdown(f'<div class="{classe_pw}">', unsafe_allow_html=True)
+
+        if Path("pw100.png").exists():
+            st.image("pw100.png", use_container_width=True)
+
+        st.markdown('<div class="pro-badge-standard">STANDARD</div>', unsafe_allow_html=True)
+        st.markdown('<div class="pro-title">Sesamo PowerCore PW100</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="pro-desc">
+        Automazione lineare per porte scorrevoli automatiche.<br>
+        Soluzione ideale per ingressi commerciali, uffici e attività.<br>
+        Compatibile con normativa EN16005.
         </div>
         """, unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
         b_pw1, b_pw2 = st.columns(2)
         with b_pw1:
@@ -2214,19 +2196,23 @@ with col_main:
                 st.rerun()
 
     with pcol2:
-        classe = "product-card product-card-active" if er_active else "product-card"
-        img_html = f'<img class="product-img" src="data:image/png;base64,{er140_b64}">' if er140_b64 else ""
-        st.markdown(f"""
-        <div class="{classe}">
-            {img_html}
-            <div class="product-badge-ridondante">RIDONDANTE / VIE DI FUGA</div>
-            <div class="product-title">Sesamo ER140 Ridondante</div>
-            <div class="product-desc">
-                Automazione ridondante per uscite di emergenza e vie di fuga.
-                Progettata per garantire continuità di apertura e massima sicurezza.
-            </div>
+        classe_er = "pro-card-box pro-card-active" if er_active else "pro-card-box"
+        st.markdown(f'<div class="{classe_er}">', unsafe_allow_html=True)
+
+        if Path("er140.png").exists():
+            st.image("er140.png", use_container_width=True)
+
+        st.markdown('<div class="pro-badge-ridondante">RIDONDANTE / VIE DI FUGA</div>', unsafe_allow_html=True)
+        st.markdown('<div class="pro-title">Sesamo ER140 Ridondante</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="pro-desc">
+        Automazione ridondante per uscite di emergenza e vie di fuga.<br>
+        Progettata per garantire continuità di apertura e massima sicurezza.<br>
+        Soluzione professionale per ambienti soggetti a requisiti specifici.
         </div>
         """, unsafe_allow_html=True)
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
         b_er1, b_er2 = st.columns(2)
         with b_er1:
@@ -2992,7 +2978,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V51.1 - Fix immagini PW100 / ER140")
+st.caption("Versione V51.2 - Grafica professionale corretta")
 
 st.markdown(f"""
 <div class="footer">
