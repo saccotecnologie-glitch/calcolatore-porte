@@ -1136,6 +1136,30 @@ def html_export_preventivo_admin(p):
     margin-top:4px!important;
 }
 
+
+/* V85 - SEZIONI ADMIN A SCOMPARSA */
+.v85-toggle-title {
+    background:#06499b;
+    color:#ffffff!important;
+    border-radius:14px;
+    padding:14px 18px;
+    margin:16px 0 8px 0;
+    font-size:19px;
+    font-weight:900;
+    box-shadow:0 5px 15px rgba(6,73,155,0.18);
+}
+.v85-help-box {
+    background:#eef6ff;
+    color:#111827!important;
+    border:2px solid #bdd4ef;
+    border-radius:14px;
+    padding:14px;
+    margin:12px 0;
+    font-size:15px;
+    font-weight:800;
+    line-height:1.55;
+}
+
 </style>
     </head>
     <body>
@@ -1855,6 +1879,15 @@ def v84_render_dashboard(preventivi):
 
 
 def v83_render_admin(preventivi):
+    st.markdown("""
+    <div class="v85-help-box">
+    <b>Simulazione funzionamento:</b><br>
+    1) Entra come Cliente e salva un preventivo.<br>
+    2) Entra come Rivenditore/Grossista e salva un preventivo con incremento prezzo.<br>
+    3) Entra come ADMIN, apri il dettaglio, cambia stato, duplica o elimina.
+    </div>
+    """, unsafe_allow_html=True)
+
     if not preventivi:
         st.info("Nessun preventivo salvato ancora.")
         return
@@ -3674,48 +3707,74 @@ if profilo == "SA-TEC":
 
 
         st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown('<h3 style="color:#06499b;">Gestione Rivenditori / Grossisti</h3>', unsafe_allow_html=True)
+        st.markdown('<div class="v85-toggle-title">Anagrafiche e gestione commerciale</div>', unsafe_allow_html=True)
 
-        righe_riv = utenti_rivenditori_grossisti()
-        if not righe_riv:
-            st.info("Nessun rivenditore o grossista presente.")
-        else:
-            st.markdown(tabella_html_sicura(righe_riv), unsafe_allow_html=True)
+        # =========================
+        # GESTIONE RIVENDITORI / GROSSISTI A SCOMPARSA
+        # =========================
+        if "v85_show_rivenditori" not in st.session_state:
+            st.session_state.v85_show_rivenditori = False
 
-            codici_riv = [r["utente"] for r in righe_riv]
-            col_riv1, col_riv2, col_riv3 = st.columns([2, 1, 1])
-            with col_riv1:
-                utente_riv_mod = st.selectbox("Utente rivenditore/grossista", codici_riv, key="utente_riv_mod")
-            with col_riv2:
-                nuovo_ricarico_riv = st.number_input("Nuovo ricarico %", min_value=0.0, max_value=200.0, value=30.0, step=1.0, key="nuovo_ricarico_riv")
-            with col_riv3:
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("AGGIORNA RICARICO"):
-                    ok_riv, err_riv = aggiorna_ricarico_utente_supabase(utente_riv_mod, nuovo_ricarico_riv)
-                    if ok_riv:
-                        st.success(f"Ricarico aggiornato per {utente_riv_mod}: {nuovo_ricarico_riv:.0f}%")
-                    else:
-                        st.error(f"Ricarico non aggiornato: {err_riv}")
+        label_riv = "▼ Nascondi Gestione Rivenditori / Grossisti" if st.session_state.v85_show_rivenditori else "► Mostra Gestione Rivenditori / Grossisti"
+        if st.button(label_riv, key="v85_toggle_rivenditori", use_container_width=True):
+            st.session_state.v85_show_rivenditori = not st.session_state.v85_show_rivenditori
+            st.rerun()
 
+        if st.session_state.v85_show_rivenditori:
+            st.markdown('<h3 style="color:#06499b;">Gestione Rivenditori / Grossisti</h3>', unsafe_allow_html=True)
+
+            righe_riv = utenti_rivenditori_grossisti()
+            if not righe_riv:
+                st.info("Nessun rivenditore o grossista presente.")
+            else:
+                st.markdown(tabella_html_sicura(righe_riv), unsafe_allow_html=True)
+
+                codici_riv = [r["utente"] for r in righe_riv]
+                col_riv1, col_riv2, col_riv3 = st.columns([2, 1, 1])
+                with col_riv1:
+                    utente_riv_mod = st.selectbox("Utente rivenditore/grossista", codici_riv, key="utente_riv_mod")
+                with col_riv2:
+                    nuovo_ricarico_riv = st.number_input("Nuovo ricarico %", min_value=0.0, max_value=200.0, value=30.0, step=1.0, key="nuovo_ricarico_riv")
+                with col_riv3:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.button("AGGIORNA RICARICO"):
+                        ok_riv, err_riv = aggiorna_ricarico_utente_supabase(utente_riv_mod, nuovo_ricarico_riv)
+                        if ok_riv:
+                            st.success(f"Ricarico aggiornato per {utente_riv_mod}: {nuovo_ricarico_riv:.0f}%")
+                        else:
+                            st.error(f"Ricarico non aggiornato: {err_riv}")
 
         st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown('<h3 style="color:#06499b;">Archivio Clienti</h3>', unsafe_allow_html=True)
 
-        clienti = carica_clienti()
-        cerca_cliente_dash = st.text_input("Cerca cliente", placeholder="Nome, azienda, telefono, email o codice preventivo", key="cerca_cliente_dash")
-        clienti_filtrati = filtra_clienti_dashboard(clienti, cerca_cliente_dash)
+        # =========================
+        # ARCHIVIO CLIENTI A SCOMPARSA
+        # =========================
+        if "v85_show_clienti" not in st.session_state:
+            st.session_state.v85_show_clienti = False
 
-        if not clienti:
-            st.info("Nessun cliente salvato ancora. Verrà creato automaticamente al salvataggio del primo preventivo.")
-        elif not clienti_filtrati:
-            st.warning("Nessun cliente trovato con questo filtro.")
-        else:
-            st.write(f"Clienti trovati: **{len(clienti_filtrati)}**")
-            st.markdown(tabella_html_sicura(righe_clienti_dashboard(clienti_filtrati)), unsafe_allow_html=True)
+        label_cli = "▼ Nascondi Archivio Clienti" if st.session_state.v85_show_clienti else "► Mostra Archivio Clienti"
+        if st.button(label_cli, key="v85_toggle_clienti", use_container_width=True):
+            st.session_state.v85_show_clienti = not st.session_state.v85_show_clienti
+            st.rerun()
 
-            if Path(CLIENTI_CSV).exists():
-                with open(CLIENTI_CSV, "rb") as f:
-                    st.download_button("Scarica CSV clienti", data=f, file_name="clienti_satec.csv", mime="text/csv")
+        if st.session_state.v85_show_clienti:
+            st.markdown('<h3 style="color:#06499b;">Archivio Clienti</h3>', unsafe_allow_html=True)
+
+            clienti = carica_clienti()
+            cerca_cliente_dash = st.text_input("Cerca cliente", placeholder="Nome, azienda, telefono, email o codice preventivo", key="cerca_cliente_dash")
+            clienti_filtrati = filtra_clienti_dashboard(clienti, cerca_cliente_dash)
+
+            if not clienti:
+                st.info("Nessun cliente salvato ancora. Verrà creato automaticamente al salvataggio del primo preventivo.")
+            elif not clienti_filtrati:
+                st.warning("Nessun cliente trovato con questo filtro.")
+            else:
+                st.write(f"Clienti trovati: **{len(clienti_filtrati)}**")
+                st.markdown(tabella_html_sicura(righe_clienti_dashboard(clienti_filtrati)), unsafe_allow_html=True)
+
+                if Path(CLIENTI_CSV).exists():
+                    with open(CLIENTI_CSV, "rb") as f:
+                        st.download_button("Scarica CSV clienti", data=f, file_name="clienti_satec.csv", mime="text/csv")
 
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -4561,7 +4620,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V84 - Dashboard CRM leggibile e chiudi dettaglio")
+st.caption("Versione V85 - Sezioni Admin a scomparsa")
 
 st.markdown(f"""
 <div class="footer">
