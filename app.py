@@ -192,6 +192,13 @@ def img_to_base64(paths):
             return base64.b64encode(f.read_bytes()).decode()
     return ""
 
+def immagine_prodotto_base64(nome_file):
+    p = Path(nome_file)
+    if p.exists():
+        return base64.b64encode(p.read_bytes()).decode()
+    return ""
+
+
 # =========================
 # RICERCA MANUALI ROBUSTA
 # =========================
@@ -1823,6 +1830,107 @@ div[data-testid="stButton"] button[kind="secondary"] {
     margin-top:-8px!important;
 }
 
+
+/* V51 - GRAFICA PROFESSIONALE PW100 / ER140 */
+.product-card {
+    background:#ffffff;
+    border:2px solid #bdd4ef;
+    border-radius:18px;
+    padding:18px;
+    margin-bottom:16px;
+    box-shadow:0 6px 18px rgba(6,73,155,0.12);
+}
+.product-card-active {
+    border:4px solid #06499b!important;
+    background:#fff8c7!important;
+}
+.product-img {
+    width:100%;
+    max-height:170px;
+    object-fit:contain;
+    background:#050505;
+    border-radius:14px;
+    padding:8px;
+    margin-bottom:12px;
+}
+.product-title {
+    color:#06499b;
+    font-size:26px;
+    font-weight:900;
+    margin-bottom:6px;
+}
+.product-badge-standard {
+    display:inline-block;
+    background:#06499b;
+    color:white;
+    font-weight:900;
+    border-radius:8px;
+    padding:7px 12px;
+    margin-bottom:10px;
+}
+.product-badge-ridondante {
+    display:inline-block;
+    background:#ff7900;
+    color:white;
+    font-weight:900;
+    border-radius:8px;
+    padding:7px 12px;
+    margin-bottom:10px;
+}
+.product-desc {
+    color:#111;
+    font-size:15px;
+    font-weight:700;
+    line-height:1.45;
+    min-height:72px;
+}
+.summary-pro {
+    background:#ffffff;
+    border:3px solid #06499b;
+    border-radius:18px;
+    padding:18px;
+    box-shadow:0 6px 18px rgba(6,73,155,0.15);
+    margin-top:12px;
+}
+.summary-pro-title {
+    background:#06499b;
+    color:#ffffff;
+    font-size:20px;
+    font-weight:900;
+    border-radius:10px;
+    padding:10px 14px;
+    text-align:center;
+    margin-bottom:14px;
+}
+.summary-line {
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1px solid #d7e6f7;
+    padding:8px 0;
+    font-size:15px;
+    color:#111;
+}
+.summary-line b { color:#06499b; }
+.summary-total {
+    background:#fff3a3;
+    border:2px solid #06499b;
+    border-radius:12px;
+    padding:12px;
+    text-align:center;
+    margin-top:14px;
+}
+.summary-total .label {
+    color:#111;
+    font-weight:900;
+    font-size:15px;
+}
+.summary-total .value {
+    color:#06499b;
+    font-weight:900;
+    font-size:34px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -2068,35 +2176,62 @@ if "scelta" not in st.session_state:
 col_main, col_side = st.columns([0.69, 0.31], gap="large")
 
 with col_main:
-    st.markdown('<div class="card"><div class="title-bar">1&nbsp;&nbsp; SCEGLI LA PORTA AUTOMATICA</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card"><div class="title-bar">1&nbsp;&nbsp; SCEGLI L\'AUTOMAZIONE</div>', unsafe_allow_html=True)
 
-    cards = [
-        ("STANDARD<br>1 ANTA", "STANDARD 1 ANTA", "Porta automatica lineare standard a una anta", "1 anta"),
-        ("STANDARD<br>2 ANTE", "STANDARD 2 ANTE", "Porta automatica lineare standard a due ante", "2 ante"),
-        ("RIDONDANTE<br>1 ANTA", "RIDONDANTE 1 ANTA", "Automazione lineare per via di fuga a una anta", "1 anta"),
-        ("RIDONDANTE<br>2 ANTE", "RIDONDANTE 2 ANTE", "Automazione lineare per via di fuga a due ante", "2 ante"),
-    ]
+    pw_active = st.session_state.scelta in ["STANDARD 1 ANTA", "STANDARD 2 ANTE"]
+    er_active = st.session_state.scelta in ["RIDONDANTE 1 ANTA", "RIDONDANTE 2 ANTE"]
 
-    cols = st.columns(4)
+    pcol1, pcol2 = st.columns(2)
 
-    for c, (titolo, key, desc, ante_mini) in zip(cols, cards):
-        with c:
-            active = st.session_state.scelta == key
-            classe_card = "porta-card porta-card-attiva" if active else "porta-card"
-
-            # Card visuale
-            st.markdown(f"""
-            <div class="{classe_card}">
-                <div class="porta-card-title">{titolo}</div>
-                <div>{mini_porta_html(ante_mini)}</div>
-                <div class="porta-card-desc">{desc}</div>
+    with pcol1:
+        classe = "product-card product-card-active" if pw_active else "product-card"
+        img_html = f'<img class="product-img" src="data:image/png;base64,{pw100_b64}">' if pw100_b64 else ""
+        st.markdown(f"""
+        <div class="{classe}">
+            {img_html}
+            <div class="product-badge-standard">STANDARD</div>
+            <div class="product-title">Sesamo PowerCore PW100</div>
+            <div class="product-desc">
+                Automazione lineare per porte scorrevoli automatiche.
+                Soluzione ideale per ingressi commerciali, uffici e attività.
+                Compatibile con normativa EN16005.
             </div>
-            """, unsafe_allow_html=True)
+        </div>
+        """, unsafe_allow_html=True)
 
-            # Pulsante grande quanto il riquadro: è lui il riquadro cliccabile reale in Streamlit
-            label_btn = "✓ SELEZIONATA" if active else "CLICCA QUI"
-            if st.button(label_btn, key=f"select_{key}", use_container_width=True):
-                st.session_state.scelta = key
+        b_pw1, b_pw2 = st.columns(2)
+        with b_pw1:
+            if st.button("PW100 1 ANTA", key="btn_pw100_1"):
+                st.session_state.scelta = "STANDARD 1 ANTA"
+                st.rerun()
+        with b_pw2:
+            if st.button("PW100 2 ANTE", key="btn_pw100_2"):
+                st.session_state.scelta = "STANDARD 2 ANTE"
+                st.rerun()
+
+    with pcol2:
+        classe = "product-card product-card-active" if er_active else "product-card"
+        img_html = f'<img class="product-img" src="data:image/png;base64,{er140_b64}">' if er140_b64 else ""
+        st.markdown(f"""
+        <div class="{classe}">
+            {img_html}
+            <div class="product-badge-ridondante">RIDONDANTE / VIE DI FUGA</div>
+            <div class="product-title">Sesamo ER140 Ridondante</div>
+            <div class="product-desc">
+                Automazione ridondante per uscite di emergenza e vie di fuga.
+                Progettata per garantire continuità di apertura e massima sicurezza.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        b_er1, b_er2 = st.columns(2)
+        with b_er1:
+            if st.button("ER140 1 ANTA", key="btn_er140_1"):
+                st.session_state.scelta = "RIDONDANTE 1 ANTA"
+                st.rerun()
+        with b_er2:
+            if st.button("ER140 2 ANTE", key="btn_er140_2"):
+                st.session_state.scelta = "RIDONDANTE 2 ANTE"
                 st.rerun()
 
     scelta = st.session_state.scelta
@@ -2112,8 +2247,8 @@ with col_main:
 
     st.markdown("""
     <div class="section-row">
-    <div class="section-box">CONFIGURAZIONE STANDARD<br><span style="font-weight:500;color:#111;">Sesamo PowerCore PW100 per porta scorrevole automatica lineare ad uso normale.</span></div>
-    <div class="section-box green">CONFIGURAZIONE RIDONDANTE<br><span style="font-weight:500;color:#111;">Automazione ridondante per vie di fuga e uscite di emergenza.</span></div>
+    <div class="section-box">PW100 STANDARD<br><span style="font-weight:500;color:#111;">Automazione lineare Sesamo PowerCore PW100 per porta scorrevole automatica ad uso normale.</span></div>
+    <div class="section-box green">ER140 RIDONDANTE<br><span style="font-weight:500;color:#111;">Automazione ridondante per vie di fuga, uscite di emergenza e sicurezza avanzata.</span></div>
     </div></div>
     """, unsafe_allow_html=True)
 
@@ -2853,7 +2988,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V48 - CRM avanzato + manuali protetti")
+st.caption("Versione V51 - Grafica professionale PW100 / ER140")
 
 st.markdown(f"""
 <div class="footer">
