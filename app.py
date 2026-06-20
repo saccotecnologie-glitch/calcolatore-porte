@@ -1726,15 +1726,141 @@ def v83_update_stato(codice, nuovo):
     return ok
 
 
+
+def v84_dashboard_html(preventivi):
+    totale_preventivi = len(preventivi)
+    valore_totale = sum(v83_imponibile(p) for p in preventivi)
+    utile_totale = sum((v83_utile(p) or 0) for p in preventivi)
+    costo_totale = sum((v83_costo(p) or 0) for p in preventivi)
+
+    accettati_ordinati = sum(
+        1 for p in preventivi
+        if str(p.get("stato", "")).strip() in ["Accettato", "Ordinato"]
+    )
+    persi = sum(1 for p in preventivi if str(p.get("stato", "")).strip() == "Perso")
+    conversione = (accettati_ordinati / totale_preventivi * 100) if totale_preventivi else 0
+    margine = (utile_totale / costo_totale * 100) if costo_totale else 0
+
+    stati = statistiche_stati_preventivi(preventivi)
+
+    def card(label, value, color="#06499b"):
+        return f"""
+        <div class="card">
+            <div class="label">{label}</div>
+            <div class="value" style="color:{color};">{value}</div>
+        </div>
+        """
+
+    stato_html = ""
+    for stato in STATI_PREVENTIVO:
+        stato_html += f"""
+        <div class="state">
+            <span>{stato}</span>
+            <b>{stati.get(stato, 0)}</b>
+        </div>
+        """
+
+    return f"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body {{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    color:#111827;
+    background:#ffffff;
+}}
+.wrap {{
+    padding:4px;
+}}
+.grid {{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:12px;
+}}
+.card {{
+    background:#ffffff;
+    border:1px solid #dbeafe;
+    border-radius:16px;
+    padding:14px;
+    min-height:88px;
+    box-shadow:0 5px 14px rgba(6,73,155,.08);
+}}
+.label {{
+    color:#06499b;
+    font-size:13px;
+    font-weight:900;
+    text-transform:uppercase;
+}}
+.value {{
+    font-size:22px;
+    font-weight:900;
+    margin-top:9px;
+    white-space:nowrap;
+}}
+.states {{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:10px;
+    margin-top:14px;
+}}
+.state {{
+    background:#eef6ff;
+    border:1px solid #bdd4ef;
+    border-radius:13px;
+    padding:12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}}
+.state span {{
+    color:#06499b;
+    font-size:13px;
+    font-weight:900;
+}}
+.state b {{
+    color:#111827;
+    font-size:20px;
+}}
+@media(max-width:1000px) {{
+    .grid, .states {{
+        grid-template-columns:repeat(2,1fr);
+    }}
+}}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="grid">
+        {card("Preventivi", totale_preventivi)}
+        {card("Valore totale", euro(valore_totale))}
+        {card("Utile lordo", euro(utile_totale), "#219653")}
+        {card("Margine", f"{margine:.1f}%", "#219653")}
+        {card("Accettati/Ordinati", accettati_ordinati)}
+        {card("Conversione", f"{conversione:.1f}%")}
+    </div>
+    <div class="states">
+        {stato_html}
+    </div>
+</div>
+</body>
+</html>
+"""
+
+
+def v84_render_dashboard(preventivi):
+    components.html(v84_dashboard_html(preventivi), height=235, scrolling=False)
+
+
 def v83_render_admin(preventivi):
     if not preventivi:
         st.info("Nessun preventivo salvato ancora.")
         return
 
     st.markdown("## CRM Commerciale")
-    render_dashboard_crm(preventivi)
-    st.markdown("### Stati preventivi")
-    render_stati_preventivi(statistiche_stati_preventivi(preventivi))
+    v84_render_dashboard(preventivi)
 
     st.markdown("---")
     st.markdown("## Gestione preventivi")
@@ -1801,6 +1927,12 @@ def v83_render_admin(preventivi):
                         st.error(msg_del)
 
         if st.session_state.get("v83_aperto") == codice:
+            chiudi_col, spazio_col = st.columns([1, 3])
+            with chiudi_col:
+                if st.button("CHIUDI DETTAGLIO", key=f"v84_chiudi_{codice}_{idx}", use_container_width=True):
+                    st.session_state.v83_aperto = ""
+                    st.rerun()
+
             components.html(v83_detail_html(p), height=760, scrolling=True)
 
             d1, d2 = st.columns(2)
@@ -4429,7 +4561,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V83 - CRM isolato definitivo")
+st.caption("Versione V84 - Dashboard CRM leggibile e chiudi dettaglio")
 
 st.markdown(f"""
 <div class="footer">
