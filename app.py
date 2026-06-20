@@ -2166,6 +2166,10 @@ if profilo == "SA-TEC":
 
         st.markdown("</div>", unsafe_allow_html=True)
 
+# Immagini prodotto PW100 / ER140
+pw100_b64 = immagine_prodotto_base64("pw100.png")
+er140_b64 = immagine_prodotto_base64("er140.png")
+
 # =========================
 # CONFIGURATORE
 # =========================
@@ -2988,7 +2992,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V51 - Grafica professionale PW100 / ER140")
+st.caption("Versione V51.1 - Fix immagini PW100 / ER140")
 
 st.markdown(f"""
 <div class="footer">
