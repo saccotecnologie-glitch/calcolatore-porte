@@ -1156,7 +1156,7 @@ def salva_preventivo(dati):
         "codice_preventivo", "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
         "cliente_telefono", "cliente_email", "configurazione", "luce_mm",
         "altezza_mm", "traversa_m", "elettroblocco", "allaccio", "radar_sicurezza_laterale",
-        "ricarico_percento", "imponibile", "iva", "totale_iva", "costo_satec", "utile_lordo", "margine_percento", "stato"
+        "ricarico_percento", "ricarico_base_percento", "ricarico_extra_percento", "imponibile", "iva", "totale_iva", "costo_satec", "utile_lordo", "margine_percento", "stato"
     ]
     with open(PREVENTIVI_CSV, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=campi)
@@ -1327,6 +1327,25 @@ def login_box():
     st.sidebar.markdown("## Accesso")
     st.sidebar.info("Cliente finale: può usare il configuratore senza login e inviare una richiesta a SA-TEC.")
 
+    with st.sidebar.expander("Codici test accesso"):
+        st.markdown("""
+        **Rivenditore test**  
+        Utente: `ROSSI01`  
+        Password: `R2026#`
+
+        **Rivenditore test 2**  
+        Utente: `VERDI01`  
+        Password: `V2026#`
+
+        **Grossista test**  
+        Utente: `GROS001`  
+        Password: `G2026#`
+
+        **Admin SA-TEC**  
+        Utente: `ADMIN`  
+        Password: `SATEC-ADMIN`
+        """)
+
     username = st.sidebar.text_input("Utente", value="", key="login_user")
     password = st.sidebar.text_input("Password", value="", type="password", key="login_pwd")
 
@@ -1422,28 +1441,34 @@ def login_box():
             st.success("Accesso cliente creato.")
             st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
 
-    with st.sidebar.expander("Registrati come rivenditore"):
-        st.caption("Richiesta accesso commerciale. SA-TEC potrà assegnare il ricarico dalla dashboard.")
+    with st.sidebar.expander("Richiesta accesso commerciale"):
+        st.caption("Compila il modulo. SA-TEC valuterà la richiesta e assegnerà il livello commerciale con relativo ricarico.")
+        tipo_richiesta = st.selectbox("Tipo richiesta", ["RIVENDITORE", "GROSSISTA"], key="riv_tipo_richiesta")
         riv_azienda = st.text_input("Ragione sociale", key="riv_reg_azienda")
         riv_ref = st.text_input("Referente", key="riv_reg_ref")
         riv_tel = st.text_input("Telefono", key="riv_reg_tel")
         riv_email = st.text_input("Email", key="riv_reg_email")
+        riv_zona = st.text_input("Zona di competenza", key="riv_reg_zona")
         riv_password = st.text_input("Password desiderata", type="password", key="riv_reg_pwd")
 
-        if st.button("INVIA REGISTRAZIONE RIVENDITORE"):
+        if st.button("INVIA RICHIESTA COMMERCIALE"):
             if not riv_azienda or not riv_email or not riv_password:
                 st.error("Inserisci almeno ragione sociale, email e password.")
             else:
                 utenti_now = carica_tutti_utenti()
-                nuovo_user = genera_codice_progressivo("RIVENDITORE", utenti_now)
+                nuovo_user = genera_codice_progressivo(tipo_richiesta, utenti_now)
+
+                azienda_con_zona = riv_azienda
+                if riv_zona:
+                    azienda_con_zona = f"{riv_azienda} - Zona: {riv_zona}"
 
                 # Backup CSV
                 salva_utente_csv(
                     nuovo_user,
                     riv_password,
-                    "RIVENDITORE",
+                    tipo_richiesta,
                     riv_ref,
-                    riv_azienda,
+                    azienda_con_zona,
                     riv_tel,
                     riv_email,
                     "0"
@@ -1452,19 +1477,19 @@ def login_box():
                 ok_sb, err_sb = salva_utente_supabase(
                     nuovo_user,
                     riv_password,
-                    "RIVENDITORE",
-                    riv_azienda,
+                    tipo_richiesta,
+                    azienda_con_zona,
                     riv_tel,
                     riv_email,
                     0
                 )
 
                 if ok_sb:
-                    st.success("Registrazione rivenditore inviata e salvata su Supabase.")
+                    st.success("Richiesta commerciale inviata e salvata su Supabase.")
                 else:
-                    st.warning(f"Registrazione salvata in CSV. Supabase non disponibile: {err_sb}")
+                    st.warning(f"Richiesta salvata in CSV. Supabase non disponibile: {err_sb}")
 
-                st.code(f"Utente: {nuovo_user}\nPassword: {riv_password}\nStato: in attesa ricarico SA-TEC")
+                st.code(f"Utente: {nuovo_user}\nPassword: {riv_password}\nProfilo richiesto: {tipo_richiesta}\nStato: in attesa ricarico SA-TEC")
 
     try:
         ricarico_effettivo = float(str(dati_utente.get("ricarico", "")).replace(",", "."))
@@ -2376,6 +2401,52 @@ div[data-testid="stImage"] img {
     margin-top:4px!important;
 }
 
+
+/* V61 - RICARICO STEP 10 FINO A CLIENTE FINALE */
+.extra-ricarico-box {
+    background:#fff8c7;
+    border:3px solid #06499b;
+    border-radius:14px;
+    padding:14px;
+    margin:12px 0;
+}
+.extra-ricarico-title {
+    color:#06499b;
+    font-size:18px;
+    font-weight:900;
+    margin-bottom:6px;
+}
+.extra-ricarico-note {
+    color:#111;
+    font-size:14px;
+    font-weight:800;
+    line-height:1.45;
+}
+
+
+/* V62 - SIDEBAR ACCESSO PIU LEGGIBILE */
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span {
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+section[data-testid="stSidebar"] input {
+    background:#ffffff!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border:2px solid #2f80ed!important;
+    border-radius:8px!important;
+    min-height:44px!important;
+}
+section[data-testid="stSidebar"] div[data-testid="stSelectbox"] div {
+    color:#111111!important;
+}
+section[data-testid="stSidebar"] button {
+    min-height:46px!important;
+    font-weight:900!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -2408,6 +2479,51 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
+
+
+# V61 - Ricarico extra a step del 10% fino al prezzo cliente finale
+ricarico_base_assegnato = float(ricarico_effettivo or 0)
+ricarico_cliente_finale = float(ricarico_default("CLIENTE"))
+
+if profilo in ["RIVENDITORE", "GROSSISTA"]:
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### Ricarico vendita")
+    st.sidebar.caption(
+        "Puoi aumentare il prezzo solo a step del 10%, senza superare il prezzo cliente finale."
+    )
+
+    extra_massimo = max(0.0, ricarico_cliente_finale - ricarico_base_assegnato)
+
+    step_extra = [0.0]
+    valore = 10.0
+    while valore <= extra_massimo + 0.001:
+        step_extra.append(float(valore))
+        valore += 10.0
+
+    labels_extra = [f"+{x:.0f}%" for x in step_extra]
+
+    scelta_extra_label = st.sidebar.selectbox(
+        "Ricarico extra consentito",
+        labels_extra,
+        index=0,
+        key="ricarico_extra_utente_step10"
+    )
+
+    ricarico_extra_utente = float(scelta_extra_label.replace("+", "").replace("%", ""))
+
+    ricarico_effettivo = min(
+        ricarico_base_assegnato + ricarico_extra_utente,
+        ricarico_cliente_finale
+    )
+
+    st.sidebar.success(
+        f"Base: {ricarico_base_assegnato:.0f}% | Extra: {ricarico_extra_utente:.0f}% | Totale: {ricarico_effettivo:.0f}%"
+    )
+    st.sidebar.caption(f"Limite massimo: prezzo cliente finale = {ricarico_cliente_finale:.0f}%")
+elif profilo == "CLIENTE":
+    ricarico_extra_utente = 0.0
+else:
+    ricarico_extra_utente = 0.0
 
 # Ricarico manuale solo per ADMIN SA-TEC
 if profilo == "SA-TEC":
@@ -3508,7 +3624,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V59 - CRM ADMIN allineato")
+st.caption("Versione V62 - Codici test e richiesta commerciale")
 
 st.markdown(f"""
 <div class="footer">
