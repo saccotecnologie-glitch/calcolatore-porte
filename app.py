@@ -983,7 +983,53 @@ def html_export_preventivo_admin(p):
         th { width:260px; background:#eef6ff; color:#06499b; text-align:left; }
         th, td { border:1px solid #bdd4ef; padding:10px; }
         .footer { margin-top:25px; font-size:13px; color:#555; }
-    </style>
+    
+/* V73 - CRM ADMIN PULITO */
+.admin-preventivo-row {
+    background:#ffffff!important;
+    border:2px solid #bdd4ef!important;
+    border-radius:18px!important;
+    padding:18px!important;
+    margin:18px 0 10px 0!important;
+    box-shadow:0 6px 18px rgba(6,73,155,0.10)!important;
+}
+.admin-preventivo-code {
+    color:#06499b!important;
+    font-size:22px!important;
+    font-weight:900!important;
+    margin-bottom:8px!important;
+}
+.admin-preventivo-line {
+    color:#111!important;
+    font-size:15px!important;
+    font-weight:800!important;
+    line-height:1.55!important;
+}
+.admin-actions-card-v73 {
+    background:#f7fbff;
+    border:2px solid #bdd4ef;
+    border-radius:16px;
+    padding:14px;
+    margin:8px 0 18px 0;
+}
+.admin-delete-note {
+    color:#eb5757!important;
+    font-size:13px!important;
+    font-weight:900!important;
+    margin-top:4px!important;
+}
+.crm-open-detail-v73 {
+    background:#06499b;
+    color:white!important;
+    border-radius:14px;
+    padding:14px;
+    margin:18px 0 10px 0;
+    text-align:center;
+    font-size:20px;
+    font-weight:900;
+}
+
+</style>
     </head>
     <body>
         <div class="head">
@@ -1006,11 +1052,82 @@ def valore_admin_euro(p, campo):
         return str(p.get(campo, "") or "")
 
 
+
+def cliente_label_admin(p):
+    nome = str(p.get("cliente_nome", "") or "").strip()
+    azienda = str(p.get("cliente_azienda", "") or "").strip()
+    email = str(p.get("cliente_email", "") or "").strip()
+    telefono = str(p.get("cliente_telefono", "") or "").strip()
+
+    # Se arriva solo un ID numerico tipo "5", non usarlo come nome cliente
+    if nome.isdigit() and not azienda and not email and not telefono:
+        return "Cliente non indicato"
+
+    if nome and not nome.isdigit():
+        return nome
+    if azienda:
+        return azienda
+    if email:
+        return email
+    if telefono:
+        return telefono
+    if nome:
+        return nome
+    return "Cliente non indicato"
+
+
+def aggiorna_stato_preventivo_admin_robusto(codice_preventivo, nuovo_stato):
+    ok = False
+
+    try:
+        ok = aggiorna_stato_preventivo_admin(codice_preventivo, nuovo_stato)
+    except Exception:
+        ok = False
+
+    # Fallback diretto CSV se la funzione esistente non trova il preventivo
+    if not ok:
+        try:
+            path = Path(PREVENTIVI_CSV)
+            if path.exists():
+                with open(path, "r", encoding="utf-8") as f:
+                    righe = list(csv.DictReader(f))
+                if righe:
+                    fieldnames = list(righe[0].keys())
+                    if "stato" not in fieldnames:
+                        fieldnames.append("stato")
+                    trovato = False
+                    for r in righe:
+                        if str(r.get("codice_preventivo", "")).strip() == str(codice_preventivo).strip():
+                            r["stato"] = nuovo_stato
+                            trovato = True
+                    if trovato:
+                        with open(path, "w", newline="", encoding="utf-8") as f:
+                            writer = csv.DictWriter(f, fieldnames=fieldnames)
+                            writer.writeheader()
+                            writer.writerows(righe)
+                        ok = True
+        except Exception:
+            pass
+
+    # Fallback Supabase
+    if not ok:
+        try:
+            sb = supabase_client()
+            if sb is not None:
+                sb.table("preventivi").update({"stato": nuovo_stato}).eq("codice_preventivo", codice_preventivo).execute()
+                ok = True
+        except Exception:
+            pass
+
+    return ok
+
+
+
 def render_dettaglio_preventivo_admin(p):
     codice = str(p.get("codice_preventivo", "") or "")
     configurazione = str(p.get("configurazione", "") or "")
     stato = str(p.get("stato", "Bozza") or "Bozza")
-    cliente = p.get("cliente_nome", "") or p.get("cliente_azienda", "") or "Cliente non indicato"
+    cliente = cliente_label_admin(p)
     rivenditore = p.get("utente", "") or "Utente non indicato"
 
     elettro = str(p.get("elettroblocco", "") or "No")
@@ -1086,7 +1203,7 @@ def render_dettaglio_preventivo_admin(p):
             file_name=f"Dettaglio_{codice}.html",
             mime="text/html",
             use_container_width=True,
-            key=f"export_html_{codice}_{id(p)}"
+            key=f"export_html_{codice}_{id(p)}_v73"
         )
 
     with a2:
@@ -2851,7 +2968,7 @@ if profilo == "SA-TEC":
 
                 for idx, p in enumerate(preventivi_visualizzati):
                     codice = str(p.get("codice_preventivo", "") or f"RIGA-{idx}")
-                    cliente = p.get("cliente_nome", "") or p.get("cliente_azienda", "") or "Cliente non indicato"
+                    cliente = cliente_label_admin(p)
                     utente_prev = p.get("utente", "") or "Utente non indicato"
                     config_prev = p.get("configurazione", "")
                     stato_prev = p.get("stato", "Bozza") or "Bozza"
@@ -2885,7 +3002,7 @@ if profilo == "SA-TEC":
                             key=f"stato_select_{codice}_{idx}"
                         )
                         if st.button("AGGIORNA STATO", key=f"aggiorna_stato_{codice}_{idx}", use_container_width=True):
-                            if aggiorna_stato_preventivo_admin(codice, nuovo_stato):
+                            if aggiorna_stato_preventivo_admin_robusto(codice, nuovo_stato):
                                 st.success(f"Stato aggiornato: {codice} → {nuovo_stato}")
                                 st.rerun()
                             else:
@@ -2910,8 +3027,19 @@ if profilo == "SA-TEC":
                                     st.error(msg_del)
                         st.markdown(f'<div class="admin-delete-note">Elimina definitivamente {codice}</div>', unsafe_allow_html=True)
 
-                    with st.expander(f"APRIRE DETTAGLIO COMPLETO {codice} - riga {idx+1}", expanded=False):
-                        render_dettaglio_preventivo_admin(p)
+                codice_dettaglio = st.session_state.get("preventivo_dettaglio_admin", "")
+                if codice_dettaglio:
+                    preventivo_sel = None
+                    for p_sel in preventivi_visualizzati:
+                        if str(p_sel.get("codice_preventivo", "")).strip() == str(codice_dettaglio).strip():
+                            preventivo_sel = p_sel
+                            break
+
+                    if preventivo_sel:
+                        st.markdown(f'<div class="crm-open-detail-v73">DETTAGLIO PREVENTIVO {codice_dettaglio}</div>', unsafe_allow_html=True)
+                        render_dettaglio_preventivo_admin(preventivo_sel)
+                    else:
+                        st.warning("Preventivo selezionato non trovato nei filtri attuali.")
 
                 st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -3834,7 +3962,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V72 - Fix definitivo chiavi duplicate dettaglio")
+st.caption("Versione V73 - CRM ADMIN pulito dettaglio aperto")
 
 st.markdown(f"""
 <div class="footer">
