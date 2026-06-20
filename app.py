@@ -1029,6 +1029,113 @@ def html_export_preventivo_admin(p):
     font-weight:900;
 }
 
+
+/* V74 - CRM ADMIN DEFINITIVO */
+.admin-preventivo-row {
+    background:#ffffff!important;
+    border:2px solid #bdd4ef!important;
+    border-radius:18px!important;
+    padding:18px!important;
+    margin:18px 0 12px 0!important;
+    box-shadow:0 6px 18px rgba(6,73,155,0.10)!important;
+}
+.admin-preventivo-code {
+    color:#06499b!important;
+    font-size:23px!important;
+    font-weight:900!important;
+    margin-bottom:10px!important;
+}
+.admin-preventivo-line {
+    color:#111!important;
+    font-size:15px!important;
+    font-weight:800!important;
+    line-height:1.55!important;
+}
+.crm-detail-open-title-v74 {
+    background:#06499b;
+    color:#ffffff!important;
+    border-radius:14px;
+    padding:14px 18px;
+    margin:16px 0 12px 0;
+    text-align:center;
+    font-size:22px;
+    font-weight:900;
+    box-shadow:0 5px 16px rgba(6,73,155,0.18);
+}
+.crm-detail-v68 {
+    background:#ffffff;
+    border:2px solid #bdd4ef;
+    border-radius:18px;
+    padding:16px;
+    margin:18px 0;
+    box-shadow:0 6px 18px rgba(6,73,155,0.10);
+}
+.crm-detail-head-v68 {
+    background:#06499b;
+    color:white;
+    border-radius:12px;
+    padding:14px 18px;
+}
+.crm-detail-code-v68 {
+    font-size:24px;
+    font-weight:900;
+}
+.crm-detail-sub-v68 {
+    font-size:14px;
+    font-weight:800;
+    margin-top:4px;
+}
+.crm-detail-grid-v68 {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-top:14px;
+}
+.crm-mini-card-v68 {
+    background:#eef6ff;
+    border:1px solid #bdd4ef;
+    border-radius:12px;
+    padding:12px;
+    color:#111;
+    font-size:14px;
+    font-weight:800;
+}
+.crm-mini-card-v68 span {
+    color:#06499b;
+    font-size:20px;
+    font-weight:900;
+}
+.crm-white-box-v68 {
+    background:#ffffff;
+    border:2px solid #bdd4ef;
+    border-radius:14px;
+    padding:16px;
+    color:#111;
+    font-size:15px;
+    font-weight:800;
+    line-height:1.65;
+}
+.crm-price-row-v68 {
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:8px 0;
+    color:#111;
+    font-size:15px;
+    font-weight:800;
+}
+.crm-price-row-v68.total {
+    color:#06499b;
+    font-size:20px;
+    font-weight:900;
+}
+.admin-delete-note {
+    color:#eb5757!important;
+    font-size:13px!important;
+    font-weight:900!important;
+    margin-top:4px!important;
+}
+
 </style>
     </head>
     <body>
@@ -1135,11 +1242,11 @@ def render_dettaglio_preventivo_admin(p):
     allaccio = str(p.get("allaccio", "") or "No")
 
     accessori = []
-    if elettro and elettro.lower() not in ["no", "false", "0", ""]:
+    if elettro.lower() not in ["no", "false", "0", ""]:
         accessori.append({"Accessorio": "Elettroblocco", "Q.tà": "1", "Valore": elettro})
-    if radar and radar.lower() not in ["no", "false", "0", ""]:
+    if radar.lower() not in ["no", "false", "0", ""]:
         accessori.append({"Accessorio": "Radar sicurezza laterale", "Q.tà": "1", "Valore": radar})
-    if allaccio and allaccio.lower() not in ["no", "false", "0", ""]:
+    if allaccio.lower() not in ["no", "false", "0", ""]:
         accessori.append({"Accessorio": "Allaccio e collaudo", "Q.tà": "1", "Valore": allaccio})
     if not accessori:
         accessori.append({"Accessorio": "Nessun accessorio extra indicato", "Q.tà": "", "Valore": ""})
@@ -1147,16 +1254,14 @@ def render_dettaglio_preventivo_admin(p):
     st.markdown(f"""
     <div class="crm-detail-v68">
         <div class="crm-detail-head-v68">
-            <div>
-                <div class="crm-detail-code-v68">DETTAGLIO PREVENTIVO {codice}</div>
-                <div class="crm-detail-sub-v68">{configurazione} · Stato: {stato}</div>
-            </div>
+            <div class="crm-detail-code-v68">DETTAGLIO PREVENTIVO {codice}</div>
+            <div class="crm-detail-sub-v68">{configurazione} · Stato: {stato}</div>
         </div>
         <div class="crm-detail-grid-v68">
             <div class="crm-mini-card-v68"><b>Cliente</b><br>{cliente}</div>
             <div class="crm-mini-card-v68"><b>Rivenditore / Utente</b><br>{rivenditore}</div>
             <div class="crm-mini-card-v68"><b>Data</b><br>{p.get('data_ora', '')}</div>
-            <div class="crm-mini-card-v68"><b>Totale vendita</b><br><span>{valore_admin_euro(p, 'totale_iva')}</span></div>
+            <div class="crm-mini-card-v68"><b>Totale vendita</b><br><span>{valore_admin_euro_safe(p, 'totale_iva')}</span></div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1171,7 +1276,7 @@ def render_dettaglio_preventivo_admin(p):
             <b>Luce passaggio:</b> {p.get('luce_mm', '')} mm<br>
             <b>Altezza:</b> {p.get('altezza_mm', '')} mm<br>
             <b>Traversa:</b> {p.get('traversa_m', '')} m<br>
-            <b>Cliente email:</b> {p.get('cliente_email', '')}<br>
+            <b>Email:</b> {p.get('cliente_email', '')}<br>
             <b>Telefono:</b> {p.get('cliente_telefono', '')}
         </div>
         """, unsafe_allow_html=True)
@@ -1183,12 +1288,12 @@ def render_dettaglio_preventivo_admin(p):
         st.markdown("### Riepilogo economico")
         st.markdown(f"""
         <div class="crm-white-box-v68">
-            <div class="crm-price-row-v68"><span>Totale netto vendita</span><b>{valore_admin_euro(p, 'imponibile')}</b></div>
-            <div class="crm-price-row-v68"><span>IVA</span><b>{valore_admin_euro(p, 'iva')}</b></div>
-            <div class="crm-price-row-v68 total"><span>Totale vendita</span><b>{valore_admin_euro(p, 'totale_iva')}</b></div>
+            <div class="crm-price-row-v68"><span>Totale netto vendita</span><b>{valore_admin_euro_safe(p, 'imponibile')}</b></div>
+            <div class="crm-price-row-v68"><span>IVA</span><b>{valore_admin_euro_safe(p, 'iva')}</b></div>
+            <div class="crm-price-row-v68 total"><span>Totale vendita</span><b>{valore_admin_euro_safe(p, 'totale_iva')}</b></div>
             <hr>
-            <div class="crm-price-row-v68"><span>Costo netto SA-TEC</span><b>{valore_admin_euro(p, 'costo_satec')}</b></div>
-            <div class="crm-price-row-v68"><span>Utile lordo</span><b>{valore_admin_euro(p, 'utile_lordo')}</b></div>
+            <div class="crm-price-row-v68"><span>Costo netto SA-TEC</span><b>{valore_admin_euro_safe(p, 'costo_satec')}</b></div>
+            <div class="crm-price-row-v68"><span>Utile lordo</span><b>{valore_admin_euro_safe(p, 'utile_lordo')}</b></div>
             <div class="crm-price-row-v68"><span>Margine</span><b>{p.get('margine_percento', '')}%</b></div>
         </div>
         """, unsafe_allow_html=True)
@@ -1203,11 +1308,11 @@ def render_dettaglio_preventivo_admin(p):
             file_name=f"Dettaglio_{codice}.html",
             mime="text/html",
             use_container_width=True,
-            key=f"export_html_{codice}_{id(p)}_v73"
+            key=f"export_html_{codice}_{id(p)}_v74"
         )
 
     with a2:
-        if st.button("DUPLICA PREVENTIVO", key=f"duplica_{codice}", use_container_width=True):
+        if st.button("DUPLICA PREVENTIVO", key=f"duplica_{codice}_{id(p)}_v74", use_container_width=True):
             ok_dup, msg_dup = duplica_preventivo_admin(codice)
             if ok_dup:
                 st.success(f"Preventivo duplicato: {msg_dup}")
@@ -2922,19 +3027,19 @@ if profilo == "SA-TEC":
                 render_stati_preventivi(stats_stati)
 
                 st.markdown("---")
-                st.markdown("## Gestione preventivi rivenditori / clienti")
+                st.markdown("## Gestione preventivi")
 
                 col_filtro1, col_filtro2 = st.columns([2, 1])
                 with col_filtro1:
                     cerca_preventivo_dash = st.text_input(
                         "Cerca per codice, cliente, rivenditore, email o configurazione",
-                        key="cerca_preventivo_dash"
+                        key="cerca_preventivo_dash_v74"
                     )
                 with col_filtro2:
                     stato_filtro_dash = st.selectbox(
                         "Filtra per stato",
                         ["Tutti"] + STATI_PREVENTIVO,
-                        key="stato_filtro_dash"
+                        key="stato_filtro_dash_v74"
                     )
 
                 preventivi_visualizzati = filtra_preventivi_dashboard(preventivi, cerca_preventivo_dash, stato_filtro_dash)
@@ -2991,17 +3096,17 @@ if profilo == "SA-TEC":
                     c_apri, c_stato, c_elimina = st.columns([1, 1, 1])
 
                     with c_apri:
-                        st.markdown('<div class="admin-action-spacer"></div>', unsafe_allow_html=True)
-                        st.info("Usa il riquadro DETTAGLIO sotto")
+                        if st.button("APRI DETTAGLIO", key=f"apri_dettaglio_{codice}_{idx}_v74", use_container_width=True):
+                            st.session_state.preventivo_dettaglio_admin = codice
 
                     with c_stato:
                         nuovo_stato = st.selectbox(
                             "Cambia stato",
                             STATI_PREVENTIVO,
                             index=STATI_PREVENTIVO.index(stato_prev) if stato_prev in STATI_PREVENTIVO else 0,
-                            key=f"stato_select_{codice}_{idx}"
+                            key=f"stato_select_{codice}_{idx}_v74"
                         )
-                        if st.button("AGGIORNA STATO", key=f"aggiorna_stato_{codice}_{idx}", use_container_width=True):
+                        if st.button("AGGIORNA STATO", key=f"aggiorna_stato_{codice}_{idx}_v74", use_container_width=True):
                             if aggiorna_stato_preventivo_admin_robusto(codice, nuovo_stato):
                                 st.success(f"Stato aggiornato: {codice} → {nuovo_stato}")
                                 st.rerun()
@@ -3011,9 +3116,9 @@ if profilo == "SA-TEC":
                     with c_elimina:
                         conferma = st.checkbox(
                             "Conferma eliminazione",
-                            key=f"conferma_elimina_{codice}_{idx}"
+                            key=f"conferma_elimina_{codice}_{idx}_v74"
                         )
-                        if st.button("ELIMINA", key=f"elimina_prev_{codice}_{idx}", use_container_width=True):
+                        if st.button("ELIMINA", key=f"elimina_prev_{codice}_{idx}_v74", use_container_width=True):
                             if not conferma:
                                 st.warning("Spunta prima 'Conferma eliminazione'.")
                             else:
@@ -3027,19 +3132,9 @@ if profilo == "SA-TEC":
                                     st.error(msg_del)
                         st.markdown(f'<div class="admin-delete-note">Elimina definitivamente {codice}</div>', unsafe_allow_html=True)
 
-                codice_dettaglio = st.session_state.get("preventivo_dettaglio_admin", "")
-                if codice_dettaglio:
-                    preventivo_sel = None
-                    for p_sel in preventivi_visualizzati:
-                        if str(p_sel.get("codice_preventivo", "")).strip() == str(codice_dettaglio).strip():
-                            preventivo_sel = p_sel
-                            break
-
-                    if preventivo_sel:
-                        st.markdown(f'<div class="crm-open-detail-v73">DETTAGLIO PREVENTIVO {codice_dettaglio}</div>', unsafe_allow_html=True)
-                        render_dettaglio_preventivo_admin(preventivo_sel)
-                    else:
-                        st.warning("Preventivo selezionato non trovato nei filtri attuali.")
+                    if st.session_state.get("preventivo_dettaglio_admin") == codice:
+                        st.markdown(f'<div class="crm-detail-open-title-v74">DETTAGLIO PREVENTIVO {codice}</div>', unsafe_allow_html=True)
+                        render_dettaglio_preventivo_admin(p)
 
                 st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -3962,7 +4057,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V73 - CRM ADMIN pulito dettaglio aperto")
+st.caption("Versione V74 - CRM ADMIN definitivo")
 
 st.markdown(f"""
 <div class="footer">
