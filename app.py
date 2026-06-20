@@ -970,150 +970,33 @@ def html_export_preventivo_admin(p):
     for label, key in campi:
         righe += f"<tr><th>{label}</th><td>{p.get(key, '')}</td></tr>"
 
-    return f"""
+    html = """
     <html>
     <head>
     <meta charset="utf-8">
-    <title>Dettaglio preventivo {codice}</title>
+    <title>Dettaglio preventivo __CODICE__</title>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 30px; color:#111; }}
-        .head {{ background:#06499b; color:white; padding:18px; border-radius:12px; }}
-        h1 {{ margin:0; }}
-        table {{ width:100%; border-collapse:collapse; margin-top:20px; }}
-        th {{ width:260px; background:#eef6ff; color:#06499b; text-align:left; }}
-        th, td {{ border:1px solid #bdd4ef; padding:10px; }}
-        .footer {{ margin-top:25px; font-size:13px; color:#555; }}
-    
-/* V68 - CRM DETAIL PROFESSIONALE */
-.crm-detail-v68 {
-    background:#ffffff;
-    border:2px solid #bdd4ef;
-    border-radius:18px;
-    padding:16px;
-    margin:18px 0;
-    box-shadow:0 6px 18px rgba(6,73,155,0.10);
-}
-.crm-detail-head-v68 {
-    background:#06499b;
-    color:white;
-    border-radius:12px;
-    padding:14px 18px;
-}
-.crm-detail-code-v68 {
-    font-size:24px;
-    font-weight:900;
-}
-.crm-detail-sub-v68 {
-    font-size:14px;
-    font-weight:800;
-    margin-top:4px;
-}
-.crm-detail-grid-v68 {
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:12px;
-    margin-top:14px;
-}
-.crm-mini-card-v68 {
-    background:#eef6ff;
-    border:1px solid #bdd4ef;
-    border-radius:12px;
-    padding:12px;
-    color:#111;
-    font-size:14px;
-    font-weight:800;
-}
-.crm-mini-card-v68 span {
-    color:#06499b;
-    font-size:20px;
-    font-weight:900;
-}
-.crm-white-box-v68 {
-    background:#ffffff;
-    border:2px solid #bdd4ef;
-    border-radius:14px;
-    padding:16px;
-    color:#111;
-    font-size:15px;
-    font-weight:800;
-    line-height:1.65;
-}
-.crm-price-row-v68 {
-    display:flex;
-    justify-content:space-between;
-    gap:12px;
-    padding:8px 0;
-    color:#111;
-    font-size:15px;
-    font-weight:800;
-}
-.crm-price-row-v68.total {
-    color:#06499b;
-    font-size:20px;
-    font-weight:900;
-}
-
-
-/* V69 - INCREMENTO PREZZO PROFESSIONALE */
-.incremento-box-v69 {
-    background:#ffffff;
-    border:2px solid #bdd4ef;
-    border-radius:14px;
-    padding:14px;
-    margin:12px 0 10px 0;
-    box-shadow:0 4px 12px rgba(6,73,155,0.12);
-}
-.incremento-title-v69 {
-    color:#06499b!important;
-    font-size:19px!important;
-    font-weight:900!important;
-}
-.incremento-note-v69 {
-    color:#111111!important;
-    font-size:14px!important;
-    font-weight:800!important;
-    margin-top:6px!important;
-    line-height:1.4!important;
-}
-.incremento-risultato-v69 {
-    background:linear-gradient(135deg,#06499b,#2f80ed);
-    color:#ffffff!important;
-    border-radius:14px;
-    padding:12px 14px;
-    margin-top:12px;
-    font-size:16px;
-    font-weight:900;
-    text-align:center;
-    box-shadow:0 4px 12px rgba(6,73,155,0.22);
-}
-section[data-testid="stSidebar"] div[data-testid="stSlider"] label,
-section[data-testid="stSidebar"] div[data-testid="stSelectSlider"] label {
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:900!important;
-}
-section[data-testid="stSidebar"] div[data-baseweb="slider"] {
-    margin-top:8px!important;
-}
-.admin-expander-title-v69 {
-    color:#06499b!important;
-    font-weight:900!important;
-    font-size:18px!important;
-    margin:10px 0!important;
-}
-
-</style>
+        body { font-family: Arial, sans-serif; margin: 30px; color:#111; }
+        .head { background:#06499b; color:white; padding:18px; border-radius:12px; }
+        h1 { margin:0; }
+        table { width:100%; border-collapse:collapse; margin-top:20px; }
+        th { width:260px; background:#eef6ff; color:#06499b; text-align:left; }
+        th, td { border:1px solid #bdd4ef; padding:10px; }
+        .footer { margin-top:25px; font-size:13px; color:#555; }
+    </style>
     </head>
     <body>
         <div class="head">
-            <h1>Dettaglio preventivo {codice}</h1>
+            <h1>Dettaglio preventivo __CODICE__</h1>
             <div>SA-TEC S.R.L.s - CRM Commerciale</div>
         </div>
-        <table>{righe}</table>
+        <table>__RIGHE__</table>
         <div class="footer">Documento gestionale interno. Stampare o salvare come PDF dal browser.</div>
     </body>
     </html>
     """
+    html = html.replace("__CODICE__", codice).replace("__RIGHE__", righe)
+    return html
 
 
 def valore_admin_euro(p, campo):
@@ -3955,7 +3838,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V69 - CRM dettaglio robusto e incremento professionale")
+st.caption("Versione V70 - Fix export dettaglio preventivo")
 
 st.markdown(f"""
 <div class="footer">
