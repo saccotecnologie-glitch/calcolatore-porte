@@ -1136,6 +1136,23 @@ def html_export_preventivo_admin(p):
     margin-top:4px!important;
 }
 
+
+/* V80 - CRM ADMIN PRO OVERRIDE */
+table, th, td {
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+th {
+    background:#eef6ff!important;
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+}
+td {
+    background:#ffffff!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+
 </style>
     </head>
     <body>
@@ -1330,6 +1347,372 @@ def render_dettaglio_preventivo_admin(p):
 
     with a3:
         st.info("Apri il file HTML e fai Stampa → Salva PDF.")
+
+
+
+# =========================
+# V80 CRM ADMIN PRO - FUNZIONI SICURE
+# =========================
+
+def v80_float(v, default=0.0):
+    try:
+        return float(str(v).replace(",", ".") or default)
+    except Exception:
+        return default
+
+
+def v80_euro(v):
+    try:
+        return euro(float(str(v).replace(",", ".") or 0))
+    except Exception:
+        return str(v or "")
+
+
+def v80_cliente_label(p):
+    nome = str(p.get("cliente_nome", "") or "").strip()
+    azienda = str(p.get("cliente_azienda", "") or "").strip()
+    email = str(p.get("cliente_email", "") or "").strip()
+    telefono = str(p.get("cliente_telefono", "") or "").strip()
+
+    if nome and not nome.isdigit():
+        return nome
+    if azienda:
+        return azienda
+    if email:
+        return email
+    if telefono:
+        return telefono
+    return "Cliente non indicato"
+
+
+def v80_utente_label(p):
+    utente = str(p.get("utente", "") or "").strip()
+    profilo = str(p.get("profilo", "") or "").strip()
+    if utente and profilo:
+        return f"{utente} / {profilo}"
+    return utente or profilo or "Utente non indicato"
+
+
+def v80_accessori_rows(p):
+    rows = []
+
+    elettro = str(p.get("elettroblocco", "") or "").strip()
+    radar = str(p.get("radar_sicurezza_laterale", "") or "").strip()
+    allaccio = str(p.get("allaccio", "") or "").strip()
+
+    if elettro and elettro.lower() not in ["no", "false", "0", "nessuno"]:
+        rows.append({"Voce": "Elettroblocco", "Q.tà": "1", "Dettaglio": elettro})
+    if radar and radar.lower() not in ["no", "false", "0", "nessuno"]:
+        rows.append({"Voce": "Radar sicurezza laterale", "Q.tà": "1", "Dettaglio": radar})
+    if allaccio and allaccio.lower() not in ["no", "false", "0", "nessuno"]:
+        rows.append({"Voce": "Allaccio e collaudo", "Q.tà": "1", "Dettaglio": allaccio})
+
+    if not rows:
+        rows.append({"Voce": "Nessun accessorio extra indicato", "Q.tà": "", "Dettaglio": ""})
+
+    return rows
+
+
+def v80_export_html_preventivo(p):
+    codice = str(p.get("codice_preventivo", "") or "")
+    campi = [
+        ("Codice", "codice_preventivo"),
+        ("Data", "data_ora"),
+        ("Cliente", "cliente_nome"),
+        ("Azienda cliente", "cliente_azienda"),
+        ("Telefono", "cliente_telefono"),
+        ("Email", "cliente_email"),
+        ("Utente / Rivenditore", "utente"),
+        ("Profilo", "profilo"),
+        ("Configurazione", "configurazione"),
+        ("Luce mm", "luce_mm"),
+        ("Altezza mm", "altezza_mm"),
+        ("Traversa m", "traversa_m"),
+        ("Elettroblocco", "elettroblocco"),
+        ("Radar laterale", "radar_sicurezza_laterale"),
+        ("Allaccio", "allaccio"),
+        ("Ricarico totale %", "ricarico_percento"),
+        ("Ricarico base %", "ricarico_base_percento"),
+        ("Ricarico extra %", "ricarico_extra_percento"),
+        ("Imponibile", "imponibile"),
+        ("IVA", "iva"),
+        ("Totale IVA inclusa", "totale_iva"),
+        ("Costo SA-TEC", "costo_satec"),
+        ("Utile lordo", "utile_lordo"),
+        ("Margine %", "margine_percento"),
+        ("Stato", "stato"),
+    ]
+
+    righe = ""
+    for label, key in campi:
+        righe += f"<tr><th>{label}</th><td>{p.get(key, '')}</td></tr>"
+
+    return f"""<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Dettaglio preventivo {codice}</title>
+<style>
+body {{ font-family: Arial, sans-serif; margin:30px; color:#111827; }}
+.header {{ background:#06499b; color:white; padding:20px; border-radius:12px; }}
+h1 {{ margin:0; font-size:26px; }}
+table {{ width:100%; border-collapse:collapse; margin-top:22px; }}
+th {{ width:260px; background:#eef6ff; color:#06499b; text-align:left; }}
+th,td {{ border:1px solid #bdd4ef; padding:10px; }}
+.footer {{ margin-top:25px; color:#666; font-size:13px; }}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>Dettaglio preventivo {codice}</h1>
+<div>SA-TEC S.R.L.s - CRM Commerciale</div>
+</div>
+<table>{righe}</table>
+<div class="footer">Documento gestionale interno. Aprire e usare Stampa → Salva come PDF.</div>
+</body>
+</html>"""
+
+
+def v80_aggiorna_stato(codice_preventivo, nuovo_stato):
+    ok = False
+
+    try:
+        ok = aggiorna_stato_preventivo_admin(codice_preventivo, nuovo_stato)
+    except Exception:
+        ok = False
+
+    if not ok:
+        try:
+            path = Path(PREVENTIVI_CSV)
+            if path.exists():
+                with open(path, "r", encoding="utf-8") as f:
+                    righe = list(csv.DictReader(f))
+                if righe:
+                    fieldnames = list(righe[0].keys())
+                    if "stato" not in fieldnames:
+                        fieldnames.append("stato")
+                    if "data_modifica_stato" not in fieldnames:
+                        fieldnames.append("data_modifica_stato")
+                    trovato = False
+                    for r in righe:
+                        if str(r.get("codice_preventivo", "")).strip() == str(codice_preventivo).strip():
+                            r["stato"] = nuovo_stato
+                            r["data_modifica_stato"] = datetime.now().strftime("%d/%m/%Y %H:%M")
+                            trovato = True
+                    if trovato:
+                        with open(path, "w", newline="", encoding="utf-8") as f:
+                            writer = csv.DictWriter(f, fieldnames=fieldnames)
+                            writer.writeheader()
+                            writer.writerows(righe)
+                        ok = True
+        except Exception:
+            ok = False
+
+    try:
+        sb = supabase_client()
+        if sb is not None:
+            sb.table("preventivi").update({"stato": nuovo_stato}).eq("codice_preventivo", codice_preventivo).execute()
+            ok = True
+    except Exception:
+        pass
+
+    return ok
+
+
+def v80_render_dettaglio_preventivo(p):
+    codice = str(p.get("codice_preventivo", "") or "")
+    cliente = v80_cliente_label(p)
+    utente = v80_utente_label(p)
+    stato = str(p.get("stato", "Bozza") or "Bozza")
+    configurazione = str(p.get("configurazione", "") or "")
+
+    st.markdown("### Dettaglio preventivo")
+    st.markdown(f"**{codice}**")
+
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Cliente", cliente)
+    k2.metric("Rivenditore / Utente", utente)
+    k3.metric("Stato", stato)
+    k4.metric("Totale vendita", v80_euro(p.get("totale_iva", p.get("totale", ""))))
+
+    st.markdown("---")
+
+    c1, c2 = st.columns([1.25, 1])
+
+    with c1:
+        st.markdown("#### Configurazione")
+        conf_rows = [
+            {"Campo": "Automazione", "Valore": configurazione},
+            {"Campo": "Luce passaggio", "Valore": f"{p.get('luce_mm', '')} mm"},
+            {"Campo": "Altezza", "Valore": f"{p.get('altezza_mm', '')} mm"},
+            {"Campo": "Traversa", "Valore": f"{p.get('traversa_m', '')} m"},
+            {"Campo": "Data", "Valore": p.get("data_ora", "")},
+        ]
+        st.markdown(tabella_html_sicura(conf_rows), unsafe_allow_html=True)
+
+        st.markdown("#### Cliente")
+        cliente_rows = [
+            {"Campo": "Nome", "Valore": p.get("cliente_nome", "")},
+            {"Campo": "Azienda", "Valore": p.get("cliente_azienda", "")},
+            {"Campo": "Telefono", "Valore": p.get("cliente_telefono", "")},
+            {"Campo": "Email", "Valore": p.get("cliente_email", "")},
+        ]
+        st.markdown(tabella_html_sicura(cliente_rows), unsafe_allow_html=True)
+
+        st.markdown("#### Accessori e servizi")
+        st.markdown(tabella_html_sicura(v80_accessori_rows(p)), unsafe_allow_html=True)
+
+    with c2:
+        st.markdown("#### Riepilogo economico")
+        econ_rows = [
+            {"Voce": "Imponibile vendita", "Valore": v80_euro(p.get("imponibile", ""))},
+            {"Voce": "IVA", "Valore": v80_euro(p.get("iva", ""))},
+            {"Voce": "Totale IVA inclusa", "Valore": v80_euro(p.get("totale_iva", p.get("totale", "")))},
+            {"Voce": "Costo netto SA-TEC", "Valore": v80_euro(p.get("costo_satec", ""))},
+            {"Voce": "Utile lordo", "Valore": v80_euro(p.get("utile_lordo", ""))},
+            {"Voce": "Margine", "Valore": f"{p.get('margine_percento', '')}%"},
+            {"Voce": "Ricarico totale", "Valore": f"{p.get('ricarico_percento', '')}%"},
+            {"Voce": "Ricarico base", "Valore": f"{p.get('ricarico_base_percento', '')}%"},
+            {"Voce": "Ricarico extra", "Valore": f"{p.get('ricarico_extra_percento', '')}%"},
+        ]
+        st.markdown(tabella_html_sicura(econ_rows), unsafe_allow_html=True)
+
+    a1, a2, a3 = st.columns(3)
+
+    with a1:
+        html = v80_export_html_preventivo(p)
+        st.download_button(
+            "ESPORTA HTML / PDF",
+            data=html.encode("utf-8"),
+            file_name=f"Dettaglio_{codice}.html",
+            mime="text/html",
+            use_container_width=True,
+            key=f"v80_export_{codice}_{id(p)}"
+        )
+
+    with a2:
+        if st.button("DUPLICA PREVENTIVO", key=f"v80_duplica_{codice}_{id(p)}", use_container_width=True):
+            ok_dup, msg_dup = duplica_preventivo_admin(codice)
+            if ok_dup:
+                st.success(f"Preventivo duplicato: {msg_dup}")
+                st.rerun()
+            else:
+                st.error(msg_dup)
+
+    with a3:
+        st.info("Per PDF: apri HTML → Stampa → Salva PDF")
+
+
+def v80_render_admin_preventivi(preventivi):
+    if not preventivi:
+        st.info("Nessun preventivo salvato ancora.")
+        return
+
+    st.write(f"Preventivi salvati: **{len(preventivi)}**")
+    st.markdown('<h3 style="color:#06499b;">CRM Commerciale</h3>', unsafe_allow_html=True)
+    render_dashboard_crm(preventivi)
+
+    stats_stati = statistiche_stati_preventivi(preventivi)
+    render_stati_preventivi(stats_stati)
+
+    st.markdown("---")
+    st.markdown("## Gestione preventivi")
+
+    f1, f2 = st.columns([2, 1])
+    with f1:
+        cerca = st.text_input(
+            "Cerca per codice, cliente, rivenditore, email o configurazione",
+            key="v80_cerca_preventivo"
+        )
+    with f2:
+        stato_filtro = st.selectbox(
+            "Filtra per stato",
+            ["Tutti"] + STATI_PREVENTIVO,
+            key="v80_stato_filtro"
+        )
+
+    visualizzati = filtra_preventivi_dashboard(preventivi, cerca, stato_filtro)
+
+    totale = sum(v80_float(p.get("imponibile", p.get("totale_iva", 0))) for p in visualizzati)
+    utile = sum(v80_float(p.get("utile_lordo", 0)) for p in visualizzati)
+    costo = sum(v80_float(p.get("costo_satec", 0)) for p in visualizzati)
+    margine = (utile / costo * 100) if costo > 0 else 0
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Visualizzati", len(visualizzati))
+    m2.metric("Valore", euro(totale))
+    m3.metric("Utile lordo", euro(utile))
+    m4.metric("Margine medio", f"{margine:.1f}%")
+
+    if not visualizzati:
+        st.info("Nessun preventivo trovato con questi filtri.")
+        return
+
+    for idx, p in enumerate(visualizzati):
+        codice = str(p.get("codice_preventivo", "") or f"RIGA-{idx}")
+        cliente = v80_cliente_label(p)
+        utente = v80_utente_label(p)
+        configurazione = str(p.get("configurazione", "") or "")
+        stato = str(p.get("stato", "Bozza") or "Bozza")
+        totale_prev = v80_euro(p.get("totale_iva", p.get("totale", "")))
+
+        st.markdown(f"""
+        <div style="background:#ffffff;border:2px solid #bdd4ef;border-radius:16px;padding:16px;margin:18px 0 10px 0;box-shadow:0 5px 15px rgba(6,73,155,0.10);">
+            <div style="color:#06499b;font-size:22px;font-weight:900;">{codice}</div>
+            <div style="color:#111;font-size:15px;font-weight:800;line-height:1.55;">
+                <b>Cliente:</b> {cliente}<br>
+                <b>Rivenditore/Utente:</b> {utente}<br>
+                <b>Configurazione:</b> {configurazione}<br>
+                <b>Totale:</b> {totale_prev} &nbsp; | &nbsp; <b>Stato:</b> {stato}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        b1, b2, b3 = st.columns([1, 1, 1])
+
+        with b1:
+            if st.button("APRI DETTAGLIO", key=f"v80_apri_{codice}_{idx}", use_container_width=True):
+                st.session_state.v80_dettaglio_codice = codice
+
+        with b2:
+            nuovo_stato = st.selectbox(
+                "Cambia stato",
+                STATI_PREVENTIVO,
+                index=STATI_PREVENTIVO.index(stato) if stato in STATI_PREVENTIVO else 0,
+                key=f"v80_stato_{codice}_{idx}"
+            )
+            if st.button("AGGIORNA STATO", key=f"v80_aggiorna_{codice}_{idx}", use_container_width=True):
+                if v80_aggiorna_stato(codice, nuovo_stato):
+                    st.success(f"Stato aggiornato: {codice} → {nuovo_stato}")
+                    st.rerun()
+                else:
+                    st.error("Stato non aggiornato.")
+
+        with b3:
+            conferma = st.checkbox("Conferma eliminazione", key=f"v80_conf_elimina_{codice}_{idx}")
+            if st.button("ELIMINA", key=f"v80_elimina_{codice}_{idx}", use_container_width=True):
+                if not conferma:
+                    st.warning("Spunta prima Conferma eliminazione.")
+                else:
+                    ok_del, msg_del = elimina_preventivo_admin(codice)
+                    if ok_del:
+                        st.success(msg_del)
+                        if st.session_state.get("v80_dettaglio_codice") == codice:
+                            st.session_state.v80_dettaglio_codice = ""
+                        st.rerun()
+                    else:
+                        st.error(msg_del)
+
+        if st.session_state.get("v80_dettaglio_codice") == codice:
+            st.markdown("---")
+            v80_render_dettaglio_preventivo(p)
+
+    st.markdown("---")
+    if Path(PREVENTIVI_CSV).exists():
+        with open(PREVENTIVI_CSV, "rb") as f:
+            st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
+    else:
+        st.caption("Backup CSV preventivi non ancora creato.")
 
 
 def statistiche_stati_preventivi(preventivi):
@@ -3023,134 +3406,7 @@ if profilo == "SA-TEC":
         tab1, tab2 = st.tabs(["Preventivi", "Utenti creati"])
 
         with tab1:
-            if not preventivi:
-                st.info("Nessun preventivo salvato ancora.")
-            else:
-                st.write(f"Preventivi salvati: **{len(preventivi)}**")
-
-                st.markdown('<h3 style="color:#06499b;">CRM Commerciale</h3>', unsafe_allow_html=True)
-                render_dashboard_crm(preventivi)
-
-                stats_stati = statistiche_stati_preventivi(preventivi)
-                render_stati_preventivi(stats_stati)
-
-                st.markdown("---")
-                st.markdown("## Gestione preventivi")
-
-                col_filtro1, col_filtro2 = st.columns([2, 1])
-                with col_filtro1:
-                    cerca_preventivo_dash = st.text_input(
-                        "Cerca per codice, cliente, rivenditore, email o configurazione",
-                        key="cerca_preventivo_dash_v74"
-                    )
-                with col_filtro2:
-                    stato_filtro_dash = st.selectbox(
-                        "Filtra per stato",
-                        ["Tutti"] + STATI_PREVENTIVO,
-                        key="stato_filtro_dash_v74"
-                    )
-
-                preventivi_visualizzati = filtra_preventivi_dashboard(preventivi, cerca_preventivo_dash, stato_filtro_dash)
-
-                totale = 0.0
-                utile_totale = 0.0
-                costo_totale_dashboard = 0.0
-                for p in preventivi_visualizzati:
-                    try:
-                        totale += float(str(p.get("imponibile", p.get("totale_iva", 0))).replace(",", ".") or 0)
-                    except:
-                        pass
-                    try:
-                        utile_totale += float(str(p.get("utile_lordo", 0)).replace(",", ".") or 0)
-                    except:
-                        pass
-                    try:
-                        costo_totale_dashboard += float(str(p.get("costo_satec", 0)).replace(",", ".") or 0)
-                    except:
-                        pass
-
-                margine_dash = (utile_totale / costo_totale_dashboard * 100) if costo_totale_dashboard > 0 else 0
-
-                st.write(f"Preventivi visualizzati: **{len(preventivi_visualizzati)}**")
-                st.write(f"Valore visualizzato: **{euro(totale)}**")
-                st.write(f"Utile lordo visualizzato: **{euro(utile_totale)}**")
-                st.write(f"Margine medio su costo: **{margine_dash:.1f}%**")
-
-                if not preventivi_visualizzati:
-                    st.info("Nessun preventivo trovato con questi filtri.")
-
-                for idx, p in enumerate(preventivi_visualizzati):
-                    codice = str(p.get("codice_preventivo", "") or f"RIGA-{idx}")
-                    cliente = cliente_label_admin(p)
-                    utente_prev = p.get("utente", "") or "Utente non indicato"
-                    config_prev = p.get("configurazione", "")
-                    stato_prev = p.get("stato", "Bozza") or "Bozza"
-
-                    try:
-                        totale_prev = euro(float(str(p.get("totale_iva", p.get("totale", "0"))).replace(",", ".") or 0))
-                    except:
-                        totale_prev = str(p.get("totale_iva", p.get("totale", "")))
-
-                    st.markdown(f"""
-                    <div class="admin-preventivo-row">
-                        <div class="admin-preventivo-code">{codice}</div>
-                        <div class="admin-preventivo-line"><b>Rivenditore/Utente:</b> {utente_prev}</div>
-                        <div class="admin-preventivo-line"><b>Cliente:</b> {cliente}</div>
-                        <div class="admin-preventivo-line"><b>Configurazione:</b> {config_prev}</div>
-                        <div class="admin-preventivo-line"><b>Totale:</b> {totale_prev} &nbsp; | &nbsp; <b>Stato:</b> {stato_prev}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    c_apri, c_stato, c_elimina = st.columns([1, 1, 1])
-
-                    with c_apri:
-                        if st.button("APRI DETTAGLIO", key=f"apri_dettaglio_{codice}_{idx}_v74", use_container_width=True):
-                            st.session_state.preventivo_dettaglio_admin = codice
-
-                    with c_stato:
-                        nuovo_stato = st.selectbox(
-                            "Cambia stato",
-                            STATI_PREVENTIVO,
-                            index=STATI_PREVENTIVO.index(stato_prev) if stato_prev in STATI_PREVENTIVO else 0,
-                            key=f"stato_select_{codice}_{idx}_v74"
-                        )
-                        if st.button("AGGIORNA STATO", key=f"aggiorna_stato_{codice}_{idx}_v74", use_container_width=True):
-                            if aggiorna_stato_preventivo_admin_robusto(codice, nuovo_stato):
-                                st.success(f"Stato aggiornato: {codice} → {nuovo_stato}")
-                                st.rerun()
-                            else:
-                                st.error("Stato non aggiornato.")
-
-                    with c_elimina:
-                        conferma = st.checkbox(
-                            "Conferma eliminazione",
-                            key=f"conferma_elimina_{codice}_{idx}_v74"
-                        )
-                        if st.button("ELIMINA", key=f"elimina_prev_{codice}_{idx}_v74", use_container_width=True):
-                            if not conferma:
-                                st.warning("Spunta prima 'Conferma eliminazione'.")
-                            else:
-                                ok_del, msg_del = elimina_preventivo_admin(codice)
-                                if ok_del:
-                                    st.success(msg_del)
-                                    if st.session_state.get("preventivo_dettaglio_admin") == codice:
-                                        st.session_state.preventivo_dettaglio_admin = ""
-                                    st.rerun()
-                                else:
-                                    st.error(msg_del)
-                        st.markdown(f'<div class="admin-delete-note">Elimina definitivamente {codice}</div>', unsafe_allow_html=True)
-
-                    if st.session_state.get("preventivo_dettaglio_admin") == codice:
-                        st.markdown(f'<div class="crm-detail-open-title-v74">DETTAGLIO PREVENTIVO {codice}</div>', unsafe_allow_html=True)
-                        render_dettaglio_preventivo_admin(p)
-
-                st.markdown("<hr>", unsafe_allow_html=True)
-
-                if Path(PREVENTIVI_CSV).exists():
-                    with open(PREVENTIVI_CSV, "rb") as f:
-                        st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
-                else:
-                    st.caption("Backup CSV preventivi non ancora creato.")
+            v80_render_admin_preventivi(preventivi)
 
         with tab2:
             if not utenti_csv:
@@ -4065,7 +4321,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V75 - Fix dettaglio preventivo ADMIN")
+st.caption("Versione V80 - CRM ADMIN PRO completo")
 
 st.markdown(f"""
 <div class="footer">
