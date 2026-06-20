@@ -1086,7 +1086,7 @@ def render_dettaglio_preventivo_admin(p):
             file_name=f"Dettaglio_{codice}.html",
             mime="text/html",
             use_container_width=True,
-            key=f"export_html_{codice}"
+            key=f"export_html_{codice}_{id(p)}"
         )
 
     with a2:
@@ -2875,8 +2875,7 @@ if profilo == "SA-TEC":
 
                     with c_apri:
                         st.markdown('<div class="admin-action-spacer"></div>', unsafe_allow_html=True)
-                        if st.button("APRI DETTAGLIO", key=f"apri_dettaglio_{codice}_{idx}", use_container_width=True):
-                            st.session_state.preventivo_dettaglio_admin = codice
+                        st.info("Usa il riquadro DETTAGLIO sotto")
 
                     with c_stato:
                         nuovo_stato = st.selectbox(
@@ -2911,10 +2910,7 @@ if profilo == "SA-TEC":
                                     st.error(msg_del)
                         st.markdown(f'<div class="admin-delete-note">Elimina definitivamente {codice}</div>', unsafe_allow_html=True)
 
-                    if st.session_state.get("preventivo_dettaglio_admin") == codice:
-                        render_dettaglio_preventivo_admin(p)
-
-                    with st.expander(f"APRIRE DETTAGLIO COMPLETO {codice}", expanded=False):
+                    with st.expander(f"APRIRE DETTAGLIO COMPLETO {codice} - riga {idx+1}", expanded=False):
                         render_dettaglio_preventivo_admin(p)
 
                 st.markdown("<hr>", unsafe_allow_html=True)
@@ -3838,7 +3834,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V70 - Fix export dettaglio preventivo")
+st.caption("Versione V72 - Fix definitivo chiavi duplicate dettaglio")
 
 st.markdown(f"""
 <div class="footer">
