@@ -2080,28 +2080,39 @@ div[data-testid="stImage"] img {
 }
 
 
-/* V54 - FIX DEFINITIVO GRAFICA AUTOMAZIONE */
-.choice-card-clean {
-    background:#ffffff;
-    border:2px solid #bdd4ef;
-    border-radius:16px;
-    padding:12px;
-    margin-bottom:10px;
+/* V55 - PULIZIA DEFINITIVA SEZIONE AUTOMAZIONE */
+.porta-card,
+.porta-card-attiva,
+.product-card,
+.product-card-active,
+.pro-card-box,
+.pro-card-active {
+    display:none!important;
     min-height:0!important;
-    box-shadow:0 4px 12px rgba(6,73,155,0.08);
+    height:0!important;
+    padding:0!important;
+    margin:0!important;
+    border:0!important;
+    overflow:hidden!important;
 }
-.choice-card-clean-active {
+
+.choice-card-v55 {
+    background:#ffffff!important;
+    border:2px solid #bdd4ef!important;
+    border-radius:16px!important;
+    padding:12px!important;
+    margin-bottom:10px!important;
+    box-shadow:0 4px 12px rgba(6,73,155,0.08)!important;
+}
+.choice-card-v55-active {
     background:#fff8c7!important;
     border:4px solid #06499b!important;
 }
-.choice-title-clean {
-    color:#06499b;
-    font-size:24px;
-    font-weight:900;
-    margin-top:8px;
-    margin-bottom:8px;
+.choice-card-v55 img {
+    max-height:145px!important;
+    object-fit:contain!important;
 }
-.choice-badge-standard {
+.choice-badge-standard-v55 {
     display:inline-block;
     background:#06499b;
     color:white!important;
@@ -2110,7 +2121,7 @@ div[data-testid="stImage"] img {
     font-weight:900;
     margin-top:8px;
 }
-.choice-badge-er {
+.choice-badge-er-v55 {
     display:inline-block;
     background:#ff7900;
     color:white!important;
@@ -2119,45 +2130,47 @@ div[data-testid="stImage"] img {
     font-weight:900;
     margin-top:8px;
 }
-.choice-desc-clean {
-    color:#111;
-    font-size:15px;
-    font-weight:800;
-    line-height:1.5;
-}
-.choice-grid-title {
-    color:#06499b;
-    font-size:18px;
-    font-weight:900;
-    margin:12px 0 8px 0;
-}
-.sel-box {
-    border-radius:12px;
-    padding:14px 8px;
-    text-align:center;
-    font-weight:900;
-    border:3px solid #06499b;
-    margin-bottom:4px;
-    font-size:16px;
-    min-height:54px;
-}
-.sel-on-standard {
-    background:#27ae60;
-    color:white!important;
-    border-color:#1e8449;
-}
-.sel-on-ridondante {
-    background:#ff7900;
-    color:white!important;
-    border-color:#c75f00;
-}
-.sel-off {
-    background:#eef6ff;
+.choice-title-v55 {
     color:#06499b!important;
+    font-size:23px!important;
+    font-weight:900!important;
+    margin:8px 0!important;
 }
-div[data-testid="stImage"] img {
-    max-height:150px!important;
-    object-fit:contain!important;
+.choice-desc-v55 {
+    color:#111!important;
+    font-size:15px!important;
+    font-weight:800!important;
+    line-height:1.48!important;
+}
+.choice-grid-title-v55 {
+    color:#06499b!important;
+    font-size:18px!important;
+    font-weight:900!important;
+    margin:12px 0 8px 0!important;
+}
+.sel-box-v55 {
+    border-radius:12px!important;
+    padding:13px 8px!important;
+    text-align:center!important;
+    font-weight:900!important;
+    border:3px solid #06499b!important;
+    margin-bottom:4px!important;
+    font-size:16px!important;
+    min-height:52px!important;
+}
+.sel-on-standard-v55 {
+    background:#27ae60!important;
+    color:white!important;
+    border-color:#1e8449!important;
+}
+.sel-on-ridondante-v55 {
+    background:#ff7900!important;
+    color:white!important;
+    border-color:#c75f00!important;
+}
+.sel-off-v55 {
+    background:#eef6ff!important;
+    color:#06499b!important;
 }
 
 </style>
@@ -2413,16 +2426,14 @@ with col_main:
     pcol1, pcol2 = st.columns(2)
 
     with pcol1:
-        classe_pw = "choice-card-clean choice-card-clean-active" if pw_active else "choice-card-clean"
+        classe_pw = "choice-card-v55 choice-card-v55-active" if pw_active else "choice-card-v55"
         st.markdown(f'<div class="{classe_pw}">', unsafe_allow_html=True)
-
         if Path("pw100.png").exists():
             st.image("pw100.png", use_container_width=True)
-
-        st.markdown('<div class="choice-badge-standard">STANDARD</div>', unsafe_allow_html=True)
-        st.markdown('<div class="choice-title-clean">Sesamo PowerCore PW100</div>', unsafe_allow_html=True)
+        st.markdown('<div class="choice-badge-standard-v55">STANDARD</div>', unsafe_allow_html=True)
+        st.markdown('<div class="choice-title-v55">Sesamo PowerCore PW100</div>', unsafe_allow_html=True)
         st.markdown("""
-        <div class="choice-desc-clean">
+        <div class="choice-desc-v55">
         ✓ Automazione standard<br>
         ✓ Conforme EN16005<br>
         ✓ Made in Italy<br>
@@ -2433,16 +2444,14 @@ with col_main:
         st.markdown("</div>", unsafe_allow_html=True)
 
     with pcol2:
-        classe_er = "choice-card-clean choice-card-clean-active" if er_active else "choice-card-clean"
+        classe_er = "choice-card-v55 choice-card-v55-active" if er_active else "choice-card-v55"
         st.markdown(f'<div class="{classe_er}">', unsafe_allow_html=True)
-
         if Path("er140.png").exists():
             st.image("er140.png", use_container_width=True)
-
-        st.markdown('<div class="choice-badge-er">RIDONDANTE / VIE DI FUGA</div>', unsafe_allow_html=True)
-        st.markdown('<div class="choice-title-clean">Sesamo ER140 Ridondante</div>', unsafe_allow_html=True)
+        st.markdown('<div class="choice-badge-er-v55">RIDONDANTE / VIE DI FUGA</div>', unsafe_allow_html=True)
+        st.markdown('<div class="choice-title-v55">Sesamo ER140 Ridondante</div>', unsafe_allow_html=True)
         st.markdown("""
-        <div class="choice-desc-clean">
+        <div class="choice-desc-v55">
         ✓ Sistema ridondante<br>
         ✓ Per uscite di emergenza<br>
         ✓ Conforme EN16005<br>
@@ -2452,39 +2461,39 @@ with col_main:
         """, unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown('<div class="choice-grid-title">Seleziona configurazione</div>', unsafe_allow_html=True)
+    st.markdown('<div class="choice-grid-title-v55">Seleziona configurazione</div>', unsafe_allow_html=True)
 
     s1, s2, s3, s4 = st.columns(4)
 
     with s1:
-        classe = "sel-box sel-on-standard" if st.session_state.scelta == "STANDARD 1 ANTA" else "sel-box sel-off"
+        classe = "sel-box-v55 sel-on-standard-v55" if st.session_state.scelta == "STANDARD 1 ANTA" else "sel-box-v55 sel-off-v55"
         testo = "✓ PW100 1 ANTA" if st.session_state.scelta == "STANDARD 1 ANTA" else "PW100 1 ANTA"
         st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
-        if st.button("Seleziona PW100 1 anta", key="btn_pw100_1", use_container_width=True):
+        if st.button("PW100 1 ANTA", key="btn_pw100_1", use_container_width=True):
             st.session_state.scelta = "STANDARD 1 ANTA"
             st.rerun()
 
     with s2:
-        classe = "sel-box sel-on-standard" if st.session_state.scelta == "STANDARD 2 ANTE" else "sel-box sel-off"
+        classe = "sel-box-v55 sel-on-standard-v55" if st.session_state.scelta == "STANDARD 2 ANTE" else "sel-box-v55 sel-off-v55"
         testo = "✓ PW100 2 ANTE" if st.session_state.scelta == "STANDARD 2 ANTE" else "PW100 2 ANTE"
         st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
-        if st.button("Seleziona PW100 2 ante", key="btn_pw100_2", use_container_width=True):
+        if st.button("PW100 2 ANTE", key="btn_pw100_2", use_container_width=True):
             st.session_state.scelta = "STANDARD 2 ANTE"
             st.rerun()
 
     with s3:
-        classe = "sel-box sel-on-ridondante" if st.session_state.scelta == "RIDONDANTE 1 ANTA" else "sel-box sel-off"
+        classe = "sel-box-v55 sel-on-ridondante-v55" if st.session_state.scelta == "RIDONDANTE 1 ANTA" else "sel-box-v55 sel-off-v55"
         testo = "✓ ER140 1 ANTA" if st.session_state.scelta == "RIDONDANTE 1 ANTA" else "ER140 1 ANTA"
         st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
-        if st.button("Seleziona ER140 1 anta", key="btn_er140_1", use_container_width=True):
+        if st.button("ER140 1 ANTA", key="btn_er140_1", use_container_width=True):
             st.session_state.scelta = "RIDONDANTE 1 ANTA"
             st.rerun()
 
     with s4:
-        classe = "sel-box sel-on-ridondante" if st.session_state.scelta == "RIDONDANTE 2 ANTE" else "sel-box sel-off"
+        classe = "sel-box-v55 sel-on-ridondante-v55" if st.session_state.scelta == "RIDONDANTE 2 ANTE" else "sel-box-v55 sel-off-v55"
         testo = "✓ ER140 2 ANTE" if st.session_state.scelta == "RIDONDANTE 2 ANTE" else "ER140 2 ANTE"
         st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
-        if st.button("Seleziona ER140 2 ante", key="btn_er140_2", use_container_width=True):
+        if st.button("ER140 2 ANTE", key="btn_er140_2", use_container_width=True):
             st.session_state.scelta = "RIDONDANTE 2 ANTE"
             st.rerun()
 
@@ -3237,7 +3246,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V54 - Fix definitivo grafica automazione")
+st.caption("Versione V55 - Pulizia definitiva automazione")
 
 st.markdown(f"""
 <div class="footer">
