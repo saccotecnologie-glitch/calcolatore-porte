@@ -1136,18 +1136,6 @@ def html_export_preventivo_admin(p):
     margin-top:4px!important;
 }
 
-
-/* V82 FIX COLORI DEFINITIVO */
-.stApp, body, html {
-    color:#111827!important;
-}
-div, span, p, label {
-    color:inherit;
-}
-button {
-    font-weight:900!important;
-}
-
 </style>
     </head>
     <body>
@@ -1346,10 +1334,10 @@ def render_dettaglio_preventivo_admin(p):
 
 
 # =========================
-# V82 CRM ADMIN ISOLATO
+# V83 CRM ADMIN COMPONENT ISOLATO
 # =========================
 
-def v82_num(v, default=0.0):
+def v83_num(v, default=0.0):
     try:
         if v is None:
             return default
@@ -1358,39 +1346,28 @@ def v82_num(v, default=0.0):
         s = str(v).strip().replace("€", "").replace(" ", "")
         if not s:
             return default
-
-        # Formato italiano: 2.275,81
         if "," in s and "." in s and s.rfind(",") > s.rfind("."):
             s = s.replace(".", "").replace(",", ".")
-        # Formato italiano senza migliaia: 2275,81
         elif "," in s and "." not in s:
             s = s.replace(",", ".")
-        # Formato inglese: 2275.81 -> lascia invariato
-        else:
-            pass
-
         return float(s)
     except Exception:
         return default
 
 
-def v82_money(v):
-    n = v82_num(v, None)
-    if n is None:
-        return "Dato non salvato"
-    return euro(n)
-
-
-def v82_clean(v):
+def v83_clean(v):
     return str(v or "").strip()
 
 
-def v82_cliente(p):
-    nome = v82_clean(p.get("cliente_nome", ""))
-    azienda = v82_clean(p.get("cliente_azienda", ""))
-    email = v82_clean(p.get("cliente_email", ""))
-    telefono = v82_clean(p.get("cliente_telefono", ""))
+def v83_euro(v):
+    return euro(v83_num(v))
 
+
+def v83_cliente(p):
+    nome = v83_clean(p.get("cliente_nome", ""))
+    azienda = v83_clean(p.get("cliente_azienda", ""))
+    email = v83_clean(p.get("cliente_email", ""))
+    telefono = v83_clean(p.get("cliente_telefono", ""))
     if nome and not nome.isdigit():
         return nome
     if azienda:
@@ -1402,9 +1379,9 @@ def v82_cliente(p):
     return "Cliente non indicato"
 
 
-def v82_utente(p):
-    utente = v82_clean(p.get("utente", ""))
-    profilo = v82_clean(p.get("profilo", ""))
+def v83_utente(p):
+    utente = v83_clean(p.get("utente", ""))
+    profilo = v83_clean(p.get("profilo", ""))
     if utente and not utente.isdigit():
         return utente
     if profilo:
@@ -1412,72 +1389,68 @@ def v82_utente(p):
     return "Utente non indicato"
 
 
-def v82_totale(p):
-    totale = v82_num(p.get("totale_iva", p.get("totale", 0)))
-    return totale
+def v83_totale(p):
+    return v83_num(p.get("totale_iva", p.get("totale", 0)))
 
 
-def v82_imponibile(p):
-    imp = v82_num(p.get("imponibile", 0))
+def v83_imponibile(p):
+    imp = v83_num(p.get("imponibile", 0))
     if imp > 0:
         return imp
-    totale = v82_totale(p)
+    totale = v83_totale(p)
     return totale / (1 + IVA) if totale > 0 else 0.0
 
 
-def v82_iva(p):
-    iva_val = v82_num(p.get("iva", 0))
+def v83_iva(p):
+    iva_val = v83_num(p.get("iva", 0))
     if iva_val > 0:
         return iva_val
-    totale = v82_totale(p)
-    imp = v82_imponibile(p)
-    return max(totale - imp, 0.0)
+    totale = v83_totale(p)
+    imp = v83_imponibile(p)
+    return max(totale - imp, 0)
 
 
-def v82_costo_satec(p):
-    costo = v82_num(p.get("costo_satec", 0))
+def v83_costo(p):
+    costo = v83_num(p.get("costo_satec", 0))
     if costo > 0:
         return costo
 
-    # Se manca il costo, prova a ricostruire dal ricarico salvato.
-    imp = v82_imponibile(p)
-    ric = v82_num(p.get("ricarico_percento", 0))
+    imp = v83_imponibile(p)
+    ric = v83_num(p.get("ricarico_percento", 0))
     if imp > 0 and ric > 0:
         return imp / (1 + ric / 100)
-
-    # Se non c'è ricarico, non inventa costo.
     return None
 
 
-def v82_utile(p):
-    utile = v82_num(p.get("utile_lordo", 0))
+def v83_utile(p):
+    utile = v83_num(p.get("utile_lordo", 0))
     if utile > 0:
         return utile
-    costo = v82_costo_satec(p)
-    imp = v82_imponibile(p)
-    if costo is not None and imp > 0:
+    costo = v83_costo(p)
+    imp = v83_imponibile(p)
+    if costo is not None:
         return imp - costo
     return None
 
 
-def v82_margine(p):
-    marg = v82_num(p.get("margine_percento", 0))
+def v83_margine(p):
+    marg = v83_num(p.get("margine_percento", 0))
     if marg > 0:
         return marg
-    costo = v82_costo_satec(p)
-    utile = v82_utile(p)
-    if costo and utile is not None and costo > 0:
+    costo = v83_costo(p)
+    utile = v83_utile(p)
+    if costo and utile is not None:
         return utile / costo * 100
     return None
 
 
-def v82_money_optional(v):
+def v83_money_optional(v):
     if v is None:
         return "Dato non salvato"
-    return euro(v82_num(v))
+    return euro(v83_num(v))
 
 
-def v82_percent_optional(v):
+def v83_percent_optional(v):
     if v is None:
         return "Dato non salvato"
     try:
@@ -1486,177 +1459,280 @@ def v82_percent_optional(v):
         return "Dato non salvato"
 
 
-def v82_accessori_html(p):
-    righe = []
-    items = [
-        ("Elettroblocco", p.get("elettroblocco", "")),
-        ("Radar sicurezza laterale", p.get("radar_sicurezza_laterale", "")),
-        ("Allaccio e collaudo", p.get("allaccio", "")),
-    ]
-
-    for nome, val in items:
-        val = v82_clean(val)
+def v83_accessori(p):
+    out = []
+    for nome, campo in [
+        ("Elettroblocco", "elettroblocco"),
+        ("Radar sicurezza laterale", "radar_sicurezza_laterale"),
+        ("Allaccio e collaudo", "allaccio"),
+    ]:
+        val = v83_clean(p.get(campo, ""))
         if val and val.lower() not in ["no", "false", "0", "none", "nessuno"]:
-            righe.append(f"""
-            <div style="display:flex;justify-content:space-between;border-bottom:1px solid #e5e7eb;padding:8px 0;color:#111827;">
-                <span style="color:#111827;font-weight:800;">✓ {nome}</span>
-                <span style="color:#111827;font-weight:700;">{val}</span>
-            </div>
+            out.append(f"""
+            <div class="line"><span>✓ {nome}</span><b>{val}</b></div>
             """)
-
-    if not righe:
-        righe.append('<div style="color:#111827;font-weight:700;padding:8px 0;">Nessun accessorio extra indicato</div>')
-
-    return "".join(righe)
+    if not out:
+        out.append('<div class="muted">Nessun accessorio extra indicato</div>')
+    return "".join(out)
 
 
-def v82_export_html(p):
-    codice = v82_clean(p.get("codice_preventivo", ""))
-    rows = [
-        ("Codice", codice),
-        ("Cliente", v82_cliente(p)),
-        ("Rivenditore / Utente", v82_utente(p)),
-        ("Configurazione", p.get("configurazione", "")),
-        ("Luce", f"{p.get('luce_mm', '')} mm"),
-        ("Altezza", f"{p.get('altezza_mm', '')} mm"),
-        ("Traversa", f"{p.get('traversa_m', '')} m"),
-        ("Imponibile", euro(v82_imponibile(p))),
-        ("IVA", euro(v82_iva(p))),
-        ("Totale", euro(v82_totale(p))),
-        ("Costo SA-TEC", v82_money_optional(v82_costo_satec(p))),
-        ("Utile", v82_money_optional(v82_utile(p))),
-        ("Margine", v82_percent_optional(v82_margine(p))),
-        ("Stato", p.get("stato", "Bozza")),
-    ]
-    trs = "".join([f"<tr><th>{a}</th><td>{b}</td></tr>" for a,b in rows])
-    return f"""<!doctype html><html><head><meta charset="utf-8">
+def v83_detail_html(p):
+    codice = v83_clean(p.get("codice_preventivo", ""))
+    stato = v83_clean(p.get("stato", "Bozza")) or "Bozza"
+    config = v83_clean(p.get("configurazione", ""))
+    totale = v83_totale(p)
+    imponibile = v83_imponibile(p)
+    iva_val = v83_iva(p)
+    costo = v83_costo(p)
+    utile = v83_utile(p)
+    margine = v83_margine(p)
+
+    return f"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
 <style>
-body{{font-family:Arial;margin:30px;color:#111827;}}
-h1{{background:#06499b;color:white;padding:18px;border-radius:12px;}}
-table{{width:100%;border-collapse:collapse;}}
-th{{background:#eef6ff;color:#06499b;text-align:left;width:250px;}}
-td,th{{border:1px solid #bdd4ef;padding:10px;color:#111827;}}
-</style></head><body><h1>Dettaglio preventivo {codice}</h1><table>{trs}</table></body></html>"""
+* {{
+    box-sizing:border-box;
+}}
+body {{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:#f6f9fc;
+    color:#111827;
+}}
+.wrap {{
+    padding:18px;
+}}
+.header {{
+    background:#ffffff;
+    border:2px solid #bdd4ef;
+    border-radius:18px;
+    padding:18px;
+    display:flex;
+    justify-content:space-between;
+    gap:18px;
+    align-items:center;
+    box-shadow:0 8px 22px rgba(6,73,155,.12);
+}}
+.title {{
+    color:#06499b;
+    font-size:26px;
+    font-weight:900;
+}}
+.sub {{
+    color:#111827;
+    font-weight:800;
+    margin-top:6px;
+}}
+.total {{
+    background:#eef6ff;
+    border:1px solid #bdd4ef;
+    border-radius:14px;
+    padding:16px 22px;
+    min-width:230px;
+    text-align:right;
+}}
+.total small {{
+    color:#06499b;
+    font-weight:900;
+}}
+.total b {{
+    display:block;
+    color:#06499b;
+    font-size:30px;
+    margin-top:6px;
+}}
+.cards {{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-top:16px;
+}}
+.card {{
+    background:#ffffff;
+    border:1px solid #dbeafe;
+    border-radius:14px;
+    padding:14px;
+    box-shadow:0 4px 12px rgba(6,73,155,.07);
+}}
+.card small {{
+    color:#06499b;
+    font-weight:900;
+    text-transform:uppercase;
+}}
+.card b {{
+    display:block;
+    color:#111827;
+    font-size:17px;
+    margin-top:8px;
+}}
+.grid {{
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:16px;
+    margin-top:16px;
+}}
+.panel {{
+    background:#ffffff;
+    border:1px solid #dbeafe;
+    border-radius:16px;
+    padding:16px;
+    box-shadow:0 4px 12px rgba(6,73,155,.06);
+}}
+.panel h3 {{
+    color:#06499b;
+    margin:0 0 14px 0;
+    font-size:18px;
+}}
+.config-title {{
+    color:#111827;
+    font-weight:900;
+    font-size:17px;
+}}
+.info {{
+    color:#111827;
+    font-weight:700;
+    line-height:1.65;
+    margin-top:8px;
+}}
+.hr {{
+    height:1px;
+    background:#e5e7eb;
+    margin:14px 0;
+}}
+.line {{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    border-bottom:1px solid #eef2f7;
+    padding:9px 0;
+    color:#111827;
+}}
+.line span {{
+    color:#111827;
+    font-weight:800;
+}}
+.line b {{
+    color:#111827;
+}}
+.econ {{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:8px 0;
+    color:#111827;
+}}
+.econ span {{
+    font-weight:700;
+}}
+.econ b {{
+    font-weight:900;
+}}
+.econ.total-row {{
+    background:#eef6ff;
+    color:#06499b;
+    border-radius:10px;
+    padding:11px;
+    margin:6px 0;
+}}
+.green {{
+    color:#219653!important;
+}}
+.muted {{
+    color:#111827;
+    font-weight:700;
+    padding:8px 0;
+}}
+@media(max-width:900px) {{
+    .cards, .grid {{
+        grid-template-columns:1fr;
+    }}
+    .header {{
+        flex-direction:column;
+        align-items:stretch;
+    }}
+}}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="header">
+        <div>
+            <div class="title">DETTAGLIO PREVENTIVO {codice}</div>
+            <div class="sub">{config} · Stato: {stato}</div>
+        </div>
+        <div class="total">
+            <small>TOTALE VENDITA</small>
+            <b>{euro(totale)}</b>
+        </div>
+    </div>
+
+    <div class="cards">
+        <div class="card"><small>Cliente</small><b>{v83_cliente(p)}</b></div>
+        <div class="card"><small>Rivenditore / Utente</small><b>{v83_utente(p)}</b></div>
+        <div class="card"><small>Data</small><b>{v83_clean(p.get('data_ora',''))[:19]}</b></div>
+        <div class="card"><small>Stato</small><b>{stato}</b></div>
+    </div>
+
+    <div class="grid">
+        <div class="panel">
+            <h3>CONFIGURAZIONE E ACCESSORI</h3>
+            <div class="config-title">{config}</div>
+            <div class="info">
+                Luce: {p.get('luce_mm','')} mm<br>
+                Altezza: {p.get('altezza_mm','')} mm<br>
+                Traversa: {p.get('traversa_m','')} m
+            </div>
+            <div class="hr"></div>
+            {v83_accessori(p)}
+        </div>
+
+        <div class="panel">
+            <h3>RIEPILOGO ECONOMICO</h3>
+            <div class="econ"><span>Imponibile vendita</span><b>{euro(imponibile)}</b></div>
+            <div class="econ"><span>IVA 22%</span><b>{euro(iva_val)}</b></div>
+            <div class="econ total-row"><span>Totale vendita</span><b>{euro(totale)}</b></div>
+            <div class="hr"></div>
+            <div class="econ"><span>Costo netto SA-TEC</span><b>{v83_money_optional(costo)}</b></div>
+            <div class="econ"><span>Utile lordo</span><b class="green">{v83_money_optional(utile)}</b></div>
+            <div class="econ"><span>Margine</span><b class="green">{v83_percent_optional(margine)}</b></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+"""
 
 
-def v82_update_stato(codice, nuovo_stato):
+def v83_export_html(p):
+    return v83_detail_html(p)
+
+
+def v83_update_stato(codice, nuovo):
     ok = False
     try:
-        ok = aggiorna_stato_preventivo_admin(codice, nuovo_stato)
+        ok = aggiorna_stato_preventivo_admin(codice, nuovo)
     except Exception:
         ok = False
-
     try:
         sb = supabase_client()
         if sb is not None:
-            sb.table("preventivi").update({"stato": nuovo_stato}).eq("codice_preventivo", codice).execute()
+            sb.table("preventivi").update({"stato": nuovo}).eq("codice_preventivo", codice).execute()
             ok = True
     except Exception:
         pass
-
     return ok
 
 
-def v82_card(label, value):
-    return f"""
-    <div style="background:#ffffff;border:1px solid #dbeafe;border-radius:14px;padding:14px;min-height:80px;box-shadow:0 4px 12px rgba(6,73,155,0.08);">
-        <div style="color:#06499b;font-size:13px;font-weight:900;text-transform:uppercase;">{label}</div>
-        <div style="color:#111827;font-size:18px;font-weight:900;margin-top:8px;">{value}</div>
-    </div>
-    """
-
-
-def v82_render_dettaglio(p):
-    codice = v82_clean(p.get("codice_preventivo", ""))
-    stato = v82_clean(p.get("stato", "Bozza")) or "Bozza"
-    totale = v82_totale(p)
-    imp = v82_imponibile(p)
-    iva_v = v82_iva(p)
-    costo = v82_costo_satec(p)
-    utile = v82_utile(p)
-    marg = v82_margine(p)
-
-    html = f"""
-    <div style="background:#ffffff;color:#111827;border:2px solid #bdd4ef;border-radius:18px;padding:18px;margin:18px 0;box-shadow:0 6px 18px rgba(6,73,155,0.12);">
-        <div style="display:flex;justify-content:space-between;gap:16px;align-items:center;">
-            <div>
-                <div style="color:#06499b;font-size:26px;font-weight:900;">DETTAGLIO PREVENTIVO {codice}</div>
-                <div style="color:#111827;font-size:15px;font-weight:800;margin-top:5px;">{p.get('configurazione','')} · Stato: {stato}</div>
-            </div>
-            <div style="background:#eef6ff;border:1px solid #bdd4ef;border-radius:14px;padding:14px 20px;text-align:right;">
-                <div style="color:#06499b;font-weight:900;font-size:13px;">TOTALE VENDITA</div>
-                <div style="color:#06499b;font-weight:900;font-size:28px;">{euro(totale)}</div>
-            </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;">
-            {v82_card("Cliente", v82_cliente(p))}
-            {v82_card("Rivenditore / Utente", v82_utente(p))}
-            {v82_card("Data", v82_clean(p.get('data_ora',''))[:19])}
-            {v82_card("Stato", stato)}
-        </div>
-
-        <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:16px;margin-top:18px;">
-            <div style="background:#ffffff;border:1px solid #dbeafe;border-radius:14px;padding:16px;color:#111827;">
-                <div style="color:#06499b;font-size:18px;font-weight:900;margin-bottom:12px;">CONFIGURAZIONE E ACCESSORI</div>
-                <div style="color:#111827;font-weight:900;font-size:16px;">{p.get('configurazione','')}</div>
-                <div style="color:#111827;margin-top:8px;font-weight:700;">
-                    Luce: {p.get('luce_mm','')} mm<br>
-                    Altezza: {p.get('altezza_mm','')} mm<br>
-                    Traversa: {p.get('traversa_m','')} m
-                </div>
-                <div style="height:1px;background:#e5e7eb;margin:14px 0;"></div>
-                {v82_accessori_html(p)}
-            </div>
-
-            <div style="background:#ffffff;border:1px solid #dbeafe;border-radius:14px;padding:16px;color:#111827;">
-                <div style="color:#06499b;font-size:18px;font-weight:900;margin-bottom:12px;">RIEPILOGO ECONOMICO</div>
-
-                <div style="display:flex;justify-content:space-between;padding:7px 0;color:#111827;"><span>Imponibile vendita</span><b>{euro(imp)}</b></div>
-                <div style="display:flex;justify-content:space-between;padding:7px 0;color:#111827;"><span>IVA 22%</span><b>{euro(iva_v)}</b></div>
-                <div style="display:flex;justify-content:space-between;padding:10px;background:#eef6ff;border-radius:8px;color:#06499b;font-weight:900;"><span>Totale vendita</span><b>{euro(totale)}</b></div>
-
-                <div style="height:1px;background:#e5e7eb;margin:14px 0;"></div>
-
-                <div style="display:flex;justify-content:space-between;padding:7px 0;color:#111827;"><span>Costo netto SA-TEC</span><b>{v82_money_optional(costo)}</b></div>
-                <div style="display:flex;justify-content:space-between;padding:7px 0;color:#111827;"><span>Utile lordo</span><b style="color:#219653;">{v82_money_optional(utile)}</b></div>
-                <div style="display:flex;justify-content:space-between;padding:7px 0;color:#111827;"><span>Margine</span><b style="color:#219653;">{v82_percent_optional(marg)}</b></div>
-            </div>
-        </div>
-    </div>
-    """
-    st.markdown(html, unsafe_allow_html=True)
-
-    a1, a2, a3 = st.columns(3)
-    with a1:
-        st.download_button(
-            "ESPORTA HTML / PDF",
-            data=v82_export_html(p).encode("utf-8"),
-            file_name=f"Dettaglio_{codice}.html",
-            mime="text/html",
-            use_container_width=True,
-            key=f"v82_export_{codice}_{id(p)}"
-        )
-    with a2:
-        if st.button("DUPLICA PREVENTIVO", key=f"v82_dup_{codice}_{id(p)}", use_container_width=True):
-            ok_dup, msg_dup = duplica_preventivo_admin(codice)
-            if ok_dup:
-                st.success(f"Preventivo duplicato: {msg_dup}")
-                st.rerun()
-            else:
-                st.error(msg_dup)
-    with a3:
-        st.info("PDF: apri HTML → Stampa → Salva PDF")
-
-
-def v82_render_admin(preventivi):
+def v83_render_admin(preventivi):
     if not preventivi:
         st.info("Nessun preventivo salvato ancora.")
         return
 
     st.markdown("## CRM Commerciale")
     render_dashboard_crm(preventivi)
-
     st.markdown("### Stati preventivi")
     render_stati_preventivi(statistiche_stati_preventivi(preventivi))
 
@@ -1665,9 +1741,9 @@ def v82_render_admin(preventivi):
 
     f1, f2 = st.columns([2,1])
     with f1:
-        cerca = st.text_input("Cerca preventivo", key="v82_cerca")
+        cerca = st.text_input("Cerca preventivo", key="v83_cerca")
     with f2:
-        stato_filtro = st.selectbox("Stato", ["Tutti"] + STATI_PREVENTIVO, key="v82_filtro_stato")
+        stato_filtro = st.selectbox("Stato", ["Tutti"] + STATI_PREVENTIVO, key="v83_stato_filter")
 
     lista = filtra_preventivi_dashboard(preventivi, cerca, stato_filtro)
 
@@ -1676,17 +1752,17 @@ def v82_render_admin(preventivi):
         return
 
     for idx, p in enumerate(lista):
-        codice = v82_clean(p.get("codice_preventivo", "")) or f"RIGA-{idx}"
-        stato = v82_clean(p.get("stato", "Bozza")) or "Bozza"
+        codice = v83_clean(p.get("codice_preventivo", "")) or f"RIGA-{idx}"
+        stato = v83_clean(p.get("stato", "Bozza")) or "Bozza"
 
         st.markdown(f"""
         <div style="background:#ffffff;color:#111827;border:2px solid #bdd4ef;border-radius:16px;padding:16px;margin:18px 0 10px 0;box-shadow:0 5px 15px rgba(6,73,155,0.10);">
             <div style="color:#06499b;font-size:23px;font-weight:900;">{codice}</div>
             <div style="color:#111827;font-size:15px;font-weight:800;line-height:1.55;">
-                <b>Cliente:</b> {v82_cliente(p)}<br>
-                <b>Rivenditore/Utente:</b> {v82_utente(p)}<br>
+                <b>Cliente:</b> {v83_cliente(p)}<br>
+                <b>Rivenditore/Utente:</b> {v83_utente(p)}<br>
                 <b>Configurazione:</b> {p.get('configurazione','')}<br>
-                <b>Totale:</b> {euro(v82_totale(p))} &nbsp; | &nbsp; <b>Stato:</b> {stato}
+                <b>Totale:</b> {euro(v83_totale(p))} &nbsp; | &nbsp; <b>Stato:</b> {stato}
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1694,26 +1770,26 @@ def v82_render_admin(preventivi):
         c1, c2, c3 = st.columns(3)
 
         with c1:
-            if st.button("APRI DETTAGLIO", key=f"v82_apri_{codice}_{idx}", use_container_width=True):
-                st.session_state.v82_aperto = codice
+            if st.button("APRI DETTAGLIO", key=f"v83_apri_{codice}_{idx}", use_container_width=True):
+                st.session_state.v83_aperto = codice
 
         with c2:
             nuovo = st.selectbox(
                 "Cambia stato",
                 STATI_PREVENTIVO,
                 index=STATI_PREVENTIVO.index(stato) if stato in STATI_PREVENTIVO else 0,
-                key=f"v82_stato_{codice}_{idx}"
+                key=f"v83_stato_{codice}_{idx}"
             )
-            if st.button("AGGIORNA STATO", key=f"v82_update_{codice}_{idx}", use_container_width=True):
-                if v82_update_stato(codice, nuovo):
+            if st.button("AGGIORNA STATO", key=f"v83_update_{codice}_{idx}", use_container_width=True):
+                if v83_update_stato(codice, nuovo):
                     st.success("Stato aggiornato.")
                     st.rerun()
                 else:
                     st.error("Stato non aggiornato.")
 
         with c3:
-            conferma = st.checkbox("Conferma eliminazione", key=f"v82_conf_{codice}_{idx}")
-            if st.button("ELIMINA", key=f"v82_del_{codice}_{idx}", use_container_width=True):
+            conferma = st.checkbox("Conferma eliminazione", key=f"v83_conf_{codice}_{idx}")
+            if st.button("ELIMINA", key=f"v83_del_{codice}_{idx}", use_container_width=True):
                 if not conferma:
                     st.warning("Spunta Conferma eliminazione.")
                 else:
@@ -1724,8 +1800,27 @@ def v82_render_admin(preventivi):
                     else:
                         st.error(msg_del)
 
-        if st.session_state.get("v82_aperto") == codice:
-            v82_render_dettaglio(p)
+        if st.session_state.get("v83_aperto") == codice:
+            components.html(v83_detail_html(p), height=760, scrolling=True)
+
+            d1, d2 = st.columns(2)
+            with d1:
+                st.download_button(
+                    "ESPORTA HTML / PDF",
+                    data=v83_export_html(p).encode("utf-8"),
+                    file_name=f"Dettaglio_{codice}.html",
+                    mime="text/html",
+                    use_container_width=True,
+                    key=f"v83_export_{codice}_{idx}_{id(p)}"
+                )
+            with d2:
+                if st.button("DUPLICA PREVENTIVO", key=f"v83_dup_{codice}_{idx}_{id(p)}", use_container_width=True):
+                    ok_dup, msg_dup = duplica_preventivo_admin(codice)
+                    if ok_dup:
+                        st.success(f"Preventivo duplicato: {msg_dup}")
+                        st.rerun()
+                    else:
+                        st.error(msg_dup)
 
 
 def statistiche_stati_preventivi(preventivi):
@@ -3419,7 +3514,7 @@ if profilo == "SA-TEC":
         tab1, tab2 = st.tabs(["Preventivi", "Utenti creati"])
 
         with tab1:
-            v82_render_admin(preventivi)
+            v83_render_admin(preventivi)
 
         with tab2:
             if not utenti_csv:
@@ -4334,7 +4429,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V82 - CRM colori e calcoli corretti")
+st.caption("Versione V83 - CRM isolato definitivo")
 
 st.markdown(f"""
 <div class="footer">
