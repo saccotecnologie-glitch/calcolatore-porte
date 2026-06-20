@@ -1053,6 +1053,55 @@ def html_export_preventivo_admin(p):
     font-weight:900;
 }
 
+
+/* V69 - INCREMENTO PREZZO PROFESSIONALE */
+.incremento-box-v69 {
+    background:#ffffff;
+    border:2px solid #bdd4ef;
+    border-radius:14px;
+    padding:14px;
+    margin:12px 0 10px 0;
+    box-shadow:0 4px 12px rgba(6,73,155,0.12);
+}
+.incremento-title-v69 {
+    color:#06499b!important;
+    font-size:19px!important;
+    font-weight:900!important;
+}
+.incremento-note-v69 {
+    color:#111111!important;
+    font-size:14px!important;
+    font-weight:800!important;
+    margin-top:6px!important;
+    line-height:1.4!important;
+}
+.incremento-risultato-v69 {
+    background:linear-gradient(135deg,#06499b,#2f80ed);
+    color:#ffffff!important;
+    border-radius:14px;
+    padding:12px 14px;
+    margin-top:12px;
+    font-size:16px;
+    font-weight:900;
+    text-align:center;
+    box-shadow:0 4px 12px rgba(6,73,155,0.22);
+}
+section[data-testid="stSidebar"] div[data-testid="stSlider"] label,
+section[data-testid="stSidebar"] div[data-testid="stSelectSlider"] label {
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:900!important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="slider"] {
+    margin-top:8px!important;
+}
+.admin-expander-title-v69 {
+    color:#06499b!important;
+    font-weight:900!important;
+    font-size:18px!important;
+    margin:10px 0!important;
+}
+
 </style>
     </head>
     <body>
@@ -2766,21 +2815,19 @@ if profilo in ["RIVENDITORE", "GROSSISTA"]:
 
     st.sidebar.markdown(
         """
-        <div class="incremento-box-v67">
-            <div class="incremento-title-v67">Incremento prezzo vendita</div>
-            <div class="incremento-note-v67">Scegli quanto aumentare il prezzo finale.</div>
+        <div class="incremento-box-v69">
+            <div class="incremento-title-v69">Prezzo vendita</div>
+            <div class="incremento-note-v69">Seleziona l’incremento commerciale da applicare al preventivo.</div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    scelta_extra_label = st.sidebar.radio(
+    scelta_extra_label = st.sidebar.select_slider(
         "Incremento prezzo vendita",
-        labels_extra,
-        index=0,
-        key="ricarico_extra_utente_step10",
-        horizontal=True,
-        label_visibility="collapsed"
+        options=labels_extra,
+        value=labels_extra[0],
+        key="ricarico_extra_utente_step10"
     )
 
     ricarico_extra_utente = float(scelta_extra_label.replace("+", "").replace("%", ""))
@@ -2792,8 +2839,8 @@ if profilo in ["RIVENDITORE", "GROSSISTA"]:
 
     st.sidebar.markdown(
         f"""
-        <div class="incremento-risultato-v67">
-            Incremento applicato: <b>{ricarico_extra_utente:.0f}%</b>
+        <div class="incremento-risultato-v69">
+            Incremento selezionato: <b>{ricarico_extra_utente:.0f}%</b>
         </div>
         """,
         unsafe_allow_html=True
@@ -2982,6 +3029,9 @@ if profilo == "SA-TEC":
                         st.markdown(f'<div class="admin-delete-note">Elimina definitivamente {codice}</div>', unsafe_allow_html=True)
 
                     if st.session_state.get("preventivo_dettaglio_admin") == codice:
+                        render_dettaglio_preventivo_admin(p)
+
+                    with st.expander(f"APRIRE DETTAGLIO COMPLETO {codice}", expanded=False):
                         render_dettaglio_preventivo_admin(p)
 
                 st.markdown("<hr>", unsafe_allow_html=True)
@@ -3905,7 +3955,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V68 - CRM dettaglio preventivo completo")
+st.caption("Versione V69 - CRM dettaglio robusto e incremento professionale")
 
 st.markdown(f"""
 <div class="footer">
