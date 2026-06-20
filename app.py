@@ -2430,6 +2430,20 @@ section[data-testid="stSidebar"] button {
     font-weight:900!important;
 }
 
+
+/* V64 - SELECTBOX SIDEBAR LEGGIBILE */
+section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
+    background:#ffffff!important;
+    color:#111111!important;
+    border:2px solid #2f80ed!important;
+    border-radius:8px!important;
+}
+section[data-testid="stSidebar"] div[data-baseweb="select"] span {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:900!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -2466,12 +2480,12 @@ profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box
 
 # V63 - Incremento prezzo vendita nascosto per rivenditore/grossista
 ricarico_base_assegnato = float(ricarico_effettivo or 0)
-ricarico_cliente_finale = float(ricarico_default("CLIENTE"))
+ricarico_cliente_finale = 60.0
 
 if profilo in ["RIVENDITORE", "GROSSISTA"]:
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Prezzo vendita")
-    st.sidebar.caption("Puoi aumentare il prezzo di vendita a step del 10%.")
+    st.sidebar.caption("Seleziona l’incremento da applicare al prezzo di vendita.")
 
     extra_massimo = max(0.0, ricarico_cliente_finale - ricarico_base_assegnato)
 
@@ -2497,7 +2511,7 @@ if profilo in ["RIVENDITORE", "GROSSISTA"]:
         ricarico_cliente_finale
     )
 
-    st.sidebar.success(f"Incremento applicato: {ricarico_extra_utente:.0f}%")
+    st.sidebar.success(f"Incremento selezionato: {ricarico_extra_utente:.0f}%")
 elif profilo == "CLIENTE":
     ricarico_extra_utente = 0.0
 else:
@@ -3602,7 +3616,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V63 - Area Rivenditori/Grossisti pulita")
+st.caption("Versione V65 - Cliente finale 60 percento")
 
 st.markdown(f"""
 <div class="footer">
