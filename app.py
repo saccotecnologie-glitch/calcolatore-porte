@@ -1914,6 +1914,90 @@ div[data-testid="stButton"] button[kind="secondary"] {
     font-size:34px;
 }
 
+
+/* V52 - CARD ALLINEATE E SELEZIONE ACCESA */
+.pro-card-box {
+    background:#ffffff!important;
+    border:2px solid #bdd4ef!important;
+    border-radius:18px!important;
+    padding:18px!important;
+    margin-bottom:12px!important;
+    box-shadow:0 6px 18px rgba(6,73,155,0.12)!important;
+    min-height:520px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:flex-start!important;
+}
+.pro-card-active {
+    border:4px solid #06499b!important;
+    background:#fff8c7!important;
+}
+div[data-testid="stImage"] img {
+    max-height:190px!important;
+    object-fit:contain!important;
+}
+.pro-badge-standard {
+    display:inline-block;
+    background:#06499b;
+    color:#ffffff!important;
+    font-weight:900;
+    border-radius:8px;
+    padding:7px 12px;
+    margin:12px 0 8px 0;
+}
+.pro-badge-ridondante {
+    display:inline-block;
+    background:#ff7900;
+    color:#ffffff!important;
+    font-weight:900;
+    border-radius:8px;
+    padding:7px 12px;
+    margin:12px 0 8px 0;
+}
+.pro-title {
+    color:#06499b!important;
+    font-size:26px;
+    font-weight:900;
+    margin:8px 0;
+    min-height:64px;
+}
+.pro-desc {
+    color:#111111!important;
+    font-size:15px;
+    font-weight:700;
+    line-height:1.45;
+    min-height:145px;
+}
+.pro-points {
+    margin-top:8px;
+    color:#111111!important;
+    font-size:15px;
+    font-weight:900;
+    line-height:1.5;
+}
+.sel-box {
+    border-radius:12px;
+    padding:12px;
+    text-align:center;
+    font-weight:900;
+    border:3px solid #06499b;
+    margin-bottom:8px;
+}
+.sel-on-standard {
+    background:#27ae60;
+    color:white!important;
+    border-color:#1e8449;
+}
+.sel-on-ridondante {
+    background:#ff7900;
+    color:white!important;
+    border-color:#c75f00;
+}
+.sel-off {
+    background:#eef6ff;
+    color:#06499b!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -2178,20 +2262,29 @@ with col_main:
         st.markdown("""
         <div class="pro-desc">
         Automazione lineare per porte scorrevoli automatiche.<br>
-        Soluzione ideale per ingressi commerciali, uffici e attività.<br>
-        Compatibile con normativa EN16005.
+        Ideale per ingressi commerciali, uffici, negozi e attività.<br>
+        Soluzione standard affidabile e compatibile con normativa EN16005.
+        <div class="pro-points">
+        ✓ Conforme EN16005<br>
+        ✓ Made in Italy<br>
+        ✓ Garanzia 12 mesi<br>
+        ✓ Assistenza tecnica SA-TEC
+        </div>
         </div>
         """, unsafe_allow_html=True)
-
         st.markdown("</div>", unsafe_allow_html=True)
 
         b_pw1, b_pw2 = st.columns(2)
         with b_pw1:
-            if st.button("PW100 1 ANTA", key="btn_pw100_1"):
+            classe = "sel-box sel-on-standard" if st.session_state.scelta == "STANDARD 1 ANTA" else "sel-box sel-off"
+            st.markdown(f'<div class="{classe}">PW100 1 ANTA</div>', unsafe_allow_html=True)
+            if st.button("Seleziona", key="btn_pw100_1"):
                 st.session_state.scelta = "STANDARD 1 ANTA"
                 st.rerun()
         with b_pw2:
-            if st.button("PW100 2 ANTE", key="btn_pw100_2"):
+            classe = "sel-box sel-on-standard" if st.session_state.scelta == "STANDARD 2 ANTE" else "sel-box sel-off"
+            st.markdown(f'<div class="{classe}">PW100 2 ANTE</div>', unsafe_allow_html=True)
+            if st.button("Seleziona", key="btn_pw100_2"):
                 st.session_state.scelta = "STANDARD 2 ANTE"
                 st.rerun()
 
@@ -2208,19 +2301,28 @@ with col_main:
         <div class="pro-desc">
         Automazione ridondante per uscite di emergenza e vie di fuga.<br>
         Progettata per garantire continuità di apertura e massima sicurezza.<br>
-        Soluzione professionale per ambienti soggetti a requisiti specifici.
+        Soluzione professionale per ambienti con requisiti specifici.
+        <div class="pro-points">
+        ✓ Sistema ridondante<br>
+        ✓ Conforme EN16005<br>
+        ✓ Garanzia 12 mesi<br>
+        ✓ Assistenza tecnica SA-TEC
+        </div>
         </div>
         """, unsafe_allow_html=True)
-
         st.markdown("</div>", unsafe_allow_html=True)
 
         b_er1, b_er2 = st.columns(2)
         with b_er1:
-            if st.button("ER140 1 ANTA", key="btn_er140_1"):
+            classe = "sel-box sel-on-ridondante" if st.session_state.scelta == "RIDONDANTE 1 ANTA" else "sel-box sel-off"
+            st.markdown(f'<div class="{classe}">ER140 1 ANTA</div>', unsafe_allow_html=True)
+            if st.button("Seleziona", key="btn_er140_1"):
                 st.session_state.scelta = "RIDONDANTE 1 ANTA"
                 st.rerun()
         with b_er2:
-            if st.button("ER140 2 ANTE", key="btn_er140_2"):
+            classe = "sel-box sel-on-ridondante" if st.session_state.scelta == "RIDONDANTE 2 ANTE" else "sel-box sel-off"
+            st.markdown(f'<div class="{classe}">ER140 2 ANTE</div>', unsafe_allow_html=True)
+            if st.button("Seleziona", key="btn_er140_2"):
                 st.session_state.scelta = "RIDONDANTE 2 ANTE"
                 st.rerun()
 
@@ -2235,12 +2337,7 @@ with col_main:
     else:
         tipo, ante = "Ridondante", "2 ante"
 
-    st.markdown("""
-    <div class="section-row">
-    <div class="section-box">PW100 STANDARD<br><span style="font-weight:500;color:#111;">Automazione lineare Sesamo PowerCore PW100 per porta scorrevole automatica ad uso normale.</span></div>
-    <div class="section-box green">ER140 RIDONDANTE<br><span style="font-weight:500;color:#111;">Automazione ridondante per vie di fuga, uscite di emergenza e sicurezza avanzata.</span></div>
-    </div></div>
-    """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown('<div class="card"><div class="title-bar">2&nbsp;&nbsp; MISURE PORTA</div>', unsafe_allow_html=True)
     m1, m2 = st.columns(2)
@@ -2978,7 +3075,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V51.2 - Grafica professionale corretta")
+st.caption("Versione V52 - Card allineate e selezione accesa")
 
 st.markdown(f"""
 <div class="footer">
