@@ -898,64 +898,276 @@ def elimina_preventivo_admin(codice_preventivo):
     return False, f"Supabase: {err_sb} | CSV: {err_csv}"
 
 
+
+def duplica_preventivo_admin(codice_preventivo):
+    path = Path(PREVENTIVI_CSV)
+    if not path.exists():
+        return False, "File preventivi CSV non trovato"
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+
+        originale = None
+        for r in righe:
+            if str(r.get("codice_preventivo", "")).strip() == str(codice_preventivo).strip():
+                originale = dict(r)
+                break
+
+        if not originale:
+            return False, "Preventivo originale non trovato"
+
+        nuovo_codice = genera_codice_preventivo()
+        originale["codice_preventivo"] = nuovo_codice
+        originale["data_ora"] = datetime.now().strftime("%d/%m/%Y %H:%M")
+        originale["stato"] = "Bozza"
+
+        fieldnames = list(righe[0].keys())
+        for k in originale.keys():
+            if k not in fieldnames:
+                fieldnames.append(k)
+
+        with open(path, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writerow(originale)
+
+        return True, nuovo_codice
+    except Exception as e:
+        return False, str(e)
+
+
+def html_export_preventivo_admin(p):
+    codice = str(p.get("codice_preventivo", "") or "")
+    righe = ""
+    campi = [
+        ("Codice", "codice_preventivo"),
+        ("Data", "data_ora"),
+        ("Rivenditore / Utente", "utente"),
+        ("Profilo", "profilo"),
+        ("Cliente", "cliente_nome"),
+        ("Azienda cliente", "cliente_azienda"),
+        ("Telefono", "cliente_telefono"),
+        ("Email", "cliente_email"),
+        ("Configurazione", "configurazione"),
+        ("Luce mm", "luce_mm"),
+        ("Altezza mm", "altezza_mm"),
+        ("Traversa m", "traversa_m"),
+        ("Elettroblocco", "elettroblocco"),
+        ("Radar sicurezza laterale", "radar_sicurezza_laterale"),
+        ("Allaccio / Collaudo", "allaccio"),
+        ("Ricarico totale %", "ricarico_percento"),
+        ("Ricarico base %", "ricarico_base_percento"),
+        ("Ricarico extra %", "ricarico_extra_percento"),
+        ("Imponibile", "imponibile"),
+        ("IVA", "iva"),
+        ("Totale IVA inclusa", "totale_iva"),
+        ("Costo SA-TEC", "costo_satec"),
+        ("Utile lordo", "utile_lordo"),
+        ("Margine %", "margine_percento"),
+        ("Stato", "stato"),
+    ]
+
+    for label, key in campi:
+        righe += f"<tr><th>{label}</th><td>{p.get(key, '')}</td></tr>"
+
+    return f"""
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <title>Dettaglio preventivo {codice}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 30px; color:#111; }}
+        .head {{ background:#06499b; color:white; padding:18px; border-radius:12px; }}
+        h1 {{ margin:0; }}
+        table {{ width:100%; border-collapse:collapse; margin-top:20px; }}
+        th {{ width:260px; background:#eef6ff; color:#06499b; text-align:left; }}
+        th, td {{ border:1px solid #bdd4ef; padding:10px; }}
+        .footer {{ margin-top:25px; font-size:13px; color:#555; }}
+    
+/* V68 - CRM DETAIL PROFESSIONALE */
+.crm-detail-v68 {
+    background:#ffffff;
+    border:2px solid #bdd4ef;
+    border-radius:18px;
+    padding:16px;
+    margin:18px 0;
+    box-shadow:0 6px 18px rgba(6,73,155,0.10);
+}
+.crm-detail-head-v68 {
+    background:#06499b;
+    color:white;
+    border-radius:12px;
+    padding:14px 18px;
+}
+.crm-detail-code-v68 {
+    font-size:24px;
+    font-weight:900;
+}
+.crm-detail-sub-v68 {
+    font-size:14px;
+    font-weight:800;
+    margin-top:4px;
+}
+.crm-detail-grid-v68 {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-top:14px;
+}
+.crm-mini-card-v68 {
+    background:#eef6ff;
+    border:1px solid #bdd4ef;
+    border-radius:12px;
+    padding:12px;
+    color:#111;
+    font-size:14px;
+    font-weight:800;
+}
+.crm-mini-card-v68 span {
+    color:#06499b;
+    font-size:20px;
+    font-weight:900;
+}
+.crm-white-box-v68 {
+    background:#ffffff;
+    border:2px solid #bdd4ef;
+    border-radius:14px;
+    padding:16px;
+    color:#111;
+    font-size:15px;
+    font-weight:800;
+    line-height:1.65;
+}
+.crm-price-row-v68 {
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:8px 0;
+    color:#111;
+    font-size:15px;
+    font-weight:800;
+}
+.crm-price-row-v68.total {
+    color:#06499b;
+    font-size:20px;
+    font-weight:900;
+}
+
+</style>
+    </head>
+    <body>
+        <div class="head">
+            <h1>Dettaglio preventivo {codice}</h1>
+            <div>SA-TEC S.R.L.s - CRM Commerciale</div>
+        </div>
+        <table>{righe}</table>
+        <div class="footer">Documento gestionale interno. Stampare o salvare come PDF dal browser.</div>
+    </body>
+    </html>
+    """
+
+
+def valore_admin_euro(p, campo):
+    try:
+        return euro(float(str(p.get(campo, "0")).replace(",", ".") or 0))
+    except:
+        return str(p.get(campo, "") or "")
+
+
 def render_dettaglio_preventivo_admin(p):
     codice = str(p.get("codice_preventivo", "") or "")
+    configurazione = str(p.get("configurazione", "") or "")
+    stato = str(p.get("stato", "Bozza") or "Bozza")
+    cliente = p.get("cliente_nome", "") or p.get("cliente_azienda", "") or "Cliente non indicato"
+    rivenditore = p.get("utente", "") or "Utente non indicato"
+
+    elettro = str(p.get("elettroblocco", "") or "No")
+    radar = str(p.get("radar_sicurezza_laterale", "") or "No")
+    allaccio = str(p.get("allaccio", "") or "No")
+
+    accessori = []
+    if elettro and elettro.lower() not in ["no", "false", "0", ""]:
+        accessori.append({"Accessorio": "Elettroblocco", "Q.tà": "1", "Valore": elettro})
+    if radar and radar.lower() not in ["no", "false", "0", ""]:
+        accessori.append({"Accessorio": "Radar sicurezza laterale", "Q.tà": "1", "Valore": radar})
+    if allaccio and allaccio.lower() not in ["no", "false", "0", ""]:
+        accessori.append({"Accessorio": "Allaccio e collaudo", "Q.tà": "1", "Valore": allaccio})
+    if not accessori:
+        accessori.append({"Accessorio": "Nessun accessorio extra indicato", "Q.tà": "", "Valore": ""})
+
     st.markdown(f"""
-    <div style="background:#fff8c7;border:3px solid #06499b;border-radius:16px;padding:16px;margin:12px 0;">
-        <div style="background:#06499b;color:white;border-radius:10px;padding:10px 14px;font-size:22px;font-weight:900;text-align:center;">
-            DETTAGLIO PREVENTIVO {codice}
+    <div class="crm-detail-v68">
+        <div class="crm-detail-head-v68">
+            <div>
+                <div class="crm-detail-code-v68">DETTAGLIO PREVENTIVO {codice}</div>
+                <div class="crm-detail-sub-v68">{configurazione} · Stato: {stato}</div>
+            </div>
+        </div>
+        <div class="crm-detail-grid-v68">
+            <div class="crm-mini-card-v68"><b>Cliente</b><br>{cliente}</div>
+            <div class="crm-mini-card-v68"><b>Rivenditore / Utente</b><br>{rivenditore}</div>
+            <div class="crm-mini-card-v68"><b>Data</b><br>{p.get('data_ora', '')}</div>
+            <div class="crm-mini-card-v68"><b>Totale vendita</b><br><span>{valore_admin_euro(p, 'totale_iva')}</span></div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    d1, d2, d3 = st.columns(3)
-    with d1:
-        st.markdown("### Rivenditore / Utente")
-        st.write(f"**Utente:** {p.get('utente', '')}")
-        st.write(f"**Profilo:** {p.get('profilo', '')}")
-        st.write(f"**Data:** {p.get('data_ora', '')}")
-        st.write(f"**Stato:** {p.get('stato', '')}")
-    with d2:
-        st.markdown("### Cliente")
-        st.write(f"**Nome:** {p.get('cliente_nome', '')}")
-        st.write(f"**Azienda:** {p.get('cliente_azienda', '')}")
-        st.write(f"**Telefono:** {p.get('cliente_telefono', '')}")
-        st.write(f"**Email:** {p.get('cliente_email', '')}")
-    with d3:
-        st.markdown("### Configurazione")
-        st.write(f"**Automazione:** {p.get('configurazione', '')}")
-        st.write(f"**Luce:** {p.get('luce_mm', '')} mm")
-        st.write(f"**Altezza:** {p.get('altezza_mm', '')} mm")
-        st.write(f"**Traversa:** {p.get('traversa_m', '')} m")
+    c1, c2 = st.columns([1.25, 1])
 
-    e1, e2, e3 = st.columns(3)
-    with e1:
-        st.markdown("### Accessori")
-        st.write(f"**Elettroblocco:** {p.get('elettroblocco', '')}")
-        st.write(f"**Radar laterale:** {p.get('radar_sicurezza_laterale', '')}")
-        st.write(f"**Allaccio/Collaudo:** {p.get('allaccio', '')}")
-    with e2:
-        st.markdown("### Importi")
-        for label, campo in [("Imponibile", "imponibile"), ("IVA", "iva"), ("Totale IVA inclusa", "totale_iva")]:
-            try:
-                val = euro(float(str(p.get(campo, "0")).replace(",", ".") or 0))
-            except:
-                val = p.get(campo, "")
-            st.write(f"**{label}:** {val}")
-    with e3:
-        st.markdown("### Dati interni SA-TEC")
-        st.write(f"**Ricarico:** {p.get('ricarico_percento', '')}%")
-        try:
-            costo = euro(float(str(p.get("costo_satec", "0")).replace(",", ".") or 0))
-        except:
-            costo = p.get("costo_satec", "")
-        try:
-            utile = euro(float(str(p.get("utile_lordo", "0")).replace(",", ".") or 0))
-        except:
-            utile = p.get("utile_lordo", "")
-        st.write(f"**Costo SA-TEC:** {costo}")
-        st.write(f"**Utile lordo:** {utile}")
-        st.write(f"**Margine:** {p.get('margine_percento', '')}%")
+    with c1:
+        st.markdown("### Configurazione e misure")
+        st.markdown(f"""
+        <div class="crm-white-box-v68">
+            <b>Automazione scelta:</b> {configurazione}<br>
+            <b>Luce passaggio:</b> {p.get('luce_mm', '')} mm<br>
+            <b>Altezza:</b> {p.get('altezza_mm', '')} mm<br>
+            <b>Traversa:</b> {p.get('traversa_m', '')} m<br>
+            <b>Cliente email:</b> {p.get('cliente_email', '')}<br>
+            <b>Telefono:</b> {p.get('cliente_telefono', '')}
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("### Accessori / servizi")
+        st.markdown(tabella_html_sicura(accessori), unsafe_allow_html=True)
+
+    with c2:
+        st.markdown("### Riepilogo economico")
+        st.markdown(f"""
+        <div class="crm-white-box-v68">
+            <div class="crm-price-row-v68"><span>Totale netto vendita</span><b>{valore_admin_euro(p, 'imponibile')}</b></div>
+            <div class="crm-price-row-v68"><span>IVA</span><b>{valore_admin_euro(p, 'iva')}</b></div>
+            <div class="crm-price-row-v68 total"><span>Totale vendita</span><b>{valore_admin_euro(p, 'totale_iva')}</b></div>
+            <hr>
+            <div class="crm-price-row-v68"><span>Costo netto SA-TEC</span><b>{valore_admin_euro(p, 'costo_satec')}</b></div>
+            <div class="crm-price-row-v68"><span>Utile lordo</span><b>{valore_admin_euro(p, 'utile_lordo')}</b></div>
+            <div class="crm-price-row-v68"><span>Margine</span><b>{p.get('margine_percento', '')}%</b></div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    a1, a2, a3 = st.columns(3)
+
+    with a1:
+        html_admin = html_export_preventivo_admin(p)
+        st.download_button(
+            "ESPORTA HTML / PDF",
+            data=html_admin.encode("utf-8"),
+            file_name=f"Dettaglio_{codice}.html",
+            mime="text/html",
+            use_container_width=True,
+            key=f"export_html_{codice}"
+        )
+
+    with a2:
+        if st.button("DUPLICA PREVENTIVO", key=f"duplica_{codice}", use_container_width=True):
+            ok_dup, msg_dup = duplica_preventivo_admin(codice)
+            if ok_dup:
+                st.success(f"Preventivo duplicato: {msg_dup}")
+                st.rerun()
+            else:
+                st.error(msg_dup)
+
+    with a3:
+        st.info("Apri il file HTML e fai Stampa → Salva PDF.")
 
 
 def statistiche_stati_preventivi(preventivi):
@@ -2444,6 +2656,61 @@ section[data-testid="stSidebar"] div[data-baseweb="select"] span {
     font-weight:900!important;
 }
 
+
+/* V67 - GRAFICA INCREMENTO PREZZO VENDITA */
+.incremento-box-v67 {
+    background:#ffffff;
+    border:2px solid #2f80ed;
+    border-radius:14px;
+    padding:12px;
+    margin:10px 0 8px 0;
+}
+.incremento-title-v67 {
+    color:#06499b!important;
+    font-size:17px!important;
+    font-weight:900!important;
+}
+.incremento-note-v67 {
+    color:#111111!important;
+    font-size:13px!important;
+    font-weight:800!important;
+    margin-top:4px!important;
+}
+.incremento-risultato-v67 {
+    background:#27ae60;
+    color:#ffffff!important;
+    border-radius:12px;
+    padding:10px 12px;
+    margin-top:8px;
+    font-size:15px;
+    font-weight:900;
+    text-align:center;
+}
+section[data-testid="stSidebar"] div[role="radiogroup"] {
+    display:flex!important;
+    gap:7px!important;
+    flex-wrap:wrap!important;
+}
+section[data-testid="stSidebar"] div[role="radiogroup"] label {
+    background:#ffffff!important;
+    border:2px solid #2f80ed!important;
+    border-radius:12px!important;
+    padding:8px 10px!important;
+    min-width:72px!important;
+    text-align:center!important;
+    color:#06499b!important;
+    font-weight:900!important;
+}
+section[data-testid="stSidebar"] div[role="radiogroup"] label p {
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+    font-weight:900!important;
+    font-size:16px!important;
+}
+section[data-testid="stSidebar"] div[role="radiogroup"] input:checked + div {
+    background:#27ae60!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -2497,11 +2764,23 @@ if profilo in ["RIVENDITORE", "GROSSISTA"]:
 
     labels_extra = [f"+{x:.0f}%" for x in step_extra]
 
-    scelta_extra_label = st.sidebar.selectbox(
+    st.sidebar.markdown(
+        """
+        <div class="incremento-box-v67">
+            <div class="incremento-title-v67">Incremento prezzo vendita</div>
+            <div class="incremento-note-v67">Scegli quanto aumentare il prezzo finale.</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    scelta_extra_label = st.sidebar.radio(
         "Incremento prezzo vendita",
         labels_extra,
         index=0,
-        key="ricarico_extra_utente_step10"
+        key="ricarico_extra_utente_step10",
+        horizontal=True,
+        label_visibility="collapsed"
     )
 
     ricarico_extra_utente = float(scelta_extra_label.replace("+", "").replace("%", ""))
@@ -2511,11 +2790,21 @@ if profilo in ["RIVENDITORE", "GROSSISTA"]:
         ricarico_cliente_finale
     )
 
-    st.sidebar.success(f"Incremento selezionato: {ricarico_extra_utente:.0f}%")
+    st.sidebar.markdown(
+        f"""
+        <div class="incremento-risultato-v67">
+            Incremento applicato: <b>{ricarico_extra_utente:.0f}%</b>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 elif profilo == "CLIENTE":
     ricarico_extra_utente = 0.0
 else:
     ricarico_extra_utente = 0.0
+
+# V68_FORCE_RICARICO_ATTIVO
+RICARICO_ATTIVO = float(ricarico_effettivo or 0)
 
 # Ricarico manuale solo per ADMIN SA-TEC
 if profilo == "SA-TEC":
@@ -3616,7 +3905,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V66 - Cliente finale realmente 60 percento")
+st.caption("Versione V68 - CRM dettaglio preventivo completo")
 
 st.markdown(f"""
 <div class="footer">
