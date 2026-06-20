@@ -2154,6 +2154,81 @@ div[data-testid="stImage"] img {
     object-fit:contain!important;
 }
 
+
+/* V57 - CARD IN UN SOLO HTML, ZERO RIQUADRI VUOTI */
+.choice-card-v57 {
+    background:#ffffff!important;
+    border:2px solid #bdd4ef!important;
+    border-radius:16px!important;
+    padding:12px!important;
+    margin-bottom:10px!important;
+    box-shadow:0 4px 12px rgba(6,73,155,0.08)!important;
+}
+.choice-card-v57-active {
+    background:#fff8c7!important;
+    border:4px solid #06499b!important;
+}
+.choice-img-v57 {
+    width:100%!important;
+    height:145px!important;
+    object-fit:contain!important;
+    display:block!important;
+    margin:0 auto 8px auto!important;
+}
+.choice-badge-standard-v57 {
+    display:inline-block;
+    background:#06499b;
+    color:white!important;
+    border-radius:8px;
+    padding:7px 12px;
+    font-weight:900;
+    margin-top:8px;
+}
+.choice-badge-er-v57 {
+    display:inline-block;
+    background:#ff7900;
+    color:white!important;
+    border-radius:8px;
+    padding:7px 12px;
+    font-weight:900;
+    margin-top:8px;
+}
+.choice-title-v57 {
+    color:#06499b!important;
+    font-size:23px!important;
+    font-weight:900!important;
+    margin:8px 0!important;
+}
+.choice-desc-v57 {
+    color:#111!important;
+    font-size:15px!important;
+    font-weight:800!important;
+    line-height:1.48!important;
+}
+.sel-box-v57 {
+    border-radius:12px!important;
+    padding:13px 8px!important;
+    text-align:center!important;
+    font-weight:900!important;
+    border:3px solid #06499b!important;
+    margin-bottom:4px!important;
+    font-size:16px!important;
+}
+.sel-on-standard-v57 {
+    background:#27ae60!important;
+    color:white!important;
+    border-color:#1e8449!important;
+}
+.sel-on-ridondante-v57 {
+    background:#ff7900!important;
+    color:white!important;
+    border-color:#c75f00!important;
+}
+.sel-off-v57 {
+    background:#eef6ff!important;
+    color:#06499b!important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -2404,50 +2479,54 @@ with col_main:
     pw_active = st.session_state.scelta in ["STANDARD 1 ANTA", "STANDARD 2 ANTE"]
     er_active = st.session_state.scelta in ["RIDONDANTE 1 ANTA", "RIDONDANTE 2 ANTE"]
 
+    pw100_img = img_to_base64(["pw100.png", "PW100.png", "pw100(1) (3).png"])
+    er140_img = img_to_base64(["er140.png", "ER140.png", "er140(1).png"])
+
+    pw_img_html = f'<img class="choice-img-v57" src="data:image/png;base64,{pw100_img}">' if pw100_img else ""
+    er_img_html = f'<img class="choice-img-v57" src="data:image/png;base64,{er140_img}">' if er140_img else ""
+
     pcol1, pcol2 = st.columns(2)
 
     with pcol1:
-        classe_pw = "choice-card-v56 choice-card-v56-active" if pw_active else "choice-card-v56"
-        st.markdown(f'<div class="{classe_pw}">', unsafe_allow_html=True)
-        if Path("pw100.png").exists():
-            st.image("pw100.png", use_container_width=True)
-        st.markdown('<div class="choice-badge-standard-v56">STANDARD</div>', unsafe_allow_html=True)
-        st.markdown('<div class="choice-title-v56">Sesamo PowerCore PW100</div>', unsafe_allow_html=True)
-        st.markdown("""
-        <div class="choice-desc-v56">
-        ✓ Automazione standard<br>
-        ✓ Conforme EN16005<br>
-        ✓ Made in Italy<br>
-        ✓ Garanzia 12 mesi<br>
-        ✓ Assistenza tecnica SA-TEC
+        classe_pw = "choice-card-v57 choice-card-v57-active" if pw_active else "choice-card-v57"
+        st.markdown(f"""
+        <div class="{classe_pw}">
+            {pw_img_html}
+            <div class="choice-badge-standard-v57">STANDARD</div>
+            <div class="choice-title-v57">Sesamo PowerCore PW100</div>
+            <div class="choice-desc-v57">
+                ✓ Automazione standard<br>
+                ✓ Conforme EN16005<br>
+                ✓ Made in Italy<br>
+                ✓ Garanzia 12 mesi<br>
+                ✓ Assistenza tecnica SA-TEC
+            </div>
         </div>
         """, unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 
     with pcol2:
-        classe_er = "choice-card-v56 choice-card-v56-active" if er_active else "choice-card-v56"
-        st.markdown(f'<div class="{classe_er}">', unsafe_allow_html=True)
-        if Path("er140.png").exists():
-            st.image("er140.png", use_container_width=True)
-        st.markdown('<div class="choice-badge-er-v56">RIDONDANTE / VIE DI FUGA</div>', unsafe_allow_html=True)
-        st.markdown('<div class="choice-title-v56">Sesamo ER140 Ridondante</div>', unsafe_allow_html=True)
-        st.markdown("""
-        <div class="choice-desc-v56">
-        ✓ Sistema ridondante<br>
-        ✓ Per uscite di emergenza<br>
-        ✓ Conforme EN16005<br>
-        ✓ Garanzia 12 mesi<br>
-        ✓ Assistenza tecnica SA-TEC
+        classe_er = "choice-card-v57 choice-card-v57-active" if er_active else "choice-card-v57"
+        st.markdown(f"""
+        <div class="{classe_er}">
+            {er_img_html}
+            <div class="choice-badge-er-v57">RIDONDANTE / VIE DI FUGA</div>
+            <div class="choice-title-v57">Sesamo ER140 Ridondante</div>
+            <div class="choice-desc-v57">
+                ✓ Sistema ridondante<br>
+                ✓ Per uscite di emergenza<br>
+                ✓ Conforme EN16005<br>
+                ✓ Garanzia 12 mesi<br>
+                ✓ Assistenza tecnica SA-TEC
+            </div>
         </div>
         """, unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown('<div style="color:#06499b;font-size:18px;font-weight:900;margin:12px 0 8px 0;">Seleziona configurazione</div>', unsafe_allow_html=True)
 
     s1, s2, s3, s4 = st.columns(4)
 
     with s1:
-        classe = "sel-box-v56 sel-on-standard-v56" if st.session_state.scelta == "STANDARD 1 ANTA" else "sel-box-v56 sel-off-v56"
+        classe = "sel-box-v57 sel-on-standard-v57" if st.session_state.scelta == "STANDARD 1 ANTA" else "sel-box-v57 sel-off-v57"
         testo = "✓ PW100 1 ANTA" if st.session_state.scelta == "STANDARD 1 ANTA" else "PW100 1 ANTA"
         st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
         if st.button("PW100 1 ANTA", key="btn_pw100_1", use_container_width=True):
@@ -2455,7 +2534,7 @@ with col_main:
             st.rerun()
 
     with s2:
-        classe = "sel-box-v56 sel-on-standard-v56" if st.session_state.scelta == "STANDARD 2 ANTE" else "sel-box-v56 sel-off-v56"
+        classe = "sel-box-v57 sel-on-standard-v57" if st.session_state.scelta == "STANDARD 2 ANTE" else "sel-box-v57 sel-off-v57"
         testo = "✓ PW100 2 ANTE" if st.session_state.scelta == "STANDARD 2 ANTE" else "PW100 2 ANTE"
         st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
         if st.button("PW100 2 ANTE", key="btn_pw100_2", use_container_width=True):
@@ -2463,7 +2542,7 @@ with col_main:
             st.rerun()
 
     with s3:
-        classe = "sel-box-v56 sel-on-ridondante-v56" if st.session_state.scelta == "RIDONDANTE 1 ANTA" else "sel-box-v56 sel-off-v56"
+        classe = "sel-box-v57 sel-on-ridondante-v57" if st.session_state.scelta == "RIDONDANTE 1 ANTA" else "sel-box-v57 sel-off-v57"
         testo = "✓ ER140 1 ANTA" if st.session_state.scelta == "RIDONDANTE 1 ANTA" else "ER140 1 ANTA"
         st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
         if st.button("ER140 1 ANTA", key="btn_er140_1", use_container_width=True):
@@ -2471,7 +2550,7 @@ with col_main:
             st.rerun()
 
     with s4:
-        classe = "sel-box-v56 sel-on-ridondante-v56" if st.session_state.scelta == "RIDONDANTE 2 ANTE" else "sel-box-v56 sel-off-v56"
+        classe = "sel-box-v57 sel-on-ridondante-v57" if st.session_state.scelta == "RIDONDANTE 2 ANTE" else "sel-box-v57 sel-off-v57"
         testo = "✓ ER140 2 ANTE" if st.session_state.scelta == "RIDONDANTE 2 ANTE" else "ER140 2 ANTE"
         st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
         if st.button("ER140 2 ANTE", key="btn_er140_2", use_container_width=True):
@@ -3227,7 +3306,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V56 - Eliminati riquadri vuoti")
+st.caption("Versione V57 - Card HTML unica senza riquadri vuoti")
 
 st.markdown(f"""
 <div class="footer">
