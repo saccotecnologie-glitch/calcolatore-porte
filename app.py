@@ -1230,6 +1230,14 @@ def aggiorna_stato_preventivo_admin_robusto(codice_preventivo, nuovo_stato):
 
 
 
+
+def valore_admin_euro_safe(p, campo):
+    try:
+        return euro(float(str(p.get(campo, "0")).replace(",", ".") or 0))
+    except Exception:
+        return str(p.get(campo, "") or "")
+
+
 def render_dettaglio_preventivo_admin(p):
     codice = str(p.get("codice_preventivo", "") or "")
     configurazione = str(p.get("configurazione", "") or "")
@@ -4057,7 +4065,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V74 - CRM ADMIN definitivo")
+st.caption("Versione V75 - Fix dettaglio preventivo ADMIN")
 
 st.markdown(f"""
 <div class="footer">
