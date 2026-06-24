@@ -4549,24 +4549,120 @@ section[data-testid="stSidebar"] div[role="radiogroup"] input:checked + div {
 
 
 # =========================
-# V206 - CSS PULITO DEFINITIVO
+# V207 - DEFINITIVA SICURA SA-TEC
 # =========================
 st.markdown("""
 <style>
 :root{
     --satec-blue:#0057D9;
-    --satec-dark:#003C96;
+    --satec-blue-dark:#003C96;
     --satec-orange:#F5B301;
-    --satec-bg:#F4F8FF;
     --satec-text:#111827;
+    --satec-bg:#F4F8FF;
+    --satec-border:#C9DCF7;
 }
 
-/* Sfondo */
 .stApp{
-    background:linear-gradient(180deg,#F4F8FF 0%,#FFFFFF 65%)!important;
+    background:linear-gradient(180deg,#F4F8FF 0%,#FFFFFF 62%)!important;
 }
 
-/* Sidebar */
+.header{
+    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%)!important;
+    border-radius:22px!important;
+    border:0!important;
+    box-shadow:0 12px 30px rgba(0,87,217,.28)!important;
+    padding:26px 30px!important;
+    margin:8px 0 18px 0!important;
+    display:grid!important;
+    grid-template-columns:27% 46% 27%!important;
+    align-items:center!important;
+    gap:20px!important;
+    min-height:150px!important;
+}
+
+.logo-satec{
+    max-height:110px!important;
+    max-width:100%!important;
+    object-fit:contain!important;
+    filter:brightness(0) invert(1) drop-shadow(0 3px 6px rgba(0,0,0,.22))!important;
+}
+
+.header > div:first-child h1,
+.header > div:first-child{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:50px!important;
+    font-weight:1000!important;
+    letter-spacing:1px!important;
+    text-shadow:0 3px 8px rgba(0,0,0,.22)!important;
+}
+
+.header-title,
+.header-title *,
+.header-title h1,
+.header-title div{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    text-align:center!important;
+    text-shadow:none!important;
+}
+.header-title h1{
+    font-size:34px!important;
+    line-height:1.08!important;
+    font-weight:1000!important;
+    margin:0!important;
+    letter-spacing:.4px!important;
+}
+.header-title div{
+    color:#EAF3FF!important;
+    -webkit-text-fill-color:#EAF3FF!important;
+    font-size:15px!important;
+    font-weight:1000!important;
+    margin-top:10px!important;
+    letter-spacing:.4px!important;
+}
+
+.header-info,
+.header-info *{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:14px!important;
+    font-weight:900!important;
+    line-height:1.55!important;
+    text-align:right!important;
+}
+
+.powercore{
+    background:#FFFFFF!important;
+    border:1px solid #C9DCF7!important;
+    border-radius:18px!important;
+    box-shadow:0 8px 22px rgba(0,87,217,.08)!important;
+    padding:22px 28px!important;
+    margin-bottom:22px!important;
+}
+.powercore-title{
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+    font-size:34px!important;
+    font-weight:1000!important;
+}
+.powercore-title span{
+    color:#0057D9!important;
+    -webkit-text-fill-color:#0057D9!important;
+}
+.powercore-sub{
+    color:#334155!important;
+    -webkit-text-fill-color:#334155!important;
+    font-size:17px!important;
+    font-weight:800!important;
+    line-height:1.45!important;
+}
+.sesamo-logo{
+    max-height:105px!important;
+    max-width:380px!important;
+    object-fit:contain!important;
+}
+
 section[data-testid="stSidebar"]{
     background:linear-gradient(180deg,#003C96 0%,#0057D9 100%)!important;
     border-right:5px solid #F5B301!important;
@@ -4591,7 +4687,6 @@ section[data-testid="stSidebar"] [data-baseweb="select"] *{
     font-weight:900!important;
 }
 
-/* Bottoni generali */
 .stButton button,
 .stDownloadButton button,
 section[data-testid="stSidebar"] .stButton button{
@@ -4604,6 +4699,7 @@ section[data-testid="stSidebar"] .stButton button{
     font-size:15px!important;
     font-weight:1000!important;
     opacity:1!important;
+    box-shadow:0 4px 12px rgba(0,87,217,.10)!important;
 }
 .stButton button *,
 .stDownloadButton button *,
@@ -4628,13 +4724,14 @@ section[data-testid="stSidebar"] .stButton button:hover *{
     -webkit-text-fill-color:#111111!important;
 }
 
-/* Menu admin centrale */
 div[data-testid="stHorizontalBlock"] .stButton button{
     background:#0057D9!important;
     color:#FFFFFF!important;
     -webkit-text-fill-color:#FFFFFF!important;
     border:2px solid #0057D9!important;
     min-height:58px!important;
+    border-radius:14px!important;
+    box-shadow:0 8px 18px rgba(0,87,217,.20)!important;
 }
 div[data-testid="stHorizontalBlock"] .stButton button *,
 div[data-testid="stHorizontalBlock"] .stButton button p,
@@ -4653,7 +4750,6 @@ div[data-testid="stHorizontalBlock"] .stButton button:hover *{
     border-color:#F5B301!important;
 }
 
-/* Titoli sezioni */
 .v100-title-bar,
 .v102-title-bar,
 .v90-section-title,
@@ -4666,7 +4762,9 @@ div[data-testid="stHorizontalBlock"] .stButton button:hover *{
     border:0!important;
     border-radius:17px!important;
     padding:16px 21px!important;
+    font-size:23px!important;
     font-weight:1000!important;
+    box-shadow:0 8px 20px rgba(0,87,217,.18)!important;
 }
 .v100-title-bar *,
 .v102-title-bar *,
@@ -4678,7 +4776,6 @@ div[data-testid="stHorizontalBlock"] .stButton button:hover *{
     -webkit-text-fill-color:#FFFFFF!important;
 }
 
-/* Contenuti */
 .card,
 .v100-row-card,
 .crm-detail-v68,
@@ -4686,6 +4783,7 @@ div[data-testid="stHorizontalBlock"] .stButton button:hover *{
 .crm-mini-card-v68,
 .v85-help-box{
     background:#FFFFFF!important;
+    border-color:#C9DCF7!important;
 }
 .card *,
 .v100-row-card *,
@@ -4703,11 +4801,11 @@ div[data-testid="stHorizontalBlock"] .stButton button:hover *{
     -webkit-text-fill-color:#FFFFFF!important;
 }
 
-/* Tabelle */
 th{
     background:#0057D9!important;
     color:#FFFFFF!important;
     -webkit-text-fill-color:#FFFFFF!important;
+    font-weight:1000!important;
 }
 td{
     background:#FFFFFF!important;
@@ -4718,7 +4816,6 @@ tr:nth-child(even) td{
     background:#F3F7FF!important;
 }
 
-/* Alert/input leggibili */
 [data-testid="stAlert"],
 [data-testid="stAlert"] *{
     color:#111827!important;
@@ -4734,6 +4831,19 @@ tr:nth-child(even) td{
     background:#FFFFFF!important;
     font-weight:850!important;
 }
+
+@media(max-width:950px){
+    .header{
+        grid-template-columns:1fr!important;
+        text-align:center!important;
+    }
+    .header-info{
+        text-align:center!important;
+    }
+    .powercore{
+        display:block!important;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -4745,7 +4855,7 @@ tr:nth-child(even) td{
 logo_satec64 = img_to_base64(["logo_satec.jpg", "logo_satec.png", "/mnt/data/logo_satec.jpg", "/mnt/data/logo_satec.png"])
 logo_sesamo64 = img_to_base64(["SESAMO LOGO.png", "sesamo_logo.png", "logo_sesamo.png", "/mnt/data/SESAMO LOGO.png", "/mnt/data/sesamo_logo.png", "/mnt/data/logo_sesamo.png"])
 
-logo_satec_html = f'<img class="logo-satec" src="data:image/jpeg;base64,{logo_satec64}">' if logo_satec64 else "<h1 style='color:#06499b'>SA-TEC</h1>"
+logo_satec_html = f'<img class="logo-satec" src="data:image/jpeg;base64,{logo_satec64}">' if logo_satec64 else "<h1 style='color:#ffffff;-webkit-text-fill-color:#ffffff;font-weight:1000;'>SA-TEC</h1>"
 sesamo_logo_html = f'<img class="sesamo-logo" src="data:image/png;base64,{logo_sesamo64}">' if logo_sesamo64 else """
 <div style="display:flex;align-items:center;justify-content:center;gap:18px;">
 <div style="background:#ff7900;color:white;font-size:44px;font-weight:900;padding:10px 18px;">▌</div>
@@ -4754,95 +4864,15 @@ sesamo_logo_html = f'<img class="sesamo-logo" src="data:image/png;base64,{logo_s
 </div>"""
 
 st.markdown(f"""
-<div style="
-    width:100%;
-    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%);
-    border-radius:22px;
-    padding:30px 34px;
-    margin:8px 0 20px 0;
-    box-shadow:0 12px 30px rgba(0,87,217,.28);
-    display:grid;
-    grid-template-columns:28% 46% 26%;
-    align-items:center;
-    gap:22px;
-">
-    <div style="
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-        font-size:52px;
-        font-weight:1000;
-        letter-spacing:1px;
-        line-height:1;
-        text-shadow:0 3px 8px rgba(0,0,0,.18);
-    ">SA-TEC</div>
-
-    <div style="text-align:center;">
-        <div style="
-            color:#FFFFFF!important;
-            -webkit-text-fill-color:#FFFFFF!important;
-            font-size:34px;
-            font-weight:1000;
-            line-height:1.08;
-            letter-spacing:.4px;
-        ">CONFIGURATORE<br>PORTE AUTOMATICHE</div>
-        <div style="
-            color:#EAF3FF!important;
-            -webkit-text-fill-color:#EAF3FF!important;
-            font-size:15px;
-            font-weight:1000;
-            margin-top:12px;
-            letter-spacing:.5px;
-        ">TECNOLOGIA, SICUREZZA E SOLUZIONI SU MISURA</div>
-    </div>
-
-    <div style="
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-        font-size:14px;
-        font-weight:900;
-        line-height:1.58;
-        text-align:right;
-    ">
-        SA-TEC S.R.L.s<br>
-        Via L. Settembrini 84<br>
-        88046 Lamezia Terme (CZ)<br>
-        P.IVA 04009610793<br>
-        ☎ 0968-036797<br>
-        ✉ sacco.tecnologie@gmail.com<br>
-        ✉ sa-tec@pec.it
-    </div>
+<div class="header">
+<div>{logo_satec_html}</div>
+<div class="header-title"><h1>CONFIGURATORE<br>PORTE AUTOMATICHE</h1><div>TECNOLOGIA, SICUREZZA E SOLUZIONI SU MISURA</div></div>
+<div class="header-info">SA-TEC S.R.L.s<br>Via L. Settembrini 84<br>88046 Lamezia Terme (CZ)<br>P.IVA 04009610793<br>☎ 0968-036797<br>✉ sacco.tecnologie@gmail.com<br>✉ sa-tec@pec.it</div>
 </div>
-
-<div style="
-    background:#FFFFFF;
-    border:1px solid #C9DCF7;
-    border-radius:18px;
-    padding:24px 30px;
-    margin:0 0 22px 0;
-    display:grid;
-    grid-template-columns:55% 45%;
-    align-items:center;
-    box-shadow:0 8px 22px rgba(0,87,217,.08);
-">
-    <div>
-        <div style="
-            color:#0B2A4A!important;
-            -webkit-text-fill-color:#0B2A4A!important;
-            font-size:34px;
-            font-weight:1000;
-            letter-spacing:.4px;
-        ">SESAMO POWERCORE PW100</div>
-        <div style="
-            color:#334155!important;
-            -webkit-text-fill-color:#334155!important;
-            font-size:17px;
-            font-weight:800;
-            margin-top:10px;
-            line-height:1.45;
-        ">Automazione lineare per porte scorrevoli automatiche,<br>
-        affidabile, sicura e compatibile con la normativa EN16005.</div>
-    </div>
-    <div style="text-align:center;">{sesamo_logo_html}</div>
+<div class="powercore">
+<div><div class="powercore-title">SESAMO <span>POWERCORE</span> PW100</div>
+<div class="powercore-sub">Automazione lineare per porte scorrevoli automatiche,<br>affidabile, sicura e compatibile con la normativa EN16005.</div></div>
+<div style="text-align:center;">{sesamo_logo_html}</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -6006,571 +6036,6 @@ if profilo == "SA-TEC":
 
 
 # =========================
-# V201 - EMERGENZA: GRAFICA CORRETTA SENZA TOCCARE FRECCE
-# =========================
-st.markdown("""
-<style>
-:root{
-    --satec-blue:#0057D9;
-    --satec-blue-dark:#003C96;
-    --satec-orange:#F5B301;
-    --satec-bg:#F3F7FF;
-    --satec-border:#BFD7F5;
-    --satec-text:#111827;
-}
-
-/* Base */
-.stApp{
-    background:linear-gradient(180deg,#F3F7FF 0%,#FFFFFF 55%)!important;
-}
-.block-container{
-    padding-top:1rem!important;
-}
-
-/* Testi sempre leggibili */
-.block-container,
-.block-container *:not(svg):not(path){
-    color:var(--satec-text)!important;
-    -webkit-text-fill-color:var(--satec-text)!important;
-}
-.block-container h1,
-.block-container h2,
-.block-container h3{
-    color:var(--satec-blue-dark)!important;
-    -webkit-text-fill-color:var(--satec-blue-dark)!important;
-    font-weight:1000!important;
-}
-
-/* Sidebar */
-section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#003C96 0%,#0057D9 100%)!important;
-    border-right:5px solid var(--satec-orange)!important;
-}
-section[data-testid="stSidebar"] h1,
-section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] div{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] textarea,
-section[data-testid="stSidebar"] [data-baseweb="input"] *,
-section[data-testid="stSidebar"] [data-baseweb="select"] *{
-    background:#ffffff!important;
-    color:var(--satec-text)!important;
-    -webkit-text-fill-color:var(--satec-text)!important;
-    font-weight:900!important;
-}
-
-/* Testata principale / banner: blu vivo e lettere bianche */
-.v200-topbar,
-.v111-admin-header,
-.v110-admin-header,
-.v105-admin-header,
-.v102-admin-hero,
-.v104-admin-hero,
-.v90-hero,
-.v101-top,
-.satec-header,
-.header-satec,
-.main-header,
-.hero,
-.banner,
-[class*="header"],
-[class*="hero"]{
-    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%)!important;
-    border-radius:18px!important;
-    border:0!important;
-    box-shadow:0 10px 26px rgba(0,87,217,.22)!important;
-}
-
-/* Dentro testata tutto bianco */
-.v200-topbar *,
-.v111-admin-header *,
-.v110-admin-header *,
-.v105-admin-header *,
-.v102-admin-hero *,
-.v104-admin-hero *,
-.v90-hero *,
-.v101-top *,
-.satec-header *,
-.header-satec *,
-.main-header *,
-.hero *,
-.banner *,
-[class*="header"] *,
-[class*="hero"] *{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    text-shadow:none!important;
-}
-
-/* ATTENZIONE: le card e i dettagli NON devono diventare blu */
-.card,
-.v100-row-card,
-.crm-detail-v68,
-.crm-white-box-v68,
-.crm-mini-card-v68,
-.v85-help-box,
-.v200-kpi,
-.v200-panel{
-    background:#ffffff!important;
-}
-.card *,
-.v100-row-card *,
-.crm-detail-v68 *,
-.crm-white-box-v68 *,
-.crm-mini-card-v68 *,
-.v85-help-box *,
-.v200-kpi *,
-.v200-panel *{
-    color:var(--satec-text)!important;
-    -webkit-text-fill-color:var(--satec-text)!important;
-}
-
-/* Bottoni definitivi: testo sempre visibile anche senza mouse */
-.stButton button,
-.stDownloadButton button,
-section[data-testid="stSidebar"] .stButton button{
-    background:#ffffff!important;
-    color:var(--satec-blue)!important;
-    -webkit-text-fill-color:var(--satec-blue)!important;
-    border:2px solid var(--satec-blue)!important;
-    border-radius:13px!important;
-    min-height:50px!important;
-    font-size:15px!important;
-    font-weight:1000!important;
-    box-shadow:0 4px 12px rgba(0,87,217,.08)!important;
-    opacity:1!important;
-}
-.stButton button *,
-.stDownloadButton button *,
-section[data-testid="stSidebar"] .stButton button *{
-    color:inherit!important;
-    -webkit-text-fill-color:inherit!important;
-    opacity:1!important;
-    font-weight:1000!important;
-}
-.stButton button:hover,
-.stDownloadButton button:hover,
-section[data-testid="stSidebar"] .stButton button:hover{
-    background:var(--satec-orange)!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:var(--satec-orange)!important;
-    box-shadow:0 8px 20px rgba(245,179,1,.30)!important;
-}
-.stButton button:hover *,
-.stDownloadButton button:hover *{
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-}
-.stButton button:focus,
-.stButton button:active,
-.stDownloadButton button:focus,
-.stDownloadButton button:active{
-    background:var(--satec-blue)!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    border-color:var(--satec-blue)!important;
-}
-
-/* Titoli sezione */
-.v100-title-bar,
-.v102-title-bar,
-.v90-section-title,
-.v101-menu-title,
-.v87-section-title,
-.v85-toggle-title{
-    background:#ffffff!important;
-    color:var(--satec-blue)!important;
-    -webkit-text-fill-color:var(--satec-blue)!important;
-    border:1px solid var(--satec-border)!important;
-    border-left:8px solid var(--satec-blue)!important;
-    border-radius:17px!important;
-    padding:16px 21px!important;
-    margin:18px 0 14px 0!important;
-    font-size:23px!important;
-    font-weight:1000!important;
-    box-shadow:0 7px 18px rgba(0,87,217,.08)!important;
-}
-.v100-title-bar *,
-.v102-title-bar *,
-.v90-section-title *,
-.v101-menu-title *,
-.v87-section-title *,
-.v85-toggle-title *{
-    color:var(--satec-blue)!important;
-    -webkit-text-fill-color:var(--satec-blue)!important;
-}
-
-/* Tabelle */
-table{
-    border-collapse:separate!important;
-    border-spacing:0!important;
-    width:100%!important;
-    border:1px solid var(--satec-border)!important;
-    border-radius:15px!important;
-    overflow:hidden!important;
-    background:#ffffff!important;
-}
-th{
-    background:var(--satec-blue)!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:1000!important;
-    padding:12px!important;
-}
-td{
-    background:#ffffff!important;
-    color:var(--satec-text)!important;
-    -webkit-text-fill-color:var(--satec-text)!important;
-    font-weight:750!important;
-    padding:10px!important;
-}
-tr:nth-child(even) td{
-    background:#F3F7FF!important;
-}
-
-/* Alert leggibili */
-[data-testid="stAlert"],
-[data-testid="stAlert"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:850!important;
-}
-
-/* Input main leggibili */
-.block-container input,
-.block-container textarea,
-.block-container [data-baseweb="input"] *,
-.block-container [data-baseweb="select"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    background:#ffffff!important;
-    font-weight:850!important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-
-# =========================
-# V203 - PULIZIA SIDEBAR ADMIN
-# =========================
-st.markdown("""
-<style>
-/* Sidebar Admin più pulita: nessun doppione comandi */
-section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#003C96 0%,#0057D9 100%)!important;
-    border-right:5px solid #F5B301!important;
-}
-section[data-testid="stSidebar"] [data-testid="stAlert"] *,
-section[data-testid="stSidebar"] .stAlert *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:900!important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-
-# =========================
-# V204 - GRAFICA FINALE SA-TEC
-# =========================
-st.markdown("""
-<style>
-:root{
-    --satec-blue:#0057D9;
-    --satec-blue-dark:#003C96;
-    --satec-orange:#F5B301;
-    --satec-text:#111827;
-    --satec-bg:#F3F7FF;
-}
-
-/* SFONDO */
-.stApp{
-    background:linear-gradient(180deg,#F3F7FF 0%,#FFFFFF 65%)!important;
-}
-
-/* TESTATA / LOGO PRINCIPALE BLU VIVO */
-.v90-hero,
-.v101-top,
-.v102-admin-hero,
-.v104-admin-hero,
-.v105-admin-header,
-.v106-admin-header,
-.v110-admin-header,
-.v111-admin-header,
-.v200-topbar,
-.satec-header,
-.header-satec,
-.main-header,
-.hero-satec,
-[class*="satec"][class*="header"],
-[class*="admin"][class*="header"]{
-    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%)!important;
-    border:0!important;
-    border-radius:20px!important;
-    box-shadow:0 12px 30px rgba(0,87,217,.26)!important;
-}
-
-/* TUTTO NELLA TESTATA BIANCO */
-.v90-hero *,
-.v101-top *,
-.v102-admin-hero *,
-.v104-admin-hero *,
-.v105-admin-header *,
-.v106-admin-header *,
-.v110-admin-header *,
-.v111-admin-header *,
-.v200-topbar *,
-.satec-header *,
-.header-satec *,
-.main-header *,
-.hero-satec *,
-[class*="satec"][class*="header"] *,
-[class*="admin"][class*="header"] *{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-weight:1000!important;
-    text-shadow:none!important;
-}
-
-/* LOGO SA-TEC PIU' DEFINITO */
-.v90-hero h1,
-.v101-top h1,
-.v102-admin-hero h1,
-.v105-admin-title,
-.v106-admin-title,
-.v110-admin-title,
-.v111-admin-title,
-.v200-logo,
-[class*="logo"],
-[class*="brand"]{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:44px!important;
-    font-weight:1000!important;
-    letter-spacing:1px!important;
-    line-height:1.05!important;
-    text-shadow:0 2px 6px rgba(0,0,0,.22)!important;
-}
-
-/* SIDEBAR */
-section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#003C96 0%,#0057D9 100%)!important;
-    border-right:5px solid #F5B301!important;
-}
-section[data-testid="stSidebar"] h1,
-section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] div{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-}
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] textarea,
-section[data-testid="stSidebar"] [data-baseweb="input"] *,
-section[data-testid="stSidebar"] [data-baseweb="select"] *{
-    background:#FFFFFF!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:900!important;
-}
-
-/* BOTTONI BASE: SEMPRE LEGGIBILI */
-.stButton button,
-.stDownloadButton button,
-section[data-testid="stSidebar"] .stButton button{
-    background:#FFFFFF!important;
-    color:#0057D9!important;
-    -webkit-text-fill-color:#0057D9!important;
-    border:2px solid #0057D9!important;
-    border-radius:13px!important;
-    min-height:50px!important;
-    font-size:15px!important;
-    font-weight:1000!important;
-    opacity:1!important;
-    box-shadow:0 4px 12px rgba(0,87,217,.10)!important;
-}
-
-/* TESTO INTERNO BOTTONI SEMPRE VISIBILE */
-.stButton button *,
-.stDownloadButton button *,
-section[data-testid="stSidebar"] .stButton button *{
-    color:inherit!important;
-    -webkit-text-fill-color:inherit!important;
-    font-weight:1000!important;
-    opacity:1!important;
-}
-
-/* HOVER ARANCIONE */
-.stButton button:hover,
-.stDownloadButton button:hover,
-section[data-testid="stSidebar"] .stButton button:hover{
-    background:#F5B301!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:#F5B301!important;
-    box-shadow:0 8px 20px rgba(245,179,1,.30)!important;
-}
-.stButton button:hover *,
-.stDownloadButton button:hover *,
-section[data-testid="stSidebar"] .stButton button:hover *{
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-}
-
-/* ACTIVE BLU */
-.stButton button:focus,
-.stButton button:active,
-.stDownloadButton button:focus,
-.stDownloadButton button:active{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    border-color:#0057D9!important;
-}
-
-/* MENU ADMIN CENTRALE: BLU CON TESTO E DESCRIZIONE BIANCHI */
-div[data-testid="stHorizontalBlock"] .stButton button{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    border:2px solid #0057D9!important;
-    min-height:58px!important;
-    box-shadow:0 8px 18px rgba(0,87,217,.20)!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button *,
-div[data-testid="stHorizontalBlock"] .stButton button p,
-div[data-testid="stHorizontalBlock"] .stButton button span,
-div[data-testid="stHorizontalBlock"] .stButton button div{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-weight:1000!important;
-    opacity:1!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button:hover{
-    background:#F5B301!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:#F5B301!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button:hover *,
-div[data-testid="stHorizontalBlock"] .stButton button:hover p,
-div[data-testid="stHorizontalBlock"] .stButton button:hover span,
-div[data-testid="stHorizontalBlock"] .stButton button:hover div{
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-}
-
-/* TITOLI SEZIONE */
-.v100-title-bar,
-.v102-title-bar,
-.v90-section-title,
-.v101-menu-title,
-.v87-section-title,
-.v85-toggle-title{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    border:0!important;
-    border-radius:17px!important;
-    padding:16px 21px!important;
-    margin:18px 0 14px 0!important;
-    font-size:23px!important;
-    font-weight:1000!important;
-    box-shadow:0 8px 20px rgba(0,87,217,.18)!important;
-}
-.v100-title-bar *,
-.v102-title-bar *,
-.v90-section-title *,
-.v101-menu-title *,
-.v87-section-title *,
-.v85-toggle-title *{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-}
-
-/* CARD E CONTENUTI RESTANO CHIARI */
-.card,
-.v100-row-card,
-.crm-detail-v68,
-.crm-white-box-v68,
-.crm-mini-card-v68,
-.v85-help-box,
-.v200-kpi,
-.v200-panel{
-    background:#FFFFFF!important;
-}
-.card *,
-.v100-row-card *,
-.crm-detail-v68 *,
-.crm-white-box-v68 *,
-.crm-mini-card-v68 *,
-.v85-help-box *,
-.v200-kpi *,
-.v200-panel *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-
-/* TESTA DETTAGLIO PREVENTIVO BLU E TESTO BIANCO */
-.crm-detail-head-v68,
-.crm-detail-head-v68 *{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-}
-
-/* TABELLE */
-th{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-weight:1000!important;
-}
-td{
-    background:#FFFFFF!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-tr:nth-child(even) td{
-    background:#F3F7FF!important;
-}
-
-/* ALERT */
-[data-testid="stAlert"],
-[data-testid="stAlert"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:850!important;
-}
-
-/* INPUT MAIN */
-.block-container input,
-.block-container textarea,
-.block-container [data-baseweb="input"] *,
-.block-container [data-baseweb="select"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    background:#FFFFFF!important;
-    font-weight:850!important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-# =========================
 # CONFIGURATORE
 # =========================
 
@@ -7412,7 +6877,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V206 - Testata Reale Sistemata")
+st.caption("Versione V207 - Definitiva Sicura SA-TEC")
 
 st.markdown(f"""
 <div class="footer">
@@ -7420,198 +6885,6 @@ st.markdown(f"""
 <div>☎ {TELEFONO}</div>
 <div>✉ {EMAIL}</div>
 </div>
-""", unsafe_allow_html=True)
-
-
-# =========================
-# V205 - CSS FINALE FORZATO A FINE FILE
-# =========================
-st.markdown("""
-<style>
-:root{
-    --satec-blue:#0057D9;
-    --satec-dark:#003C96;
-    --satec-orange:#F5B301;
-}
-
-/* FORZA TESTATA PRINCIPALE BLU VIVO */
-div[class*="hero"],
-div[class*="header"],
-div[class*="satec"],
-div[class*="admin"],
-.v90-hero,
-.v101-top,
-.v102-admin-hero,
-.v104-admin-hero,
-.v105-admin-header,
-.v106-admin-header,
-.v110-admin-header,
-.v111-admin-header{
-    background:linear-gradient(90deg,#0057D9,#003C96)!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    border:0!important;
-}
-
-/* FORZA TESTI BIANCHI IN TESTATA */
-div[class*="hero"] *,
-div[class*="header"] *,
-div[class*="satec"] *,
-div[class*="admin"] *,
-.v90-hero *,
-.v101-top *,
-.v102-admin-hero *,
-.v104-admin-hero *,
-.v105-admin-header *,
-.v106-admin-header *,
-.v110-admin-header *,
-.v111-admin-header *{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:1000!important;
-}
-
-/* LOGO / TITOLI GRANDI BIANCHI */
-h1,
-.v105-admin-title,
-.v106-admin-title,
-.v110-admin-title,
-.v111-admin-title,
-[class*="logo"],
-[class*="brand"]{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:1000!important;
-}
-
-/* PERO' TITOLI NORMALI FUORI DALLE TESTATE RESTANO BLU */
-.block-container > div:not([class*="hero"]):not([class*="header"]) h1,
-.block-container > div:not([class*="hero"]):not([class*="header"]) h2,
-.block-container > div:not([class*="hero"]):not([class*="header"]) h3{
-    color:#003C96!important;
-    -webkit-text-fill-color:#003C96!important;
-}
-
-/* BOTTONI MENU ADMIN: BLU CON SCRITTE BIANCHE SEMPRE */
-div[data-testid="stHorizontalBlock"] .stButton button{
-    background:#0057D9!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    border:2px solid #0057D9!important;
-    border-radius:14px!important;
-    min-height:58px!important;
-    font-weight:1000!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button *,
-div[data-testid="stHorizontalBlock"] .stButton button p,
-div[data-testid="stHorizontalBlock"] .stButton button span,
-div[data-testid="stHorizontalBlock"] .stButton button div{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:1000!important;
-    opacity:1!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button:hover{
-    background:#F5B301!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:#F5B301!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button:hover *,
-div[data-testid="stHorizontalBlock"] .stButton button:hover p,
-div[data-testid="stHorizontalBlock"] .stButton button:hover span,
-div[data-testid="stHorizontalBlock"] .stButton button:hover div{
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-}
-
-/* BOTTONI GENERALI: BIANCO BLU, HOVER ARANCIONE */
-.stButton button,
-.stDownloadButton button{
-    background:#ffffff!important;
-    color:#0057D9!important;
-    -webkit-text-fill-color:#0057D9!important;
-    border:2px solid #0057D9!important;
-    border-radius:13px!important;
-    font-weight:1000!important;
-    opacity:1!important;
-}
-.stButton button *,
-.stDownloadButton button *{
-    color:inherit!important;
-    -webkit-text-fill-color:inherit!important;
-    font-weight:1000!important;
-    opacity:1!important;
-}
-.stButton button:hover,
-.stDownloadButton button:hover{
-    background:#F5B301!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:#F5B301!important;
-}
-
-/* SIDEBAR */
-section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#003C96,#0057D9)!important;
-    border-right:5px solid #F5B301!important;
-}
-section[data-testid="stSidebar"] *{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] textarea,
-section[data-testid="stSidebar"] [data-baseweb="input"] *,
-section[data-testid="stSidebar"] [data-baseweb="select"] *{
-    background:#ffffff!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-
-/* CARD E CONTENUTI NON DEVONO DIVENTARE BLU */
-.card,
-.v100-row-card,
-.crm-detail-v68,
-.crm-white-box-v68,
-.crm-mini-card-v68,
-.v85-help-box,
-.v200-panel,
-.v200-kpi{
-    background:#ffffff!important;
-}
-.card *,
-.v100-row-card *,
-.crm-detail-v68 *,
-.crm-white-box-v68 *,
-.crm-mini-card-v68 *,
-.v85-help-box *,
-.v200-panel *,
-.v200-kpi *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-
-/* DETTAGLIO PREVENTIVO TESTATA BLU */
-.crm-detail-head-v68,
-.crm-detail-head-v68 *{
-    background:#0057D9!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-
-/* TABELLE */
-th{
-    background:#0057D9!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-td{
-    background:#ffffff!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-</style>
 """, unsafe_allow_html=True)
 
 
