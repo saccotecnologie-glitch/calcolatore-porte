@@ -1585,3682 +1585,388 @@ def render_dettaglio_preventivo_admin(p):
 
 
 
+
 # =========================
-# V83 CRM ADMIN COMPONENT ISOLATO
+# HEADER V400 CLEAN SA-TEC
 # =========================
 
-def v83_num(v, default=0.0):
-    try:
-        if v is None:
-            return default
-        if isinstance(v, (int, float)):
-            return float(v)
-        s = str(v).strip().replace("€", "").replace(" ", "")
-        if not s:
-            return default
-        if "," in s and "." in s and s.rfind(",") > s.rfind("."):
-            s = s.replace(".", "").replace(",", ".")
-        elif "," in s and "." not in s:
-            s = s.replace(",", ".")
-        return float(s)
-    except Exception:
-        return default
-
-
-def v83_clean(v):
-    return str(v or "").strip()
-
-
-def v83_euro(v):
-    return euro(v83_num(v))
-
-
-def v83_cliente(p):
-    nome = v83_clean(p.get("cliente_nome", ""))
-    azienda = v83_clean(p.get("cliente_azienda", ""))
-    email = v83_clean(p.get("cliente_email", ""))
-    telefono = v83_clean(p.get("cliente_telefono", ""))
-    if nome and not nome.isdigit():
-        return nome
-    if azienda:
-        return azienda
-    if email:
-        return email
-    if telefono:
-        return telefono
-    return "Cliente non indicato"
-
-
-def v83_utente(p):
-    utente = v83_clean(p.get("utente", ""))
-    profilo = v83_clean(p.get("profilo", ""))
-    if utente and not utente.isdigit():
-        return utente
-    if profilo:
-        return profilo
-    return "Utente non indicato"
-
-
-def v83_totale(p):
-    return v83_num(p.get("totale_iva", p.get("totale", 0)))
-
-
-def v83_imponibile(p):
-    imp = v83_num(p.get("imponibile", 0))
-    if imp > 0:
-        return imp
-    totale = v83_totale(p)
-    return totale / (1 + IVA) if totale > 0 else 0.0
-
-
-def v83_iva(p):
-    iva_val = v83_num(p.get("iva", 0))
-    if iva_val > 0:
-        return iva_val
-    totale = v83_totale(p)
-    imp = v83_imponibile(p)
-    return max(totale - imp, 0)
-
-
-def v83_costo(p):
-    costo = v83_num(p.get("costo_satec", 0))
-    if costo > 0:
-        return costo
-
-    imp = v83_imponibile(p)
-    ric = v83_num(p.get("ricarico_percento", 0))
-    if imp > 0 and ric > 0:
-        return imp / (1 + ric / 100)
-    return None
-
-
-def v83_utile(p):
-    utile = v83_num(p.get("utile_lordo", 0))
-    if utile > 0:
-        return utile
-    costo = v83_costo(p)
-    imp = v83_imponibile(p)
-    if costo is not None:
-        return imp - costo
-    return None
-
-
-def v83_margine(p):
-    marg = v83_num(p.get("margine_percento", 0))
-    if marg > 0:
-        return marg
-    costo = v83_costo(p)
-    utile = v83_utile(p)
-    if costo and utile is not None:
-        return utile / costo * 100
-    return None
-
-
-def v83_money_optional(v):
-    if v is None:
-        return "Dato non salvato"
-    return euro(v83_num(v))
-
-
-def v83_percent_optional(v):
-    if v is None:
-        return "Dato non salvato"
-    try:
-        return f"{float(v):.1f}%"
-    except Exception:
-        return "Dato non salvato"
-
-
-def v83_accessori(p):
-    out = []
-    for nome, campo in [
-        ("Elettroblocco", "elettroblocco"),
-        ("Radar sicurezza laterale", "radar_sicurezza_laterale"),
-        ("Allaccio e collaudo", "allaccio"),
-    ]:
-        val = v83_clean(p.get(campo, ""))
-        if val and val.lower() not in ["no", "false", "0", "none", "nessuno"]:
-            out.append(f"""
-            <div class="line"><span>✓ {nome}</span><b>{val}</b></div>
-            """)
-    if not out:
-        out.append('<div class="muted">Nessun accessorio extra indicato</div>')
-    return "".join(out)
-
-
-def v83_detail_html(p):
-    codice = v83_clean(p.get("codice_preventivo", ""))
-    stato = v83_clean(p.get("stato", "Bozza")) or "Bozza"
-    config = v83_clean(p.get("configurazione", ""))
-    totale = v83_totale(p)
-    imponibile = v83_imponibile(p)
-    iva_val = v83_iva(p)
-    costo = v83_costo(p)
-    utile = v83_utile(p)
-    margine = v83_margine(p)
-
-    return f"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-* {{
-    box-sizing:border-box;
-}}
-body {{
-    margin:0;
-    font-family:Arial, Helvetica, sans-serif;
-    background:#f6f9fc;
-    color:#111827;
-}}
-.wrap {{
-    padding:18px;
-}}
-.header {{
-    background:#ffffff;
-    border:2px solid #bdd4ef;
-    border-radius:18px;
-    padding:18px;
-    display:flex;
-    justify-content:space-between;
-    gap:18px;
-    align-items:center;
-    box-shadow:0 8px 22px rgba(6,73,155,.12);
-}}
-.title {{
-    color:#06499b;
-    font-size:26px;
-    font-weight:900;
-}}
-.sub {{
-    color:#111827;
-    font-weight:800;
-    margin-top:6px;
-}}
-.total {{
-    background:#eef6ff;
-    border:1px solid #bdd4ef;
-    border-radius:14px;
-    padding:16px 22px;
-    min-width:230px;
-    text-align:right;
-}}
-.total small {{
-    color:#06499b;
-    font-weight:900;
-}}
-.total b {{
-    display:block;
-    color:#06499b;
-    font-size:32px;
-    margin-top:6px;
-}}
-.cards {{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:12px;
-    margin-top:16px;
-}}
-.card {{
-    background:#ffffff;
-    border:1px solid #dbeafe;
-    border-radius:14px;
-    padding:14px;
-    box-shadow:0 4px 12px rgba(6,73,155,.07);
-}}
-.card small {{
-    color:#06499b;
-    font-weight:900;
-    text-transform:uppercase;
-}}
-.card b {{
-    display:block;
-    color:#111827;
-    font-size:17px;
-    margin-top:8px;
-}}
-.grid {{
-    display:grid;
-    grid-template-columns:1.15fr 1fr;
-    gap:16px;
-    margin-top:16px;
-}}
-.panel {{
-    background:#ffffff;
-    border:1px solid #dbeafe;
-    border-radius:16px;
-    padding:16px;
-    box-shadow:0 4px 12px rgba(6,73,155,.06);
-}}
-.panel h3 {{
-    color:#06499b;
-    margin:0 0 14px 0;
-    font-size:18px;
-}}
-.config-title {{
-    color:#111827;
-    font-weight:900;
-    font-size:17px;
-}}
-.info {{
-    color:#111827;
-    font-weight:700;
-    line-height:1.65;
-    margin-top:8px;
-}}
-.hr {{
-    height:1px;
-    background:#e5e7eb;
-    margin:14px 0;
-}}
-.line {{
-    display:flex;
-    justify-content:space-between;
-    gap:12px;
-    border-bottom:1px solid #eef2f7;
-    padding:9px 0;
-    color:#111827;
-}}
-.line span {{
-    color:#111827;
-    font-weight:800;
-}}
-.line b {{
-    color:#111827;
-}}
-.econ {{
-    display:flex;
-    justify-content:space-between;
-    gap:12px;
-    padding:8px 0;
-    color:#111827;
-}}
-.econ span {{
-    font-weight:700;
-}}
-.econ b {{
-    font-weight:900;
-}}
-.econ.total-row {{
-    background:#eef6ff;
-    color:#06499b;
-    border-radius:10px;
-    padding:11px;
-    margin:6px 0;
-}}
-.green {{
-    color:#219653!important;
-}}
-.muted {{
-    color:#111827;
-    font-weight:700;
-    padding:8px 0;
-}}
-@media(max-width:900px) {{
-    .cards, .grid {{
-        grid-template-columns:1fr;
-    }}
-    .header {{
-        flex-direction:column;
-        align-items:stretch;
-    }}
-}}
-</style>
-</head>
-<body>
-<div class="wrap">
-    <div class="header">
-        <div>
-            <div class="title">DETTAGLIO PREVENTIVO {codice}</div>
-            <div class="sub">{config} · Stato: {stato}</div>
-        </div>
-        <div class="total">
-            <small>TOTALE VENDITA</small>
-            <b>{euro(totale)}</b>
-        </div>
-    </div>
-
-    <div class="cards">
-        <div class="card"><small>Cliente</small><b>{v83_cliente(p)}</b></div>
-        <div class="card"><small>Rivenditore / Utente</small><b>{v83_utente(p)}</b></div>
-        <div class="card"><small>Data</small><b>{v83_clean(p.get('data_ora',''))[:19]}</b></div>
-        <div class="card"><small>Stato</small><b>{stato}</b></div>
-    </div>
-
-    <div class="grid">
-        <div class="panel">
-            <h3>CONFIGURAZIONE E ACCESSORI</h3>
-            <div class="config-title">{config}</div>
-            <div class="info">
-                Luce: {p.get('luce_mm','')} mm<br>
-                Altezza: {p.get('altezza_mm','')} mm<br>
-                Traversa: {p.get('traversa_m','')} m
-            </div>
-            <div class="hr"></div>
-            {v83_accessori(p)}
-        </div>
-
-        <div class="panel">
-            <h3>RIEPILOGO ECONOMICO</h3>
-            <div class="econ"><span>Imponibile vendita</span><b>{euro(imponibile)}</b></div>
-            <div class="econ"><span>IVA 22%</span><b>{euro(iva_val)}</b></div>
-            <div class="econ total-row"><span>Totale vendita</span><b>{euro(totale)}</b></div>
-            <div class="hr"></div>
-            <div class="econ"><span>Costo netto SA-TEC</span><b>{v83_money_optional(costo)}</b></div>
-            <div class="econ"><span>Utile lordo</span><b class="green">{v83_money_optional(utile)}</b></div>
-            <div class="econ"><span>Margine</span><b class="green">{v83_percent_optional(margine)}</b></div>
-        </div>
-    </div>
-</div>
-</body>
-</html>
-"""
-
-
-def v83_export_html(p):
-    return v83_detail_html(p)
-
-
-def v83_update_stato(codice, nuovo):
-    ok = False
-    try:
-        ok = aggiorna_stato_preventivo_admin(codice, nuovo)
-    except Exception:
-        ok = False
-    try:
-        sb = supabase_client()
-        if sb is not None:
-            sb.table("preventivi").update({"stato": nuovo}).eq("codice_preventivo", codice).execute()
-            ok = True
-    except Exception:
-        pass
-    return ok
-
-
-
-def v84_dashboard_html(preventivi):
-    totale_preventivi = len(preventivi)
-    valore_totale = sum(v83_imponibile(p) for p in preventivi)
-    utile_totale = sum((v83_utile(p) or 0) for p in preventivi)
-    costo_totale = sum((v83_costo(p) or 0) for p in preventivi)
-
-    accettati_ordinati = sum(
-        1 for p in preventivi
-        if str(p.get("stato", "")).strip() in ["Accettato", "Ordinato"]
-    )
-    persi = sum(1 for p in preventivi if str(p.get("stato", "")).strip() == "Perso")
-    conversione = (accettati_ordinati / totale_preventivi * 100) if totale_preventivi else 0
-    margine = (utile_totale / costo_totale * 100) if costo_totale else 0
-
-    stati = statistiche_stati_preventivi(preventivi)
-
-    def card(label, value, color="#06499b"):
-        return f"""
-        <div class="card">
-            <div class="label">{label}</div>
-            <div class="value" style="color:{color};">{value}</div>
-        </div>
-        """
-
-    stato_html = ""
-    for stato in STATI_PREVENTIVO:
-        stato_html += f"""
-        <div class="state">
-            <span>{stato}</span>
-            <b>{stati.get(stato, 0)}</b>
-        </div>
-        """
-
-    return f"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-body {{
-    margin:0;
-    font-family:Arial, Helvetica, sans-serif;
-    color:#111827;
-    background:#ffffff;
-}}
-.wrap {{
-    padding:4px;
-}}
-.grid {{
-    display:grid;
-    grid-template-columns:repeat(6,1fr);
-    gap:12px;
-}}
-.card {{
-    background:#ffffff;
-    border:1px solid #dbeafe;
-    border-radius:16px;
-    padding:14px;
-    min-height:88px;
-    box-shadow:0 5px 14px rgba(6,73,155,.08);
-}}
-.label {{
-    color:#06499b;
-    font-size:13px;
-    font-weight:900;
-    text-transform:uppercase;
-}}
-.value {{
-    font-size:22px;
-    font-weight:900;
-    margin-top:9px;
-    white-space:nowrap;
-}}
-.states {{
-    display:grid;
-    grid-template-columns:repeat(6,1fr);
-    gap:10px;
-    margin-top:14px;
-}}
-.state {{
-    background:#eef6ff;
-    border:1px solid #bdd4ef;
-    border-radius:13px;
-    padding:12px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}}
-.state span {{
-    color:#06499b;
-    font-size:13px;
-    font-weight:900;
-}}
-.state b {{
-    color:#111827;
-    font-size:20px;
-}}
-@media(max-width:1000px) {{
-    .grid, .states {{
-        grid-template-columns:repeat(2,1fr);
-    }}
-}}
-</style>
-</head>
-<body>
-<div class="wrap">
-    <div class="grid">
-        {card("Preventivi", totale_preventivi)}
-        {card("Valore totale", euro(valore_totale))}
-        {card("Utile lordo", euro(utile_totale), "#219653")}
-        {card("Margine", f"{margine:.1f}%", "#219653")}
-        {card("Accettati/Ordinati", accettati_ordinati)}
-        {card("Conversione", f"{conversione:.1f}%")}
-    </div>
-    <div class="states">
-        {stato_html}
-    </div>
-</div>
-</body>
-</html>
-"""
-
-
-def v84_render_dashboard(preventivi):
-    components.html(v84_dashboard_html(preventivi), height=235, scrolling=False)
-
-
-def v83_render_admin(preventivi):
+def v400_style():
     st.markdown("""
-    <div class="v85-help-box v90-card" style="background:#eef6ff;color:#111827!important;-webkit-text-fill-color:#111827!important;border:2px solid #bdd4ef;border-radius:14px;padding:14px;margin:12px 0;font-weight:800;line-height:1.55;">
-    <b>Simulazione funzionamento:</b><br>
-    1) Entra come Cliente e salva un preventivo.<br>
-    2) Entra come Rivenditore/Grossista e salva un preventivo con incremento prezzo.<br>
-    3) Entra come ADMIN, apri il dettaglio, cambia stato, duplica o elimina.
-    </div>
-    """, unsafe_allow_html=True)
-
-    if not preventivi:
-        st.info("Nessun preventivo salvato ancora.")
-        return
-
-    st.markdown("""
-    <div class="v90-hero">
-        <h1>CRM Commerciale SA-TEC</h1>
-        <p>Controllo preventivi, clienti, rivenditori e gestione commerciale</p>
-    </div>
-    """, unsafe_allow_html=True)
-    v84_render_dashboard(preventivi)
-
-    st.markdown("---")
-    st.markdown('<div class="v90-section-title">📋 GESTIONE PREVENTIVI</div>', unsafe_allow_html=True)
-
-    f1, f2 = st.columns([2,1])
-    with f1:
-        cerca = st.text_input("Cerca preventivo", key="v83_cerca")
-    with f2:
-        stato_filtro = st.selectbox("Stato", ["Tutti"] + STATI_PREVENTIVO, key="v83_stato_filter")
-
-    lista = filtra_preventivi_dashboard(preventivi, cerca, stato_filtro)
-
-    if not lista:
-        st.info("Nessun preventivo trovato.")
-        return
-
-    for idx, p in enumerate(lista):
-        codice = v83_clean(p.get("codice_preventivo", "")) or f"RIGA-{idx}"
-        stato = v83_clean(p.get("stato", "Bozza")) or "Bozza"
-
-        st.markdown(f"""
-        <div style="background:#ffffff;color:#111827;border:2px solid #bdd4ef;border-radius:16px;padding:16px;margin:18px 0 10px 0;box-shadow:0 5px 15px rgba(6,73,155,0.10);">
-            <div style="color:#06499b;font-size:23px;font-weight:900;">{codice}</div>
-            <div style="color:#111827;font-size:15px;font-weight:800;line-height:1.55;">
-                <b>Cliente:</b> {v83_cliente(p)}<br>
-                <b>Rivenditore/Utente:</b> {v83_utente(p)}<br>
-                <b>Configurazione:</b> {p.get('configurazione','')}<br>
-                <b>Totale:</b> {euro(v83_totale(p))} &nbsp; | &nbsp; <b>Stato:</b> {stato}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        c1, c2, c3 = st.columns(3)
-
-        with c1:
-            if st.button("APRI DETTAGLIO", key=f"v83_apri_{codice}_{idx}", use_container_width=True):
-                st.session_state.v83_aperto = codice
-
-        with c2:
-            nuovo = st.selectbox(
-                "Cambia stato",
-                STATI_PREVENTIVO,
-                index=STATI_PREVENTIVO.index(stato) if stato in STATI_PREVENTIVO else 0,
-                key=f"v83_stato_{codice}_{idx}"
-            )
-            if st.button("AGGIORNA STATO", key=f"v83_update_{codice}_{idx}", use_container_width=True):
-                if v83_update_stato(codice, nuovo):
-                    st.success("Stato aggiornato.")
-                    st.rerun()
-                else:
-                    st.error("Stato non aggiornato.")
-
-        with c3:
-            conferma = st.checkbox("Conferma eliminazione", key=f"v83_conf_{codice}_{idx}")
-            if st.button("ELIMINA", key=f"v83_del_{codice}_{idx}", use_container_width=True):
-                if not conferma:
-                    st.warning("Spunta Conferma eliminazione.")
-                else:
-                    ok_del, msg_del = elimina_preventivo_admin(codice)
-                    if ok_del:
-                        st.success(msg_del)
-                        st.rerun()
-                    else:
-                        st.error(msg_del)
-
-        if st.session_state.get("v83_aperto") == codice:
-            chiudi_col, spazio_col = st.columns([1, 3])
-            with chiudi_col:
-                if st.button("CHIUDI DETTAGLIO", key=f"v84_chiudi_{codice}_{idx}", use_container_width=True):
-                    st.session_state.v83_aperto = ""
-                    st.rerun()
-
-            components.html(v83_detail_html(p), height=760, scrolling=True)
-
-            d1, d2 = st.columns(2)
-            with d1:
-                st.download_button(
-                    "ESPORTA HTML / PDF",
-                    data=v83_export_html(p).encode("utf-8"),
-                    file_name=f"Dettaglio_{codice}.html",
-                    mime="text/html",
-                    use_container_width=True,
-                    key=f"v83_export_{codice}_{idx}_{id(p)}"
-                )
-            with d2:
-                if st.button("DUPLICA PREVENTIVO", key=f"v83_dup_{codice}_{idx}_{id(p)}", use_container_width=True):
-                    ok_dup, msg_dup = duplica_preventivo_admin(codice)
-                    if ok_dup:
-                        st.success(f"Preventivo duplicato: {msg_dup}")
-                        st.rerun()
-                    else:
-                        st.error(msg_dup)
-
-
-
-# =========================
-# V100 - ADMIN DASHBOARD PRO
-# =========================
-
-def v100_num(v, default=0.0):
-    try:
-        if v is None:
-            return default
-        if isinstance(v, (int, float)):
-            return float(v)
-        s = str(v).strip().replace("€", "").replace(" ", "")
-        if not s:
-            return default
-        if "," in s and "." in s and s.rfind(",") > s.rfind("."):
-            s = s.replace(".", "").replace(",", ".")
-        elif "," in s and "." not in s:
-            s = s.replace(",", ".")
-        return float(s)
-    except Exception:
-        return default
-
-
-def v100_clean(v):
-    return str(v or "").strip()
-
-
-def v100_euro(v):
-    return euro(v100_num(v))
-
-
-def v100_cliente(p):
-    nome = v100_clean(p.get("cliente_nome", ""))
-    azienda = v100_clean(p.get("cliente_azienda", ""))
-    email = v100_clean(p.get("cliente_email", ""))
-    telefono = v100_clean(p.get("cliente_telefono", ""))
-    if nome and not nome.isdigit():
-        return nome
-    if azienda:
-        return azienda
-    if email:
-        return email
-    if telefono:
-        return telefono
-    return "Cliente non indicato"
-
-
-def v100_utente(p):
-    utente = v100_clean(p.get("utente", ""))
-    profilo = v100_clean(p.get("profilo", ""))
-    if utente and not utente.isdigit():
-        return utente
-    if profilo:
-        return profilo
-    return "Utente non indicato"
-
-
-def v100_totale(p):
-    return v100_num(p.get("totale_iva", p.get("totale", 0)))
-
-
-def v100_imponibile(p):
-    imp = v100_num(p.get("imponibile", 0))
-    if imp > 0:
-        return imp
-    totale = v100_totale(p)
-    return totale / (1 + IVA) if totale > 0 else 0.0
-
-
-def v100_iva(p):
-    iva_val = v100_num(p.get("iva", 0))
-    if iva_val > 0:
-        return iva_val
-    totale = v100_totale(p)
-    imp = v100_imponibile(p)
-    return max(totale - imp, 0)
-
-
-def v100_costo(p):
-    costo = v100_num(p.get("costo_satec", 0))
-    if costo > 0:
-        return costo
-    imp = v100_imponibile(p)
-    ric = v100_num(p.get("ricarico_percento", 0))
-    if imp > 0 and ric > 0:
-        return imp / (1 + ric / 100)
-    return None
-
-
-def v100_utile(p):
-    utile = v100_num(p.get("utile_lordo", 0))
-    if utile > 0:
-        return utile
-    costo = v100_costo(p)
-    imp = v100_imponibile(p)
-    if costo is not None:
-        return imp - costo
-    return None
-
-
-def v100_margine(p):
-    marg = v100_num(p.get("margine_percento", 0))
-    if marg > 0:
-        return marg
-    costo = v100_costo(p)
-    utile = v100_utile(p)
-    if costo and utile is not None:
-        return utile / costo * 100
-    return None
-
-
-def v100_money_optional(v):
-    if v is None:
-        return "Non disponibile"
-    return euro(v100_num(v))
-
-
-def v100_percent_optional(v):
-    if v is None:
-        return "Non disponibile"
-    try:
-        return f"{float(v):.1f}%"
-    except Exception:
-        return "Non disponibile"
-
-
-def v100_accessori_html(p):
-    items = [
-        ("Elettroblocco", p.get("elettroblocco", "")),
-        ("Radar sicurezza laterale", p.get("radar_sicurezza_laterale", "")),
-        ("Allaccio e collaudo", p.get("allaccio", "")),
-    ]
-    righe = []
-    for nome, val in items:
-        val = v100_clean(val)
-        if val and val.lower() not in ["no", "false", "0", "none", "nessuno"]:
-            righe.append(f"""
-            <div class="v100-line"><span>✓ {nome}</span><b>{val}</b></div>
-            """)
-    if not righe:
-        righe.append('<div class="v100-muted">Nessun accessorio extra indicato</div>')
-    return "".join(righe)
-
-
-def v100_export_html(p):
-    codice = v100_clean(p.get("codice_preventivo", ""))
-    rows = [
-        ("Codice", codice),
-        ("Cliente", v100_cliente(p)),
-        ("Rivenditore / Utente", v100_utente(p)),
-        ("Configurazione", p.get("configurazione", "")),
-        ("Luce", f"{p.get('luce_mm', '')} mm"),
-        ("Altezza", f"{p.get('altezza_mm', '')} mm"),
-        ("Traversa", f"{p.get('traversa_m', '')} m"),
-        ("Imponibile", euro(v100_imponibile(p))),
-        ("IVA", euro(v100_iva(p))),
-        ("Totale", euro(v100_totale(p))),
-        ("Costo SA-TEC", v100_money_optional(v100_costo(p))),
-        ("Utile", v100_money_optional(v100_utile(p))),
-        ("Margine", v100_percent_optional(v100_margine(p))),
-        ("Stato", p.get("stato", "Bozza")),
-    ]
-    trs = "".join([f"<tr><th>{a}</th><td>{b}</td></tr>" for a,b in rows])
-    return f"""<!doctype html><html><head><meta charset="utf-8">
-<style>
-body{{font-family:Arial;margin:30px;color:#111827;}}
-h1{{background:#0b2a4a;color:white;padding:18px;border-radius:12px;}}
-table{{width:100%;border-collapse:collapse;}}
-th{{background:#eef6ff;color:#06499b;text-align:left;width:250px;}}
-td,th{{border:1px solid #bdd4ef;padding:10px;color:#111827;}}
-</style></head><body><h1>Dettaglio preventivo {codice}</h1><table>{trs}</table></body></html>"""
-
-
-def v100_detail_html(p):
-    codice = v100_clean(p.get("codice_preventivo", ""))
-    stato = v100_clean(p.get("stato", "Bozza")) or "Bozza"
-    config = v100_clean(p.get("configurazione", ""))
-    totale = v100_totale(p)
-    imponibile = v100_imponibile(p)
-    iva_val = v100_iva(p)
-    costo = v100_costo(p)
-    utile = v100_utile(p)
-    margine = v100_margine(p)
-
-    return f"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-* {{ box-sizing:border-box; }}
-body {{
-    margin:0;
-    font-family:Inter, Arial, sans-serif;
-    color:#111827;
-    background:#f5f7fb;
-}}
-.wrap {{ padding:18px; }}
-.header {{
-    background:linear-gradient(135deg,#0b2a4a,#06499b);
-    border-radius:22px;
-    padding:22px;
-    color:white;
-    display:flex;
-    justify-content:space-between;
-    gap:18px;
-    align-items:center;
-    box-shadow:0 12px 28px rgba(6,73,155,.22);
-}}
-.title {{ color:white; font-size:27px; font-weight:900; }}
-.sub {{ color:#dbeafe; font-weight:800; margin-top:6px; }}
-.total {{
-    background:rgba(255,255,255,.13);
-    border:1px solid rgba(255,255,255,.28);
-    border-radius:18px;
-    padding:16px 22px;
-    min-width:240px;
-    text-align:right;
-}}
-.total small {{ color:#dbeafe; font-weight:900; }}
-.total b {{ display:block; color:white; font-size:31px; margin-top:5px; }}
-.cards {{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:13px;
-    margin-top:16px;
-}}
-.card {{
-    background:white;
-    border:1px solid #dbeafe;
-    border-radius:18px;
-    padding:15px;
-    box-shadow:0 6px 16px rgba(6,73,155,.08);
-}}
-.card small {{ color:#06499b; font-weight:900; text-transform:uppercase; }}
-.card b {{ display:block; color:#111827; font-size:17px; margin-top:8px; }}
-.grid {{
-    display:grid;
-    grid-template-columns:1.15fr 1fr;
-    gap:16px;
-    margin-top:16px;
-}}
-.panel {{
-    background:white;
-    border:1px solid #dbeafe;
-    border-radius:18px;
-    padding:18px;
-    box-shadow:0 6px 16px rgba(6,73,155,.07);
-}}
-.panel h3 {{ color:#06499b; margin:0 0 14px 0; font-size:19px; }}
-.config-title {{ color:#111827; font-weight:900; font-size:18px; }}
-.info {{ color:#111827; font-weight:700; line-height:1.65; margin-top:9px; }}
-.hr {{ height:1px; background:#e5e7eb; margin:14px 0; }}
-.v100-line {{
-    display:flex;
-    justify-content:space-between;
-    gap:12px;
-    border-bottom:1px solid #eef2f7;
-    padding:10px 0;
-    color:#111827;
-}}
-.v100-line span {{ color:#111827; font-weight:800; }}
-.v100-line b {{ color:#111827; }}
-.econ {{
-    display:flex;
-    justify-content:space-between;
-    gap:12px;
-    padding:9px 0;
-    color:#111827;
-}}
-.econ span {{ font-weight:700; }}
-.econ b {{ font-weight:900; }}
-.econ.total-row {{
-    background:#eef6ff;
-    color:#06499b;
-    border-radius:12px;
-    padding:12px;
-    margin:8px 0;
-}}
-.green {{ color:#219653!important; }}
-.v100-muted {{ color:#111827; font-weight:700; padding:8px 0; }}
-@media(max-width:900px) {{
-    .cards, .grid {{ grid-template-columns:1fr; }}
-    .header {{ flex-direction:column; align-items:stretch; }}
-}}
-</style>
-</head>
-<body>
-<div class="wrap">
-    <div class="header">
-        <div>
-            <div class="title">Dettaglio preventivo {codice}</div>
-            <div class="sub">{config} · Stato: {stato}</div>
-        </div>
-        <div class="total">
-            <small>TOTALE VENDITA</small>
-            <b>{euro(totale)}</b>
-        </div>
-    </div>
-
-    <div class="cards">
-        <div class="card"><small>Cliente</small><b>{v100_cliente(p)}</b></div>
-        <div class="card"><small>Utente</small><b>{v100_utente(p)}</b></div>
-        <div class="card"><small>Data</small><b>{v100_clean(p.get('data_ora',''))[:19]}</b></div>
-        <div class="card"><small>Stato</small><b>{stato}</b></div>
-    </div>
-
-    <div class="grid">
-        <div class="panel">
-            <h3>Configurazione e accessori</h3>
-            <div class="config-title">{config}</div>
-            <div class="info">
-                Luce: {p.get('luce_mm','')} mm<br>
-                Altezza: {p.get('altezza_mm','')} mm<br>
-                Traversa: {p.get('traversa_m','')} m
-            </div>
-            <div class="hr"></div>
-            {v100_accessori_html(p)}
-        </div>
-
-        <div class="panel">
-            <h3>Riepilogo economico</h3>
-            <div class="econ"><span>Imponibile vendita</span><b>{euro(imponibile)}</b></div>
-            <div class="econ"><span>IVA 22%</span><b>{euro(iva_val)}</b></div>
-            <div class="econ total-row"><span>Totale vendita</span><b>{euro(totale)}</b></div>
-            <div class="hr"></div>
-            <div class="econ"><span>Costo SA-TEC</span><b>{v100_money_optional(costo)}</b></div>
-            <div class="econ"><span>Utile lordo</span><b class="green">{v100_money_optional(utile)}</b></div>
-            <div class="econ"><span>Margine</span><b class="green">{v100_percent_optional(margine)}</b></div>
-        </div>
-    </div>
-</div>
-</body>
-</html>
-"""
-
-
-def v100_dashboard_html(preventivi):
-    totale_preventivi = len(preventivi)
-    valore_totale = sum(v100_imponibile(p) for p in preventivi)
-    utile_totale = sum((v100_utile(p) or 0) for p in preventivi)
-    costo_totale = sum((v100_costo(p) or 0) for p in preventivi)
-    accettati_ordinati = sum(1 for p in preventivi if str(p.get("stato", "")).strip() in ["Accettato", "Ordinato"])
-    persi = sum(1 for p in preventivi if str(p.get("stato", "")).strip() == "Perso")
-    conversione = (accettati_ordinati / totale_preventivi * 100) if totale_preventivi else 0
-    margine = (utile_totale / costo_totale * 100) if costo_totale else 0
-
-    def card(title, value, accent="#06499b"):
-        return f"""
-        <div class="v100-stat">
-            <div class="v100-stat-title">{title}</div>
-            <div class="v100-stat-value" style="color:{accent};">{value}</div>
-        </div>
-        """
-
-    return f"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-body {{ margin:0; font-family:Inter,Arial,sans-serif; background:#f5f7fb; color:#111827; }}
-.hero {{
-    background:linear-gradient(135deg,#0b2a4a,#06499b);
-    border-radius:24px;
-    padding:28px;
-    color:white;
-    box-shadow:0 12px 28px rgba(6,73,155,.22);
-}}
-.hero h1 {{ margin:0; color:white; font-size:34px; font-weight:900; }}
-.hero p {{ margin:8px 0 0 0; color:#dbeafe; font-weight:800; font-size:16px; }}
-.stats {{ display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-top:14px; }}
-.v100-stat {{
-    background:white;
-    border:1px solid #dbeafe;
-    border-radius:18px;
-    padding:15px;
-    min-height:92px;
-    box-shadow:0 6px 16px rgba(6,73,155,.08);
-}}
-.v100-stat-title {{
-    color:#06499b;
-    font-size:12px;
-    text-transform:uppercase;
-    font-weight:900;
-}}
-.v100-stat-value {{
-    font-size:22px;
-    font-weight:900;
-    margin-top:10px;
-    white-space:nowrap;
-}}
-@media(max-width:1000px) {{
-    .stats {{ grid-template-columns:repeat(2,1fr); }}
-}}
-</style>
-</head>
-<body>
-<div class="hero">
-    <h1>CRM Commerciale SA-TEC</h1>
-    <p>Dashboard amministrativa per preventivi, clienti, rivenditori e ordini</p>
-</div>
-<div class="stats">
-    {card("Preventivi", totale_preventivi)}
-    {card("Valore totale", euro(valore_totale))}
-    {card("Utile lordo", euro(utile_totale), "#219653")}
-    {card("Margine", f"{margine:.1f}%", "#219653")}
-    {card("Accettati/Ordinati", accettati_ordinati)}
-    {card("Conversione", f"{conversione:.1f}%")}
-</div>
-</body>
-</html>
-"""
-
-
-def v100_update_stato(codice, nuovo):
-    ok = False
-    try:
-        ok = aggiorna_stato_preventivo_admin(codice, nuovo)
-    except Exception:
-        ok = False
-    try:
-        sb = supabase_client()
-        if sb is not None:
-            sb.table("preventivi").update({"stato": nuovo}).eq("codice_preventivo", codice).execute()
-            ok = True
-    except Exception:
-        pass
-    return ok
-
-
-def v100_render_preventivi(preventivi):
-    st.markdown('<div class="v100-title-bar">📋 Gestione Preventivi</div>', unsafe_allow_html=True)
-
-    f1, f2 = st.columns([2,1])
-    with f1:
-        cerca = st.text_input("Cerca preventivo", key="v100_cerca")
-    with f2:
-        stato_filtro = st.selectbox("Stato", ["Tutti"] + STATI_PREVENTIVO, key="v100_stato_filter")
-
-    lista = filtra_preventivi_dashboard(preventivi, cerca, stato_filtro)
-    if not lista:
-        st.info("Nessun preventivo trovato.")
-        return
-
-    for idx, p in enumerate(lista):
-        codice = v100_clean(p.get("codice_preventivo", "")) or f"RIGA-{idx}"
-        stato = v100_clean(p.get("stato", "Bozza")) or "Bozza"
-
-        st.markdown(f"""
-        <div class="v100-row-card">
-            <div class="v100-row-code">{codice}</div>
-            <div class="v100-row-grid">
-                <div><b>Cliente</b><br>{v100_cliente(p)}</div>
-                <div><b>Utente</b><br>{v100_utente(p)}</div>
-                <div><b>Configurazione</b><br>{p.get('configurazione','')}</div>
-                <div><b>Totale</b><br>{euro(v100_totale(p))}</div>
-                <div><b>Stato</b><br>{stato}</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        c1, c2, c3 = st.columns(3)
-
-        with c1:
-            if st.button("👁 APRI DETTAGLIO", key=f"v100_apri_{codice}_{idx}", use_container_width=True):
-                st.session_state.v100_aperto = codice
-
-        with c2:
-            nuovo = st.selectbox(
-                "Cambia stato",
-                STATI_PREVENTIVO,
-                index=STATI_PREVENTIVO.index(stato) if stato in STATI_PREVENTIVO else 0,
-                key=f"v100_stato_{codice}_{idx}"
-            )
-            if st.button("AGGIORNA STATO", key=f"v100_update_{codice}_{idx}", use_container_width=True):
-                if v100_update_stato(codice, nuovo):
-                    st.success("Stato aggiornato.")
-                    st.rerun()
-                else:
-                    st.error("Stato non aggiornato.")
-
-        with c3:
-            conferma = st.checkbox("Conferma eliminazione", key=f"v100_conf_{codice}_{idx}")
-            if st.button("🗑 ELIMINA", key=f"v100_del_{codice}_{idx}", use_container_width=True):
-                if not conferma:
-                    st.warning("Spunta Conferma eliminazione.")
-                else:
-                    ok_del, msg_del = elimina_preventivo_admin(codice)
-                    if ok_del:
-                        st.success(msg_del)
-                        st.rerun()
-                    else:
-                        st.error(msg_del)
-
-        if st.session_state.get("v100_aperto") == codice:
-            close_col, _ = st.columns([1,3])
-            with close_col:
-                if st.button("CHIUDI DETTAGLIO", key=f"v100_chiudi_{codice}_{idx}", use_container_width=True):
-                    st.session_state.v100_aperto = ""
-                    st.rerun()
-
-            components.html(v100_detail_html(p), height=760, scrolling=True)
-
-            d1, d2 = st.columns(2)
-            with d1:
-                st.download_button(
-                    "📄 ESPORTA HTML / PDF",
-                    data=v100_export_html(p).encode("utf-8"),
-                    file_name=f"Dettaglio_{codice}.html",
-                    mime="text/html",
-                    use_container_width=True,
-                    key=f"v100_export_{codice}_{idx}_{id(p)}"
-                )
-            with d2:
-                if st.button("📋 DUPLICA PREVENTIVO", key=f"v100_dup_{codice}_{idx}_{id(p)}", use_container_width=True):
-                    ok_dup, msg_dup = duplica_preventivo_admin(codice)
-                    if ok_dup:
-                        st.success(f"Preventivo duplicato: {msg_dup}")
-                        st.rerun()
-                    else:
-                        st.error(msg_dup)
-
-
-def v100_render_rivenditori():
-    st.markdown('<div class="v100-title-bar">🏪 Rivenditori / Grossisti</div>', unsafe_allow_html=True)
-    righe_riv = utenti_rivenditori_grossisti()
-    if not righe_riv:
-        st.info("Nessun rivenditore o grossista presente.")
-        return
-
-    st.markdown(tabella_html_sicura(righe_riv), unsafe_allow_html=True)
-    codici_riv = [r["utente"] for r in righe_riv]
-
-    col_riv1, col_riv2, col_riv3 = st.columns([2,1,1])
-    with col_riv1:
-        utente_riv_mod = st.selectbox("Utente rivenditore/grossista", codici_riv, key="v100_utente_riv_mod")
-    with col_riv2:
-        nuovo_ricarico_riv = st.number_input("Nuovo ricarico %", min_value=0.0, max_value=200.0, value=30.0, step=1.0, key="v100_nuovo_ricarico_riv")
-    with col_riv3:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("AGGIORNA RICARICO", key="v100_aggiorna_ricarico", use_container_width=True):
-            ok_riv, err_riv = aggiorna_ricarico_utente_supabase(utente_riv_mod, nuovo_ricarico_riv)
-            if ok_riv:
-                st.success(f"Ricarico aggiornato per {utente_riv_mod}: {nuovo_ricarico_riv:.0f}%")
-            else:
-                st.error(f"Ricarico non aggiornato: {err_riv}")
-
-    st.markdown("---")
-    st.warning("Eliminare un utente blocca il login. Lo storico preventivi rimane.")
-    del1, del2, del3 = st.columns([2,1,1])
-    with del1:
-        utente_da_eliminare = st.selectbox("Utente da eliminare", codici_riv, key="v100_utente_da_eliminare")
-    with del2:
-        conferma_elimina_utente = st.checkbox("Confermo", key="v100_conf_elimina_utente")
-    with del3:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("ELIMINA UTENTE", key="v100_elimina_utente", use_container_width=True):
-            if not conferma_elimina_utente:
-                st.warning("Spunta Confermo.")
-            else:
-                ok_del_user, msg_del_user = elimina_utente_admin(utente_da_eliminare)
-                if ok_del_user:
-                    st.success(msg_del_user)
-                    st.rerun()
-                else:
-                    st.error(msg_del_user)
-
-
-def v100_render_clienti():
-    st.markdown('<div class="v100-title-bar">👥 Archivio Clienti</div>', unsafe_allow_html=True)
-    clienti = carica_clienti()
-    cerca_cliente = st.text_input("Cerca cliente", placeholder="Nome, azienda, telefono, email", key="v100_cerca_cliente")
-    clienti_filtrati = filtra_clienti_dashboard(clienti, cerca_cliente)
-
-    if not clienti:
-        st.info("Nessun cliente salvato ancora.")
-        return
-    if not clienti_filtrati:
-        st.warning("Nessun cliente trovato.")
-        return
-
-    st.write(f"Clienti trovati: **{len(clienti_filtrati)}**")
-    st.markdown(tabella_html_sicura(righe_clienti_dashboard(clienti_filtrati)), unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.warning("Eliminare un cliente rimuove l'anagrafica. I preventivi storici restano.")
-    opzioni_clienti = {}
-    for c in clienti_filtrati:
-        label = label_cliente_elimina(c) if "label_cliente_elimina" in globals() else (c.get("email") or c.get("telefono") or c.get("nome") or c.get("azienda") or "Cliente")
-        ident = identificativo_cliente_elimina(c) if "identificativo_cliente_elimina" in globals() else (c.get("email") or c.get("telefono") or c.get("nome") or c.get("azienda") or "")
-        if ident:
-            opzioni_clienti[label] = ident
-
-    if opzioni_clienti:
-        c1, c2, c3 = st.columns([2,1,1])
-        with c1:
-            cliente_label_del = st.selectbox("Cliente da eliminare", list(opzioni_clienti.keys()), key="v100_cliente_da_eliminare")
-        with c2:
-            conferma_elimina_cliente = st.checkbox("Confermo", key="v100_conf_elimina_cliente")
-        with c3:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("ELIMINA CLIENTE", key="v100_elimina_cliente", use_container_width=True):
-                if not conferma_elimina_cliente:
-                    st.warning("Spunta Confermo.")
-                else:
-                    ok_cli_del, msg_cli_del = elimina_cliente_admin(opzioni_clienti.get(cliente_label_del, ""))
-                    if ok_cli_del:
-                        st.success(msg_cli_del)
-                        st.rerun()
-                    else:
-                        st.error(msg_cli_del)
-
-
-def v100_render_simulazione():
-    st.markdown('<div class="v100-title-bar">🧪 Simulazione Funzionamento</div>', unsafe_allow_html=True)
-    st.markdown("""
-    <div class="v100-info">
-        <b>Procedura test consigliata:</b><br>
-        1) Esci da Admin e crea un preventivo come Cliente finale.<br>
-        2) Entra come Rivenditore/Grossista e crea un preventivo con incremento prezzo.<br>
-        3) Rientra come Admin, apri dettaglio, cambia stato, duplica o elimina.<br>
-        4) Controlla Archivio Clienti e Gestione Rivenditori.
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def v100_render_admin(preventivi):
-    components.html(v100_dashboard_html(preventivi), height=235, scrolling=False)
-
-    if "v100_menu" not in st.session_state:
-        st.session_state.v100_menu = "preventivi"
-
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        if st.button("📋 Preventivi", key="v100_menu_preventivi", use_container_width=True):
-            st.session_state.v100_menu = "preventivi"
-            st.rerun()
-    with m2:
-        if st.button("👥 Clienti", key="v100_menu_clienti", use_container_width=True):
-            st.session_state.v100_menu = "clienti"
-            st.rerun()
-    with m3:
-        if st.button("🏪 Rivenditori", key="v100_menu_riv", use_container_width=True):
-            st.session_state.v100_menu = "rivenditori"
-            st.rerun()
-    with m4:
-        if st.button("🧪 Simulazione", key="v100_menu_sim", use_container_width=True):
-            st.session_state.v100_menu = "simulazione"
-            st.rerun()
-
-    st.markdown("---")
-
-    if st.session_state.v100_menu == "preventivi":
-        v100_render_preventivi(preventivi)
-    elif st.session_state.v100_menu == "clienti":
-        v100_render_clienti()
-    elif st.session_state.v100_menu == "rivenditori":
-        v100_render_rivenditori()
-    elif st.session_state.v100_menu == "simulazione":
-        v100_render_simulazione()
-
-
-def statistiche_stati_preventivi(preventivi):
-    stats = {s: 0 for s in STATI_PREVENTIVO}
-    for p in preventivi:
-        stato = str(p.get("stato", "Bozza") or "Bozza")
-        if stato not in stats:
-            stats[stato] = 0
-        stats[stato] += 1
-    return stats
-
-def box_stati_html(stats):
-    return ""
-
-
-def valore_preventivo_float(p):
-    for campo in ["imponibile", "totale_iva", "totale"]:
-        try:
-            return float(str(p.get(campo, "0")).replace(",", ".") or 0)
-        except:
-            pass
-    return 0.0
-
-def utile_preventivo_float(p):
-    try:
-        return float(str(p.get("utile_lordo", "0")).replace(",", ".") or 0)
-    except:
-        return 0.0
-
-def dashboard_crm_html(preventivi):
-    return ""
-
-def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
-    cerca = str(cerca or "").strip().lower()
-    stato = str(stato or "Tutti").strip()
-
-    out = []
-    for p in preventivi:
-        if stato != "Tutti" and str(p.get("stato", "")) != stato:
-            continue
-
-        if cerca:
-            testo = " ".join([
-                str(p.get("codice_preventivo", "")),
-                str(p.get("cliente_nome", "")),
-                str(p.get("cliente_azienda", "")),
-                str(p.get("cliente_email", "")),
-                str(p.get("utente", "")),
-                str(p.get("configurazione", "")),
-                str(p.get("stato", "")),
-            ]).lower()
-            if cerca not in testo:
-                continue
-
-        out.append(p)
-    return out
-
-
-
-# =========================
-# CLIENTI CSV
-# =========================
-
-
-def elimina_cliente_supabase(identificativo):
-    sb = supabase_client()
-    if sb is None:
-        return False, "Supabase non collegato"
-
-    try:
-        identificativo = str(identificativo or "").strip()
-        if not identificativo:
-            return False, "Cliente non valido"
-
-        # Prova eliminazione per email, telefono, nome o azienda.
-        # Basta che uno dei campi combaci.
-        eliminato = False
-
-        for campo in ["email", "telefono", "nome", "azienda"]:
-            try:
-                sb.table("clienti").delete().eq(campo, identificativo).execute()
-                eliminato = True
-            except Exception:
-                pass
-
-        return eliminato, "" if eliminato else "Cliente non trovato in Supabase"
-
-    except Exception as e:
-        return False, str(e)
-
-
-def elimina_cliente_csv(identificativo):
-    path = Path(CLIENTI_CSV)
-    if not path.exists():
-        return False, "CSV clienti non presente"
-
-    try:
-        identificativo = str(identificativo or "").strip()
-        if not identificativo:
-            return False, "Cliente non valido"
-
-        with open(path, "r", encoding="utf-8") as f:
-            righe = list(csv.DictReader(f))
-
-        if not righe:
-            return False, "CSV clienti vuoto"
-
-        fieldnames = list(righe[0].keys())
-
-        def match_cliente(r):
-            valori = [
-                str(r.get("email", "")).strip(),
-                str(r.get("telefono", "")).strip(),
-                str(r.get("nome", "")).strip(),
-                str(r.get("azienda", "")).strip(),
-                str(r.get("cliente_nome", "")).strip(),
-                str(r.get("cliente_azienda", "")).strip(),
-                str(r.get("cliente_email", "")).strip(),
-                str(r.get("cliente_telefono", "")).strip(),
-            ]
-            return identificativo in valori
-
-        nuove = [r for r in righe if not match_cliente(r)]
-
-        if len(nuove) == len(righe):
-            return False, "Cliente non trovato nel CSV"
-
-        with open(path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(nuove)
-
-        return True, ""
-
-    except Exception as e:
-        return False, str(e)
-
-
-def elimina_cliente_admin(identificativo):
-    identificativo = str(identificativo or "").strip()
-    if not identificativo:
-        return False, "Cliente non valido"
-
-    ok_sb, err_sb = elimina_cliente_supabase(identificativo)
-    ok_csv, err_csv = elimina_cliente_csv(identificativo)
-
-    if ok_sb or ok_csv:
-        return True, f"Cliente eliminato: {identificativo}. I preventivi storici non vengono cancellati."
-
-    return False, f"Supabase: {err_sb} | CSV: {err_csv}"
-
-
-def label_cliente_elimina(c):
-    nome = str(c.get("nome", c.get("cliente_nome", "")) or "").strip()
-    azienda = str(c.get("azienda", c.get("cliente_azienda", "")) or "").strip()
-    telefono = str(c.get("telefono", c.get("cliente_telefono", "")) or "").strip()
-    email = str(c.get("email", c.get("cliente_email", "")) or "").strip()
-
-    testo = " - ".join([x for x in [nome, azienda, telefono, email] if x])
-    return testo or "Cliente senza dati"
-
-
-def identificativo_cliente_elimina(c):
-    # Priorità: email, telefono, nome, azienda
-    for campo in ["email", "cliente_email", "telefono", "cliente_telefono", "nome", "cliente_nome", "azienda", "cliente_azienda"]:
-        val = str(c.get(campo, "") or "").strip()
-        if val:
-            return val
-    return ""
-
-
-
-def carica_clienti():
-    clienti_sb = carica_clienti_supabase()
-    if clienti_sb:
-        return clienti_sb
-
-    path = Path(CLIENTI_CSV)
-    if not path.exists():
-        return []
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return list(csv.DictReader(f))
-    except:
-        return []
-
-def salva_cliente_csv(nome, azienda, telefono, email, codice_preventivo, imponibile, owner_utente='CLIENTE', owner_profilo='CLIENTE'):
-    nome = str(nome or "").strip()
-    azienda = str(azienda or "").strip()
-    telefono = str(telefono or "").strip()
-    email = str(email or "").strip().lower()
-
-    if not nome and not azienda and not telefono and not email:
-        return
-
-    clienti = carica_clienti()
-    oggi = datetime.now().strftime("%d/%m/%Y %H:%M")
-    trovato = False
-
-    for c in clienti:
-        stessa_email = email and str(c.get("email", "")).strip().lower() == email
-        stesso_tel = telefono and str(c.get("telefono", "")).strip() == telefono
-
-        if stessa_email or stesso_tel:
-            c["nome"] = nome or c.get("nome", "")
-            c["azienda"] = azienda or c.get("azienda", "")
-            c["telefono"] = telefono or c.get("telefono", "")
-            c["email"] = email or c.get("email", "")
-            c["ultimo_preventivo"] = codice_preventivo
-            c["data_ultimo_preventivo"] = oggi
-            c["owner_utente"] = c.get("owner_utente", owner_utente) or owner_utente
-            c["owner_profilo"] = c.get("owner_profilo", owner_profilo) or owner_profilo
-            try:
-                c["numero_preventivi"] = str(int(c.get("numero_preventivi", "0") or 0) + 1)
-            except:
-                c["numero_preventivi"] = "1"
-            try:
-                totale_vecchio = float(str(c.get("totale_preventivi", "0")).replace(",", ".") or 0)
-            except:
-                totale_vecchio = 0.0
-            c["totale_preventivi"] = f"{totale_vecchio + float(imponibile or 0):.2f}"
-            trovato = True
-            break
-
-    if not trovato:
-        clienti.append({
-            "nome": nome,
-            "azienda": azienda,
-            "telefono": telefono,
-            "email": email,
-            "primo_preventivo": codice_preventivo,
-            "ultimo_preventivo": codice_preventivo,
-            "data_primo_preventivo": oggi,
-            "data_ultimo_preventivo": oggi,
-            "numero_preventivi": "1",
-            "totale_preventivi": f"{float(imponibile or 0):.2f}",
-            "owner_utente": owner_utente,
-            "owner_profilo": owner_profilo,
-        })
-
-    campi = [
-        "nome", "azienda", "telefono", "email",
-        "primo_preventivo", "ultimo_preventivo",
-        "data_primo_preventivo", "data_ultimo_preventivo",
-        "numero_preventivi", "totale_preventivi", "owner_utente", "owner_profilo"
-    ]
-
-    with open(CLIENTI_CSV, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=campi)
-        writer.writeheader()
-        writer.writerows(clienti)
-
-def righe_clienti_dashboard(clienti):
-    righe = []
-    for c in clienti:
-        try:
-            totale = euro(float(str(c.get("totale_preventivi", "0")).replace(",", ".") or 0))
-        except:
-            totale = ""
-        righe.append({
-            "Nome": c.get("nome", ""),
-            "Azienda": c.get("azienda", ""),
-            "Telefono": c.get("telefono", ""),
-            "Email": c.get("email", ""),
-            "N. preventivi": c.get("numero_preventivi", ""),
-            "Totale": totale,
-            "Ultimo preventivo": c.get("ultimo_preventivo", ""),
-            "Data ultimo": c.get("data_ultimo_preventivo", ""),
-            "Utente": c.get("owner_utente", ""),
-            "Profilo": c.get("owner_profilo", ""),
-        })
-    return righe
-
-def filtra_clienti_dashboard(clienti, cerca):
-    cerca = str(cerca or "").strip().lower()
-    if not cerca:
-        return clienti
-    out = []
-    for c in clienti:
-        testo = " ".join([
-            str(c.get("nome", "")),
-            str(c.get("azienda", "")),
-            str(c.get("telefono", "")),
-            str(c.get("email", "")),
-            str(c.get("ultimo_preventivo", "")),
-        ]).lower()
-        if cerca in testo:
-            out.append(c)
-    return out
-
-def clienti_visibili_per_profilo(clienti, profilo, utente_codice):
-    if profilo == "SA-TEC":
-        return clienti
-    return [
-        c for c in clienti
-        if str(c.get("owner_utente", "")).strip().upper() == str(utente_codice).strip().upper()
-    ]
-
-
-# =========================
-# PREVENTIVI CSV
-# =========================
-
-def salva_preventivo(dati):
-    file_exists = Path(PREVENTIVI_CSV).exists()
-    campi = [
-        "codice_preventivo", "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
-        "cliente_telefono", "cliente_email", "configurazione", "luce_mm",
-        "altezza_mm", "traversa_m", "elettroblocco", "allaccio", "radar_sicurezza_laterale",
-        "ricarico_percento", "ricarico_base_percento", "ricarico_extra_percento", "imponibile", "iva", "totale_iva", "costo_satec", "utile_lordo", "margine_percento", "stato"
-    ]
-    with open(PREVENTIVI_CSV, "a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=campi)
-        if not file_exists:
-            writer.writeheader()
-        writer.writerow(dati)
-
-def carica_preventivi():
-    preventivi_sb = carica_preventivi_supabase()
-    if preventivi_sb:
-        return preventivi_sb
-
-    path = Path(PREVENTIVI_CSV)
-    if not path.exists():
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
-
-
-# =========================
-# CRM DASHBOARD NATIVA - FIX SICURO
-# =========================
-
-def crm_valore_float(p):
-    for campo in ["imponibile", "totale_iva", "totale"]:
-        try:
-            return float(str(p.get(campo, "0")).replace(",", ".") or 0)
-        except:
-            pass
-    return 0.0
-
-def crm_utile_float(p):
-    try:
-        return float(str(p.get("utile_lordo", "0")).replace(",", ".") or 0)
-    except:
-        return 0.0
-
-def render_dashboard_crm(preventivi):
-    totale_preventivi = len(preventivi)
-    valore_totale = sum(crm_valore_float(p) for p in preventivi)
-    utile_totale = sum(crm_utile_float(p) for p in preventivi)
-
-    accettati = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "accettato")
-    ordinati = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "ordinato")
-    persi = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "perso")
-    conversione = ((accettati + ordinati) / totale_preventivi * 100) if totale_preventivi else 0
-
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.metric("Preventivi", totale_preventivi)
-    c2.metric("Valore totale", euro(valore_totale))
-    c3.metric("Utile lordo", euro(utile_totale))
-    c4.metric("Accettati/Ordinati", accettati + ordinati)
-    c5.metric("Persi", persi)
-    c6.metric("Conversione", f"{conversione:.1f}%")
-
-def render_stati_preventivi(stats):
-    cols = st.columns(len(STATI_PREVENTIVO))
-    for col, stato in zip(cols, STATI_PREVENTIVO):
-        col.metric(stato, stats.get(stato, 0))
-
-def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
-    cerca = str(cerca or "").strip().lower()
-    stato = str(stato or "Tutti").strip()
-
-    out = []
-    for p in preventivi:
-        if stato != "Tutti" and str(p.get("stato", "")) != stato:
-            continue
-
-        if cerca:
-            testo = " ".join([
-                str(p.get("codice_preventivo", "")),
-                str(p.get("cliente_nome", "")),
-                str(p.get("cliente_azienda", "")),
-                str(p.get("cliente_email", "")),
-                str(p.get("utente", "")),
-                str(p.get("configurazione", "")),
-                str(p.get("stato", "")),
-            ]).lower()
-            if cerca not in testo:
-                continue
-
-        out.append(p)
-    return out
-
-
-
-# =========================
-# CRM AVANZATO V48
-# =========================
-
-def crm_nome_cliente(p):
-    nome = str(p.get("cliente_nome", "") or "").strip()
-    azienda = str(p.get("cliente_azienda", "") or "").strip()
-    if nome and azienda:
-        return f"{nome} - {azienda}"
-    return nome or azienda or "Cliente non indicato"
-
-def crm_nome_utente(p):
-    return str(p.get("utente", "") or "Non indicato").strip() or "Non indicato"
-
-def top_aggregati(preventivi, campo_nome_fn, limite=10):
-    agg = {}
-    for p in preventivi:
-        nome = campo_nome_fn(p)
-        if nome not in agg:
-            agg[nome] = {"N.": 0, "Valore": 0.0, "Utile": 0.0}
-        agg[nome]["N."] += 1
-        agg[nome]["Valore"] += crm_valore_float(p)
-        agg[nome]["Utile"] += crm_utile_float(p)
-
-    righe = []
-    for nome, d in agg.items():
-        righe.append({
-            "Nome": nome,
-            "N. preventivi": d["N."],
-            "Valore": euro(d["Valore"]),
-            "Utile": euro(d["Utile"]),
-        })
-    righe.sort(key=lambda r: float(str(r["Valore"]).replace("€", "").replace(".", "").replace(",", ".").strip() or 0), reverse=True)
-    return righe[:limite]
-
-def render_crm_avanzato(preventivi):
-    st.markdown('<h3 style="color:#06499b;">Analisi commerciale avanzata</h3>', unsafe_allow_html=True)
-
-    stati = statistiche_stati_preventivi(preventivi)
-    dati_stati = []
-    for stato in STATI_PREVENTIVO:
-        dati_stati.append({"Stato": stato, "Numero": stati.get(stato, 0)})
-
-    try:
-        st.bar_chart(pd.DataFrame(dati_stati).set_index("Stato"))
-    except:
-        pass
-
-    ctop1, ctop2 = st.columns(2)
-    with ctop1:
-        st.markdown("### Top clienti")
-        righe_clienti = top_aggregati(preventivi, crm_nome_cliente, 10)
-        st.markdown(tabella_html_sicura(righe_clienti), unsafe_allow_html=True)
-
-    with ctop2:
-        st.markdown("### Top utenti / rivenditori")
-        righe_utenti = top_aggregati(preventivi, crm_nome_utente, 10)
-        st.markdown(tabella_html_sicura(righe_utenti), unsafe_allow_html=True)
-
-
-# =========================
-# LOGIN + REGISTRAZIONE
-# =========================
-
-def login_box():
-    utenti = carica_tutti_utenti()
-
-    # Sessione login stabile
-    if "logged_profilo" not in st.session_state:
-        st.session_state.logged_profilo = "CLIENTE"
-        st.session_state.logged_nome = "Cliente finale"
-        st.session_state.logged_utente = "CLIENTE"
-        st.session_state.logged_dati = {
-            "nome": "",
-            "azienda": "",
-            "telefono": "",
-            "email": "",
-            "ricarico": "60"
+    <style>
+    :root{
+        --satec-blue:#0057D9;
+        --satec-dark:#003C96;
+        --satec-orange:#F5B301;
+        --satec-text:#111827;
+        --satec-border:#C9DCF7;
+        --satec-bg:#F4F8FF;
+    }
+
+    .stApp{
+        background:linear-gradient(180deg,#F4F8FF 0%,#FFFFFF 65%)!important;
+    }
+
+    .block-container{
+        padding-top:0.8rem!important;
+    }
+
+    /* HEADER V400 */
+    .v400-header{
+        background:linear-gradient(90deg,#0057D9 0%,#003C96 100%)!important;
+        border-radius:20px!important;
+        padding:22px 26px!important;
+        margin:8px 0 18px 0!important;
+        box-shadow:0 12px 30px rgba(0,87,217,.28)!important;
+        display:grid!important;
+        grid-template-columns:23% 39% 23% 15%!important;
+        gap:20px!important;
+        align-items:center!important;
+    }
+    .v400-header,
+    .v400-header *{
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+        text-shadow:none!important;
+        opacity:1!important;
+    }
+    .v400-brand{
+        font-size:48px!important;
+        font-weight:1000!important;
+        letter-spacing:1px!important;
+        line-height:1!important;
+    }
+    .v400-brand-sub{
+        color:#EAF3FF!important;
+        -webkit-text-fill-color:#EAF3FF!important;
+        font-size:13px!important;
+        font-weight:1000!important;
+        letter-spacing:4px!important;
+        margin-top:12px!important;
+    }
+    .v400-title{
+        border-left:1px solid rgba(255,255,255,.42)!important;
+        padding-left:22px!important;
+    }
+    .v400-title-main{
+        font-size:31px!important;
+        line-height:1.08!important;
+        font-weight:1000!important;
+        letter-spacing:.4px!important;
+    }
+    .v400-title-main span{
+        color:#F5B301!important;
+        -webkit-text-fill-color:#F5B301!important;
+    }
+    .v400-title-sub{
+        color:#EAF3FF!important;
+        -webkit-text-fill-color:#EAF3FF!important;
+        font-size:14px!important;
+        font-weight:900!important;
+        margin-top:10px!important;
+    }
+    .v400-info{
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+        font-size:13px!important;
+        font-weight:900!important;
+        line-height:1.55!important;
+    }
+    .v400-sesamo{
+        border-left:1px solid rgba(255,255,255,.42)!important;
+        padding-left:16px!important;
+        display:flex!important;
+        align-items:center!important;
+        justify-content:center!important;
+        gap:10px!important;
+    }
+    .v400-sesamo-mark{
+        background:#F58220!important;
+        color:#071124!important;
+        -webkit-text-fill-color:#071124!important;
+        font-size:34px!important;
+        font-weight:1000!important;
+        padding:7px 12px!important;
+    }
+    .v400-sesamo-name{
+        font-size:28px!important;
+        font-weight:1000!important;
+        line-height:1!important;
+        letter-spacing:1px!important;
+    }
+    .v400-sesamo-sub{
+        color:#EAF3FF!important;
+        -webkit-text-fill-color:#EAF3FF!important;
+        font-size:10px!important;
+        font-weight:1000!important;
+        letter-spacing:.8px!important;
+        margin-top:4px!important;
+    }
+
+    /* PRODUCT */
+    .v400-product{
+        background:#FFFFFF!important;
+        border:1px solid #C9DCF7!important;
+        border-radius:16px!important;
+        padding:22px 26px!important;
+        margin:0 0 22px 0!important;
+        display:grid!important;
+        grid-template-columns:65% 35%!important;
+        align-items:center!important;
+        box-shadow:0 8px 22px rgba(0,87,217,.08)!important;
+    }
+    .v400-product-title{
+        color:#0B2A4A!important;
+        -webkit-text-fill-color:#0B2A4A!important;
+        font-size:31px!important;
+        font-weight:1000!important;
+    }
+    .v400-product-sub{
+        color:#334155!important;
+        -webkit-text-fill-color:#334155!important;
+        font-size:16px!important;
+        font-weight:800!important;
+        margin-top:9px!important;
+        line-height:1.45!important;
+    }
+    .v400-product-logo{
+        display:flex!important;
+        justify-content:center!important;
+        align-items:center!important;
+        gap:15px!important;
+    }
+    .v400-product-mark{
+        background:#F58220!important;
+        color:#071124!important;
+        -webkit-text-fill-color:#071124!important;
+        font-size:39px!important;
+        font-weight:1000!important;
+        padding:7px 14px!important;
+    }
+    .v400-product-name{
+        color:#111827!important;
+        -webkit-text-fill-color:#111827!important;
+        font-size:39px!important;
+        font-weight:1000!important;
+        line-height:1!important;
+    }
+    .v400-product-tech{
+        color:#111827!important;
+        -webkit-text-fill-color:#111827!important;
+        font-size:13px!important;
+        font-weight:1000!important;
+        letter-spacing:1px!important;
+        margin-top:5px!important;
+    }
+
+    /* SIDEBAR */
+    section[data-testid="stSidebar"]{
+        background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;
+        border-right:5px solid #F5B301!important;
+    }
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] div{
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+    }
+    section[data-testid="stSidebar"] input,
+    section[data-testid="stSidebar"] textarea,
+    section[data-testid="stSidebar"] [data-baseweb="input"],
+    section[data-testid="stSidebar"] [data-baseweb="input"] *,
+    section[data-testid="stSidebar"] [data-baseweb="select"],
+    section[data-testid="stSidebar"] [data-baseweb="select"] *{
+        background:#FFFFFF!important;
+        color:#111827!important;
+        -webkit-text-fill-color:#111827!important;
+        font-weight:900!important;
+    }
+
+    /* BOTTONI */
+    .stButton button,
+    .stDownloadButton button{
+        background:#FFFFFF!important;
+        color:#0057D9!important;
+        -webkit-text-fill-color:#0057D9!important;
+        border:2px solid #0057D9!important;
+        border-radius:13px!important;
+        min-height:48px!important;
+        font-size:15px!important;
+        font-weight:1000!important;
+        opacity:1!important;
+        box-shadow:0 4px 12px rgba(0,87,217,.10)!important;
+    }
+    .stButton button *,
+    .stDownloadButton button *{
+        color:inherit!important;
+        -webkit-text-fill-color:inherit!important;
+        font-weight:1000!important;
+        opacity:1!important;
+    }
+    .stButton button:hover,
+    .stDownloadButton button:hover{
+        background:#F5B301!important;
+        color:#111111!important;
+        -webkit-text-fill-color:#111111!important;
+        border-color:#F5B301!important;
+    }
+    .stButton button:hover *,
+    .stDownloadButton button:hover *{
+        color:#111111!important;
+        -webkit-text-fill-color:#111111!important;
+    }
+
+    /* PULSANTI SIDEBAR */
+    section[data-testid="stSidebar"] .stButton button{
+        background:#FFFFFF!important;
+        color:#0057D9!important;
+        -webkit-text-fill-color:#0057D9!important;
+        border:2px solid #FFFFFF!important;
+    }
+    section[data-testid="stSidebar"] .stButton button *,
+    section[data-testid="stSidebar"] .stButton button p,
+    section[data-testid="stSidebar"] .stButton button span,
+    section[data-testid="stSidebar"] .stButton button div{
+        color:#0057D9!important;
+        -webkit-text-fill-color:#0057D9!important;
+        font-weight:1000!important;
+    }
+
+    /* ADMIN TOP BUTTONS */
+    div[data-testid="stHorizontalBlock"] .stButton button{
+        background:#0057D9!important;
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+        border-color:#0057D9!important;
+        min-height:56px!important;
+    }
+    div[data-testid="stHorizontalBlock"] .stButton button *,
+    div[data-testid="stHorizontalBlock"] .stButton button p,
+    div[data-testid="stHorizontalBlock"] .stButton button span,
+    div[data-testid="stHorizontalBlock"] .stButton button div{
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+        font-weight:1000!important;
+    }
+    div[data-testid="stHorizontalBlock"] .stButton button:hover,
+    div[data-testid="stHorizontalBlock"] .stButton button:hover *{
+        background:#F5B301!important;
+        color:#111111!important;
+        -webkit-text-fill-color:#111111!important;
+        border-color:#F5B301!important;
+    }
+
+    /* SEZIONI ADMIN */
+    .v87-section-title,
+    .v85-toggle-title,
+    .v100-title-bar,
+    .v102-title-bar{
+        background:#0057D9!important;
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+        border-radius:16px!important;
+        border:0!important;
+    }
+    .v87-section-title *,
+    .v85-toggle-title *,
+    .v100-title-bar *,
+    .v102-title-bar *{
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+    }
+
+    /* TABELLE */
+    th{
+        background:#0057D9!important;
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+    }
+    td{
+        background:#FFFFFF!important;
+        color:#111827!important;
+        -webkit-text-fill-color:#111827!important;
+    }
+
+    /* RESPONSIVE */
+    @media(max-width:1100px){
+        .v400-header{
+            grid-template-columns:1fr!important;
+            text-align:center!important;
         }
+        .v400-title,
+        .v400-sesamo{
+            border-left:0!important;
+            padding-left:0!important;
+        }
+        .v400-product{
+            grid-template-columns:1fr!important;
+            gap:18px!important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-    st.sidebar.markdown("""
-    <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);border-radius:18px;padding:18px;text-align:center;margin-bottom:14px;">
-        <div style="color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;font-size:38px;font-weight:900;line-height:1;">SA-TEC</div>
-        <div style="color:#dbeafe!important;-webkit-text-fill-color:#dbeafe!important;font-size:13px;font-weight:900;margin-top:7px;">PORTE AUTOMATICHE</div>
+
+def v400_header():
+    st.markdown("""
+    <div class="v400-header">
+        <div>
+            <div class="v400-brand">SA-TEC</div>
+            <div class="v400-brand-sub">PORTE AUTOMATICHE</div>
+        </div>
+        <div class="v400-title">
+            <div class="v400-title-main">
+                CONFIGURATORE<br>
+                <span>PORTE AUTOMATICHE</span>
+            </div>
+            <div class="v400-title-sub">TECNOLOGIA, SICUREZZA E SOLUZIONI SU MISURA</div>
+        </div>
+        <div class="v400-info">
+            📍 SA-TEC S.R.L.s<br>
+            Via L. Settembrini 84<br>
+            88046 Lamezia Terme (CZ)<br>
+            ☎ 0968-036797<br>
+            ✉ sacco.tecnologie@gmail.com
+        </div>
+        <div class="v400-sesamo">
+            <div class="v400-sesamo-mark">▌</div>
+            <div>
+                <div class="v400-sesamo-name">SESAMO</div>
+                <div class="v400-sesamo-sub">THE DOOR TECHNOLOGY</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="v400-product">
+        <div>
+            <div class="v400-product-title">SESAMO POWERCORE PW100</div>
+            <div class="v400-product-sub">
+                Automazione lineare per porte scorrevoli automatiche,<br>
+                affidabile, sicura e compatibile con la normativa EN16005.
+            </div>
+        </div>
+        <div class="v400-product-logo">
+            <div class="v400-product-mark">▌</div>
+            <div>
+                <div class="v400-product-name">SESAMO</div>
+                <div class="v400-product-tech">THE DOOR TECHNOLOGY</div>
+            </div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.sidebar.markdown("## Accesso")
-    st.sidebar.info("Cliente finale: può usare il configuratore senza login e inviare una richiesta a SA-TEC.")
 
-    username = st.sidebar.text_input("Utente", value="", key="login_user")
-    password = st.sidebar.text_input("Password", value="", type="password", key="login_pwd")
-
-    col_login_1, col_login_2 = st.sidebar.columns(2)
-
-    with col_login_1:
-        accedi = st.button("ACCEDI", key="btn_accedi")
-
-    with col_login_2:
-        esci = st.button("ESCI", key="btn_esci")
-
-    st.sidebar.markdown("### Accesso rapido")
-    st.sidebar.info("Inserisci utente e password per accedere alla tua area.")
-
-    if esci:
-        st.session_state.logged_profilo = "CLIENTE"
-        st.session_state.logged_nome = "Cliente finale"
-        st.session_state.logged_utente = "CLIENTE"
-        st.session_state.logged_dati = {
-            "nome": "",
-            "azienda": "",
-            "telefono": "",
-            "email": "",
-            "ricarico": "60"
-        }
-        st.sidebar.success("Accesso cliente finale")
-
-    if accedi:
-        u = username.strip().upper()
-        pwd_inserita = password.strip()
-
-        # ADMIN SEMPRE ATTIVO, anche se CSV è sporco o mancante
-        if u == "ADMIN" and pwd_inserita == "SATEC-ADMIN":
-            st.session_state.logged_profilo = "SA-TEC"
-            st.session_state.logged_nome = "SA-TEC Amministratore"
-            st.session_state.logged_utente = "ADMIN"
-            st.session_state.logged_dati = UTENTI_BASE["ADMIN"]
-            st.sidebar.success("Accesso: SA-TEC Amministratore")
-
-        elif u in utenti and str(utenti[u].get("password", "")).strip() == pwd_inserita:
-            profilo_login = str(utenti[u].get("profilo", "CLIENTE")).strip().upper()
-            if profilo_login not in PROFILI:
-                profilo_login = "CLIENTE"
-
-            st.session_state.logged_profilo = profilo_login
-            st.session_state.logged_nome = utenti[u].get("nome", "") or u
-            st.session_state.logged_utente = u
-            st.session_state.logged_dati = utenti[u]
-            st.sidebar.success(f"Accesso: {st.session_state.logged_nome}")
-
-        else:
-            st.sidebar.error("Utente o password non corretti.")
-            st.sidebar.caption("Admin corretto: ADMIN / SATEC-ADMIN")
-
-    profilo = st.session_state.logged_profilo
-    nome_utente = st.session_state.logged_nome
-    utente_codice = st.session_state.logged_utente
-    dati_utente = st.session_state.logged_dati
-
-    st.sidebar.markdown("---")
-    st.sidebar.write(f"Profilo attivo: **{PROFILI.get(profilo, 'Cliente finale')}**")
-    st.sidebar.caption(f"Utente attivo: {utente_codice}")
-
-    if profilo in ["RIVENDITORE", "GROSSISTA"]:
-        st.sidebar.markdown("---")
-        st.sidebar.markdown("### Logo azienda")
-        logo_presente = trova_logo_utente(utente_codice)
-        if logo_presente:
-            st.sidebar.success("Logo caricato")
-        logo_upload = st.sidebar.file_uploader("Carica logo PDF", type=["png", "jpg", "jpeg"], key=f"logo_upload_{utente_codice}")
-        if logo_upload is not None:
-            if salva_logo_utente(utente_codice, logo_upload):
-                st.sidebar.success("Logo salvato. Ricarica la pagina se non lo vedi nel PDF.")
-
-    if profilo not in ["RIVENDITORE", "GROSSISTA"]:
-        with st.sidebar.expander("Registrazione cliente"):
-            st.caption("Crea automaticamente una password cliente.")
-            reg_nome = st.text_input("Nome", key="reg_nome")
-            reg_azienda = st.text_input("Azienda", key="reg_azienda")
-            reg_tel = st.text_input("Telefono", key="reg_tel")
-            reg_email = st.text_input("Email", key="reg_email")
-
-            if st.button("GENERA ACCESSO CLIENTE"):
-                utenti_now = carica_tutti_utenti()
-                nuovo_user = genera_codice_progressivo("CLIENTE", utenti_now)
-                nuova_pwd = genera_password()
-                salva_utente_csv(
-                    nuovo_user,
-                    nuova_pwd,
-                    "CLIENTE",
-                    reg_nome,
-                    reg_azienda,
-                    reg_tel,
-                    reg_email,
-                    "60"
-                )
-                st.success("Accesso cliente creato.")
-                st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
-
-    if profilo not in ["RIVENDITORE", "GROSSISTA"]:
-        with st.sidebar.expander("Richiesta accesso commerciale"):
-            st.caption("Compila il modulo. SA-TEC valuterà la richiesta e assegnerà il livello commerciale con relativo ricarico.")
-            tipo_richiesta = st.selectbox("Tipo richiesta", ["RIVENDITORE", "GROSSISTA"], key="riv_tipo_richiesta")
-            riv_azienda = st.text_input("Ragione sociale", key="riv_reg_azienda")
-            riv_ref = st.text_input("Referente", key="riv_reg_ref")
-            riv_tel = st.text_input("Telefono", key="riv_reg_tel")
-            riv_email = st.text_input("Email", key="riv_reg_email")
-            riv_zona = st.text_input("Zona di competenza", key="riv_reg_zona")
-            riv_password = st.text_input("Password desiderata", type="password", key="riv_reg_pwd")
-
-            if st.button("INVIA RICHIESTA COMMERCIALE"):
-                if not riv_azienda or not riv_email or not riv_password:
-                    st.error("Inserisci almeno ragione sociale, email e password.")
-                else:
-                    utenti_now = carica_tutti_utenti()
-                    nuovo_user = genera_codice_progressivo(tipo_richiesta, utenti_now)
-
-                    azienda_con_zona = riv_azienda
-                    if riv_zona:
-                        azienda_con_zona = f"{riv_azienda} - Zona: {riv_zona}"
-
-                    # Backup CSV
-                    salva_utente_csv(
-                        nuovo_user,
-                        riv_password,
-                        tipo_richiesta,
-                        riv_ref,
-                        azienda_con_zona,
-                        riv_tel,
-                        riv_email,
-                        "0"
-                    )
-
-                    ok_sb, err_sb = salva_utente_supabase(
-                        nuovo_user,
-                        riv_password,
-                        tipo_richiesta,
-                        azienda_con_zona,
-                        riv_tel,
-                        riv_email,
-                        0
-                    )
-
-                    if ok_sb:
-                        st.success("Richiesta commerciale inviata e salvata su Supabase.")
-                    else:
-                        st.warning(f"Richiesta salvata in CSV. Supabase non disponibile: {err_sb}")
-
-                    st.code(f"Utente: {nuovo_user}\nPassword: {riv_password}\nProfilo richiesto: {tipo_richiesta}\nStato: in attesa ricarico SA-TEC")
-
-    try:
-        ricarico_effettivo = float(str(dati_utente.get("ricarico", "")).replace(",", "."))
-    except:
-        ricarico_effettivo = ricarico_default(profilo)
-
-    if profilo == "SA-TEC":
-        ricarico_effettivo = 0.0
-
-    return profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo
-
-# =========================
-# DISEGNI PORTE
-# =========================
-
-def mini_porta_html(ante):
-    if ante == "1 anta":
-        return """
-        <svg width="120" height="120" viewBox="0 0 120 120">
-        <rect x="18" y="18" width="84" height="10" fill="#d9d9d9" stroke="#111"/>
-        <rect x="26" y="30" width="34" height="72" fill="#dcecff" stroke="#111" stroke-width="2"/>
-        <rect x="60" y="30" width="34" height="72" fill="#fff" stroke="#111" stroke-width="2"/>
-        <line x1="60" y1="30" x2="60" y2="102" stroke="#111" stroke-width="2"/>
-        </svg>"""
-    return """
-    <svg width="120" height="120" viewBox="0 0 120 120">
-    <rect x="18" y="18" width="84" height="10" fill="#d9d9d9" stroke="#111"/>
-    <rect x="25" y="30" width="35" height="72" fill="#eef7ff" stroke="#111" stroke-width="2"/>
-    <rect x="60" y="30" width="35" height="72" fill="#eef7ff" stroke="#111" stroke-width="2"/>
-    <rect x="56" y="30" width="5" height="72" fill="#fff" stroke="#111"/>
-    <rect x="61" y="30" width="5" height="72" fill="#fff" stroke="#111"/>
-    </svg>"""
-
-def render_choice_card(title, desc, ante, active):
-    border = "#06499b" if active else "#d4dce8"
-    bw = "4px" if active else "2px"
-    bg = "#dcecff" if active else "#fff"
-    components.html(f"""
-    <div style="border:{bw} solid {border};background:{bg};border-radius:14px;text-align:center;padding:14px;min-height:242px;font-family:Arial;">
-    <div style="font-size:19px;font-weight:900;color:#111;line-height:1.15;margin-bottom:6px;">{title}</div>
-    <div>{mini_porta_html(ante)}</div>
-    <div style="font-size:14px;line-height:1.28;color:#111;margin-top:4px;">{desc}</div>
-    </div>""", height=260)
-
-def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    blu = "#06499b"
-    blu_scuro = "#073763"
-    nero = "#111111"
-    vetro_chiaro = "#eaf6ff"
-    vetro_scuro = "#8fbbe8"
-    vetro_fisso = "#f8fbff"
-    alluminio = "#d9e2ec"
-    giallo = "#fff3a3"
-    grigio = "#f7faff"
-
-    traversa_mm = int(lunghezza_traversa * 1000)
-    anta_mm = int(luce_mm) if ante == "1 anta" else int(luce_mm / 2)
-
-    if ante == "1 anta":
-        titolo = "AUTOMAZIONE SCORREVOLE 1 ANTA"
-        schema_ante = f"""
-        <!-- pannello fisso sinistro chiaro -->
-        <rect x="165" y="180" width="205" height="175" rx="4" fill="{vetro_fisso}" stroke="{nero}" stroke-width="3"/>
-        <line x1="185" y1="198" x2="350" y2="337" stroke="#c7d9ed" stroke-width="2"/>
-
-        <!-- anta mobile scura destra -->
-        <rect x="370" y="180" width="205" height="175" rx="4" fill="{vetro_scuro}" stroke="{nero}" stroke-width="5"/>
-        <line x1="392" y1="198" x2="553" y2="337" stroke="#ffffff" stroke-width="2" opacity="0.7"/>
-
-        <line x1="370" y1="180" x2="370" y2="355" stroke="{nero}" stroke-width="6"/>
-        <text x="472" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA MOBILE SCURA {anta_mm} mm</text>
-        <text x="268" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="700">FISSO / PASSAGGIO</text>
-        """
-        legenda = "1 ANTA MOBILE EVIDENZIATA IN BLU SCURO"
-    else:
-        titolo = "AUTOMAZIONE SCORREVOLE 2 ANTE"
-        schema_ante = f"""
-        <!-- anta mobile sx scura -->
-        <rect x="165" y="180" width="205" height="175" rx="4" fill="{vetro_scuro}" stroke="{nero}" stroke-width="5"/>
-        <line x1="187" y1="198" x2="348" y2="337" stroke="#ffffff" stroke-width="2" opacity="0.7"/>
-
-        <!-- anta mobile dx scura -->
-        <rect x="370" y="180" width="205" height="175" rx="4" fill="{vetro_scuro}" stroke="{nero}" stroke-width="5"/>
-        <line x1="392" y1="198" x2="553" y2="337" stroke="#ffffff" stroke-width="2" opacity="0.7"/>
-
-        <!-- incontro centrale -->
-        <rect x="358" y="180" width="12" height="175" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
-        <rect x="370" y="180" width="12" height="175" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
-
-        <text x="267" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA 1 SCURA {anta_mm} mm</text>
-        <text x="472" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA 2 SCURA {anta_mm} mm</text>
-        """
-        legenda = "2 ANTE MOBILI EVIDENZIATE IN BLU SCURO"
-
-    return f"""
-    <div style="background:#ffffff;border:2px solid #b8d4f3;border-radius:14px;padding:16px;font-family:Arial;">
-    <svg width="100%" height="520" viewBox="0 0 760 520">
-
-        <!-- titolo -->
-        <rect x="34" y="16" width="692" height="48" rx="12" fill="{blu}"/>
-        <text x="380" y="47" text-anchor="middle" font-size="22" fill="#ffffff" font-weight="900">{titolo}</text>
-
-        <!-- corpo disegno centrato -->
-        <rect x="80" y="86" width="600" height="330" rx="14" fill="#ffffff" stroke="#d7e6f7" stroke-width="2"/>
-
-        <!-- quota traversa -->
-        <text x="380" y="112" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900">TRAVERSA / AUTOMAZIONE {traversa_mm} mm</text>
-        <line x1="130" y1="130" x2="630" y2="130" stroke="{blu}" stroke-width="3"/>
-        <line x1="130" y1="120" x2="130" y2="140" stroke="{blu}" stroke-width="3"/>
-        <line x1="630" y1="120" x2="630" y2="140" stroke="{blu}" stroke-width="3"/>
-
-        <!-- traversa centrata -->
-        <rect x="120" y="145" width="520" height="40" rx="5" fill="{alluminio}" stroke="{nero}" stroke-width="3"/>
-        <rect x="138" y="155" width="484" height="8" fill="#ffffff" opacity="0.55"/>
-        <rect x="330" y="158" width="100" height="18" rx="4" fill="{blu_scuro}"/>
-        <text x="380" y="172" text-anchor="middle" font-size="11" fill="#ffffff" font-weight="900">GRUPPO MOTORE</text>
-
-        <!-- telaio laterale -->
-        <rect x="145" y="172" width="20" height="190" fill="{alluminio}" stroke="{nero}" stroke-width="2"/>
-        <rect x="575" y="172" width="20" height="190" fill="{alluminio}" stroke="{nero}" stroke-width="2"/>
-        <rect x="145" y="355" width="450" height="10" fill="{alluminio}" stroke="{nero}" stroke-width="2"/>
-
-        <!-- serramento/ante -->
-        {schema_ante}
-
-        <!-- quota luce passaggio -->
-        <line x1="175" y1="402" x2="565" y2="402" stroke="{blu}" stroke-width="3"/>
-        <line x1="175" y1="392" x2="175" y2="412" stroke="{blu}" stroke-width="3"/>
-        <line x1="565" y1="392" x2="565" y2="412" stroke="{blu}" stroke-width="3"/>
-        <text x="370" y="429" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">LUCE PASSAGGIO {luce_mm} mm</text>
-
-        <!-- quota altezza -->
-        <line x1="665" y1="180" x2="665" y2="355" stroke="{blu}" stroke-width="3"/>
-        <line x1="653" y1="180" x2="677" y2="180" stroke="{blu}" stroke-width="3"/>
-        <line x1="653" y1="355" x2="677" y2="355" stroke="{blu}" stroke-width="3"/>
-        <text x="700" y="270" text-anchor="middle" font-size="17" fill="{blu}" font-weight="900" transform="rotate(90 700,270)">H {altezza_mm} mm</text>
-
-        <!-- legenda tecnica -->
-        <rect x="35" y="448" width="690" height="52" rx="10" fill="{grigio}" stroke="{blu}" stroke-width="2"/>
-        <text x="55" y="470" font-size="14" fill="{nero}" font-weight="900">LUCE:</text>
-        <text x="108" y="470" font-size="14" fill="{blu}" font-weight="900">{luce_mm} mm</text>
-
-        <text x="200" y="470" font-size="14" fill="{nero}" font-weight="900">H:</text>
-        <text x="225" y="470" font-size="14" fill="{blu}" font-weight="900">{altezza_mm} mm</text>
-
-        <text x="315" y="470" font-size="14" fill="{nero}" font-weight="900">TRAVERSA:</text>
-        <text x="410" y="470" font-size="14" fill="{blu}" font-weight="900">{traversa_mm} mm</text>
-
-        <text x="515" y="470" font-size="14" fill="{nero}" font-weight="900">ANTA:</text>
-        <text x="568" y="470" font-size="14" fill="{blu}" font-weight="900">{anta_mm} mm</text>
-
-        <rect x="55" y="480" width="130" height="13" fill="{vetro_scuro}" stroke="{nero}" stroke-width="1"/>
-        <text x="195" y="492" font-size="12" fill="{nero}" font-weight="700">{legenda}</text>
-
-    </svg>
-    </div>
-    """
-
-
-def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scontato=True):
-    listino = LISTINI[codice]
-    if scontato:
-        prezzo_unitario = prezzo_vendita(listino)
-        costo_unitario = costo_satec_reale(listino)
-    else:
-        prezzo_unitario = listino
-        costo_unitario = listino
-
-    articoli.append({
-        "codice": codice,
-        "descrizione": descrizione,
-        "descrizione_lunga": descrizione_lunga,
-        "quantita": quantita,
-        "listino_unitario": listino,
-        "costo_unitario_satec": costo_unitario,
-        "prezzo_unitario": prezzo_unitario,
-        "totale": prezzo_unitario * quantita,
-        "costo_totale_satec": costo_unitario * quantita
-    })
-
-# =========================
-# CSS
-# =========================
-
-st.markdown("""
-<style>
-.stApp {background:#f3f7fd;font-family:Arial,sans-serif;}
-.main .block-container {padding-top:0rem;max-width:1550px;}
-.header {background:linear-gradient(115deg,#fff 0%,#fff 28%,#073763 28%,#06499b 100%);border-bottom:5px solid #063b7a;padding:22px 32px;display:grid;grid-template-columns:28% 44% 28%;align-items:center;color:white;}
-.logo-satec {width:300px;}
-.header-title {text-align:center;}
-.header-title h1 {font-size:42px;margin:0;font-weight:900;line-height:1.05;}
-.header-title div {font-size:18px;margin-top:12px;font-weight:700;}
-.header-info {font-size:15px;line-height:1.45;text-align:left;font-weight:700;}
-.powercore {background:white;padding:18px 34px;display:grid;grid-template-columns:50% 50%;align-items:center;border-bottom:1px solid #bdd4ef;}
-.powercore-title {font-size:34px;font-weight:900;color:#111;}
-.powercore-title span {color:#ff7900;}
-.powercore-sub {font-size:17px;color:#111;margin-top:8px;}
-.sesamo-logo {height:115px;max-width:380px;object-fit:contain;}
-.card,.side-card {background:white;border:1px solid #bdd4ef;border-radius:14px;padding:16px;margin-bottom:16px;}
-.title-bar {display:inline-block;background:#06499b;color:white;padding:9px 16px;border-radius:8px;font-size:18px;font-weight:900;margin-bottom:16px;}
-.section-row {display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;}
-.section-box {background:#eef6ff;border-radius:12px;padding:16px;color:#06499b;font-weight:800;font-size:16px;}
-.section-box.green {background:#eefaf2;color:#0c7b3e;}
-div[data-testid="stNumberInput"] label {color:#111!important;font-size:15px!important;font-weight:800!important;}
-div[data-testid="stNumberInput"] input {border:2px solid #8998b0!important;border-radius:0!important;text-align:center!important;font-size:28px!important;font-weight:800!important;color:#06499b!important;height:54px!important;}
-div[data-testid="stTextInput"] input {background:#ffffff!important;color:#06499b!important;border:2px solid #8998b0!important;border-radius:6px!important;font-weight:800!important;}
-.measure-total {border:2px solid #bdd4ef;background:#f8fbff;border-radius:10px;padding:14px;display:grid;grid-template-columns:1fr 200px;align-items:center;color:#06499b;margin-top:10px;}
-.measure-total .big {font-size:32px;font-weight:900;text-align:center;}
-.measure-total .small {font-size:18px;font-weight:900;text-align:center;}
-.option-box {border:2px solid #06499b;border-radius:12px;padding:18px;margin-bottom:18px;background:white;}
-.option-title {font-size:20px;font-weight:900;color:#06499b;margin-bottom:12px;}
-.option-note {border:2px solid #06499b;border-radius:12px;padding:13px;background:#eef6ff;color:#06499b;font-size:15px;font-weight:800;line-height:1.45;margin-top:12px;}
-div[data-testid="stCheckbox"] {border:0;padding:0;margin:0;}
-div[data-testid="stCheckbox"] label {color:#06499b!important;font-size:18px!important;font-weight:900!important;}
-.price {text-align:center;color:#06499b;font-size:42px;font-weight:900;}
-.price-label {color:#06499b;font-size:18px;font-weight:900;text-align:center;}
-.vat-box {border:1px solid #bdd4ef;border-radius:10px;padding:14px;color:#06499b;font-size:17px;font-weight:800;background:#f8fbff;}
-.power-side-title {color:#06499b;font-size:18px;font-weight:900;margin-bottom:12px;}
-.power-side-text {font-size:15px;line-height:1.45;color:#111;}
-.power-side-list li {margin-bottom:10px;color:#111;}
-.desc-grid {display:grid;grid-template-columns:34% 33% 33%;gap:16px;color:#111;font-size:15px;}
-.desc-title {color:#06499b;font-size:22px;font-weight:900;margin-bottom:10px;}
-.footer {background:#06499b;color:white;padding:18px 34px;display:grid;grid-template-columns:1fr 1fr 1fr;font-size:16px;font-weight:700;margin-top:12px;}
-.stButton>button {background:#06499b;color:white;border-radius:8px;height:48px;font-size:16px;font-weight:900;border:none;}
-.stButton>button:hover {background:#073763;color:white;}
-.admin-box {background:#ffffff;border:2px solid #06499b;border-radius:14px;padding:18px;margin-bottom:18px;}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    font-size: 14px;
-}
-th {
-    background: #06499b;
-    color: white;
-    padding: 8px;
-    text-align: left;
-}
-td {
-    border: 1px solid #bdd4ef;
-    padding: 8px;
-    color: #111;
-}
-tr:nth-child(even) {
-    background: #f3f7fd;
-}
-
-
-/* FIX SA-TEC: rettangoli blu e campi leggibili */
-.title-bar,
-.title-bar * {
-    background:#06499b!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-
-div[data-testid="stTextInput"] input {
-    background:#ffffff!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border:2px solid #8998b0!important;
-    border-radius:6px!important;
-    font-weight:800!important;
-}
-
-div[data-testid="stTextInput"] label,
-div[data-testid="stNumberInput"] label,
-div[data-testid="stCheckbox"] label {
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    font-weight:800!important;
-}
-
-.option-note,
-.option-note *,
-.section-box span,
-.power-side-text,
-.power-side-list li,
-.desc-grid,
-.desc-grid *,
-td {
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-}
-
-th {
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-
-
-/* V26 - CAMPI MISURE INTERNI GIALLI */
-div[data-testid="stNumberInput"] input {
-    background:#fff3a3!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border:2px solid #06499b!important;
-    border-radius:8px!important;
-    text-align:center!important;
-    font-size:28px!important;
-    font-weight:900!important;
-    height:56px!important;
-}
-
-div[data-testid="stNumberInput"] label {
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    font-weight:900!important;
-}
-
-
-/* V29 - CHECKBOX ACCESSORI GIALLI */
-div[data-testid="stCheckbox"] input[type="checkbox"] {
-    accent-color:#ffd400!important;
-}
-
-div[data-testid="stCheckbox"] label {
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    font-weight:900!important;
-    font-size:18px!important;
-}
-
-div[data-testid="stCheckbox"] [data-testid="stMarkdownContainer"] p {
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    font-weight:900!important;
-}
-
-/* evidenzia meglio la zona dei checkbox */
-div[data-testid="stCheckbox"] {
-    background:#fff3a3!important;
-    border:2px solid #06499b!important;
-    border-radius:10px!important;
-    padding:10px 12px!important;
-    margin-bottom:10px!important;
-}
-
-
-/* V31 - Bottoni email stessa dimensione e colore */
-div[data-testid="stButton"] button {
-    background:#06499b!important;
-    color:#ffffff!important;
-    border:none!important;
-    border-radius:10px!important;
-    height:48px!important;
-    font-size:18px!important;
-    font-weight:900!important;
-    width:100%!important;
-}
-
-
-/* V35 - CARD PORTA CLICCABILI */
-.porta-card {
-    border:3px solid #bdd4ef;
-    background:#ffffff;
-    border-radius:16px;
-    padding:14px;
-    min-height:235px;
-    text-align:center;
-    box-shadow:0 4px 12px rgba(6,73,155,0.10);
-    margin-bottom:8px;
-}
-
-.porta-card-attiva {
-    border:5px solid #06499b;
-    background:#fff3a3;
-    box-shadow:0 6px 18px rgba(6,73,155,0.25);
-}
-
-.porta-card-title {
-    color:#06499b;
-    font-size:19px;
-    font-weight:900;
-    line-height:1.15;
-    margin-bottom:8px;
-}
-
-.porta-card-desc {
-    color:#111111;
-    font-size:14px;
-    font-weight:700;
-    line-height:1.35;
-    margin-top:6px;
-}
-
-.porta-btn button {
-    background:#06499b!important;
-    color:#ffffff!important;
-    border-radius:10px!important;
-    height:48px!important;
-    font-size:15px!important;
-    font-weight:900!important;
-    width:100%!important;
-}
-
-.porta-btn-attivo button {
-    background:#ffd400!important;
-    color:#111111!important;
-    border:3px solid #06499b!important;
-}
-
-
-/* V36 - pulsante card integrato */
-div[data-testid="stButton"] button[kind="secondary"] {
-    background:#06499b!important;
-    color:#ffffff!important;
-    border-radius:0 0 16px 16px!important;
-    min-height:54px!important;
-    font-size:17px!important;
-    font-weight:900!important;
-    border:3px solid #06499b!important;
-    margin-top:-12px!important;
-}
-
-div[data-testid="stButton"] button[kind="secondary"]:hover {
-    background:#ffd400!important;
-    color:#111111!important;
-    border:3px solid #06499b!important;
-}
-
-
-/* V37 - allineamento riquadri scelta automazione */
-.porta-card {
-    height:285px!important;
-    min-height:285px!important;
-    display:flex!important;
-    flex-direction:column!important;
-    justify-content:space-between!important;
-    align-items:center!important;
-    box-sizing:border-box!important;
-}
-
-.porta-card-title {
-    min-height:46px!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    text-align:center!important;
-}
-
-.porta-card-desc {
-    min-height:54px!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    text-align:center!important;
-    padding:0 6px!important;
-}
-
-.porta-card svg {
-    height:120px!important;
-    max-height:120px!important;
-}
-
-div[data-testid="stButton"] button[kind="secondary"] {
-    height:54px!important;
-    min-height:54px!important;
-    margin-top:-8px!important;
-}
-
-
-/* V51.2 - card native immagini */
-.pro-card-box {
-    background:#ffffff;
-    border:2px solid #bdd4ef;
-    border-radius:18px;
-    padding:18px;
-    margin-bottom:12px;
-    box-shadow:0 6px 18px rgba(6,73,155,0.12);
-}
-.pro-card-active {
-    border:4px solid #06499b!important;
-    background:#fff8c7!important;
-}
-.pro-badge-standard {
-    display:inline-block;
-    background:#06499b;
-    color:#ffffff;
-    font-weight:900;
-    border-radius:8px;
-    padding:7px 12px;
-    margin:8px 0;
-}
-.pro-badge-ridondante {
-    display:inline-block;
-    background:#ff7900;
-    color:#ffffff;
-    font-weight:900;
-    border-radius:8px;
-    padding:7px 12px;
-    margin:8px 0;
-}
-.pro-title {
-    color:#06499b;
-    font-size:26px;
-    font-weight:900;
-    margin:8px 0;
-}
-.pro-desc {
-    color:#111111;
-    font-size:15px;
-    font-weight:700;
-    line-height:1.45;
-}
-.summary-pro {
-    background:#ffffff;
-    border:3px solid #06499b;
-    border-radius:18px;
-    padding:18px;
-    box-shadow:0 6px 18px rgba(6,73,155,0.15);
-    margin-top:12px;
-}
-.summary-pro-title {
-    background:#06499b;
-    color:#ffffff;
-    font-size:20px;
-    font-weight:900;
-    border-radius:10px;
-    padding:10px 14px;
-    text-align:center;
-    margin-bottom:14px;
-}
-.summary-line {
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
-    border-bottom:1px solid #d7e6f7;
-    padding:8px 0;
-    font-size:15px;
-    color:#111;
-}
-.summary-line b { color:#06499b; }
-.summary-total {
-    background:#fff3a3;
-    border:2px solid #06499b;
-    border-radius:12px;
-    padding:12px;
-    text-align:center;
-    margin-top:14px;
-}
-.summary-total .label {
-    color:#111;
-    font-weight:900;
-    font-size:15px;
-}
-.summary-total .value {
-    color:#06499b;
-    font-weight:900;
-    font-size:34px;
-}
-
-
-/* V52 - CARD ALLINEATE E SELEZIONE ACCESA */
-.pro-card-box {
-    background:#ffffff!important;
-    border:2px solid #bdd4ef!important;
-    border-radius:18px!important;
-    padding:18px!important;
-    margin-bottom:12px!important;
-    box-shadow:0 6px 18px rgba(6,73,155,0.12)!important;
-    min-height:520px!important;
-    display:flex!important;
-    flex-direction:column!important;
-    justify-content:flex-start!important;
-}
-.pro-card-active {
-    border:4px solid #06499b!important;
-    background:#fff8c7!important;
-}
-div[data-testid="stImage"] img {
-    max-height:190px!important;
-    object-fit:contain!important;
-}
-.pro-badge-standard {
-    display:inline-block;
-    background:#06499b;
-    color:#ffffff!important;
-    font-weight:900;
-    border-radius:8px;
-    padding:7px 12px;
-    margin:12px 0 8px 0;
-}
-.pro-badge-ridondante {
-    display:inline-block;
-    background:#ff7900;
-    color:#ffffff!important;
-    font-weight:900;
-    border-radius:8px;
-    padding:7px 12px;
-    margin:12px 0 8px 0;
-}
-.pro-title {
-    color:#06499b!important;
-    font-size:26px;
-    font-weight:900;
-    margin:8px 0;
-    min-height:64px;
-}
-.pro-desc {
-    color:#111111!important;
-    font-size:15px;
-    font-weight:700;
-    line-height:1.45;
-    min-height:145px;
-}
-.pro-points {
-    margin-top:8px;
-    color:#111111!important;
-    font-size:15px;
-    font-weight:900;
-    line-height:1.5;
-}
-.sel-box {
-    border-radius:12px;
-    padding:12px;
-    text-align:center;
-    font-weight:900;
-    border:3px solid #06499b;
-    margin-bottom:8px;
-}
-.sel-on-standard {
-    background:#27ae60;
-    color:white!important;
-    border-color:#1e8449;
-}
-.sel-on-ridondante {
-    background:#ff7900;
-    color:white!important;
-    border-color:#c75f00;
-}
-.sel-off {
-    background:#eef6ff;
-    color:#06499b!important;
-}
-
-
-/* V53 - SCELTA AUTOMAZIONE PULITA */
-.pro-card-box {
-    background:#ffffff!important;
-    border:2px solid #bdd4ef!important;
-    border-radius:18px!important;
-    padding:16px!important;
-    margin-bottom:10px!important;
-    box-shadow:0 6px 18px rgba(6,73,155,0.10)!important;
-    min-height:430px!important;
-}
-.pro-card-active {
-    border:4px solid #06499b!important;
-    background:#fff8c7!important;
-}
-div[data-testid="stImage"] img {
-    max-height:175px!important;
-    object-fit:contain!important;
-}
-.pro-badge-standard {
-    display:inline-block;
-    background:#06499b;
-    color:#ffffff!important;
-    font-weight:900;
-    border-radius:8px;
-    padding:7px 12px;
-    margin:10px 0 6px 0;
-}
-.pro-badge-ridondante {
-    display:inline-block;
-    background:#ff7900;
-    color:#ffffff!important;
-    font-weight:900;
-    border-radius:8px;
-    padding:7px 12px;
-    margin:10px 0 6px 0;
-}
-.pro-title {
-    color:#06499b!important;
-    font-size:24px;
-    font-weight:900;
-    margin:6px 0;
-}
-.pro-desc {
-    color:#111111!important;
-    font-size:15px;
-    font-weight:800;
-    line-height:1.55;
-    min-height:120px;
-}
-.choice-grid-title {
-    color:#06499b;
-    font-size:18px;
-    font-weight:900;
-    margin:10px 0 8px 0;
-}
-.sel-box {
-    border-radius:12px;
-    padding:14px 8px;
-    text-align:center;
-    font-weight:900;
-    border:3px solid #06499b;
-    margin-bottom:4px;
-    font-size:16px;
-    min-height:54px;
-}
-.sel-on-standard {
-    background:#27ae60;
-    color:white!important;
-    border-color:#1e8449;
-}
-.sel-on-ridondante {
-    background:#ff7900;
-    color:white!important;
-    border-color:#c75f00;
-}
-.sel-off {
-    background:#eef6ff;
-    color:#06499b!important;
-}
-
-
-/* V56 - ELIMINA RIQUADRI VUOTI */
-div[role="radiogroup"] {
-    display:none!important;
-}
-.choice-card-v56 {
-    background:#ffffff!important;
-    border:2px solid #bdd4ef!important;
-    border-radius:16px!important;
-    padding:12px!important;
-    margin-bottom:10px!important;
-    box-shadow:0 4px 12px rgba(6,73,155,0.08)!important;
-}
-.choice-card-v56-active {
-    background:#fff8c7!important;
-    border:4px solid #06499b!important;
-}
-.choice-badge-standard-v56 {
-    display:inline-block;
-    background:#06499b;
-    color:white!important;
-    border-radius:8px;
-    padding:7px 12px;
-    font-weight:900;
-    margin-top:8px;
-}
-.choice-badge-er-v56 {
-    display:inline-block;
-    background:#ff7900;
-    color:white!important;
-    border-radius:8px;
-    padding:7px 12px;
-    font-weight:900;
-    margin-top:8px;
-}
-.choice-title-v56 {
-    color:#06499b!important;
-    font-size:23px!important;
-    font-weight:900!important;
-    margin:8px 0!important;
-}
-.choice-desc-v56 {
-    color:#111!important;
-    font-size:15px!important;
-    font-weight:800!important;
-    line-height:1.48!important;
-}
-.sel-box-v56 {
-    border-radius:12px!important;
-    padding:13px 8px!important;
-    text-align:center!important;
-    font-weight:900!important;
-    border:3px solid #06499b!important;
-    margin-bottom:4px!important;
-    font-size:16px!important;
-}
-.sel-on-standard-v56 {
-    background:#27ae60!important;
-    color:white!important;
-    border-color:#1e8449!important;
-}
-.sel-on-ridondante-v56 {
-    background:#ff7900!important;
-    color:white!important;
-    border-color:#c75f00!important;
-}
-.sel-off-v56 {
-    background:#eef6ff!important;
-    color:#06499b!important;
-}
-div[data-testid="stImage"] img {
-    max-height:145px!important;
-    object-fit:contain!important;
-}
-
-
-/* V57 - CARD IN UN SOLO HTML, ZERO RIQUADRI VUOTI */
-.choice-card-v57 {
-    background:#ffffff!important;
-    border:2px solid #bdd4ef!important;
-    border-radius:16px!important;
-    padding:12px!important;
-    margin-bottom:10px!important;
-    box-shadow:0 4px 12px rgba(6,73,155,0.08)!important;
-}
-.choice-card-v57-active {
-    background:#fff8c7!important;
-    border:4px solid #06499b!important;
-}
-.choice-img-v57 {
-    width:100%!important;
-    height:145px!important;
-    object-fit:contain!important;
-    display:block!important;
-    margin:0 auto 8px auto!important;
-}
-.choice-badge-standard-v57 {
-    display:inline-block;
-    background:#06499b;
-    color:white!important;
-    border-radius:8px;
-    padding:7px 12px;
-    font-weight:900;
-    margin-top:8px;
-}
-.choice-badge-er-v57 {
-    display:inline-block;
-    background:#ff7900;
-    color:white!important;
-    border-radius:8px;
-    padding:7px 12px;
-    font-weight:900;
-    margin-top:8px;
-}
-.choice-title-v57 {
-    color:#06499b!important;
-    font-size:23px!important;
-    font-weight:900!important;
-    margin:8px 0!important;
-}
-.choice-desc-v57 {
-    color:#111!important;
-    font-size:15px!important;
-    font-weight:800!important;
-    line-height:1.48!important;
-}
-.sel-box-v57 {
-    border-radius:12px!important;
-    padding:13px 8px!important;
-    text-align:center!important;
-    font-weight:900!important;
-    border:3px solid #06499b!important;
-    margin-bottom:4px!important;
-    font-size:16px!important;
-}
-.sel-on-standard-v57 {
-    background:#27ae60!important;
-    color:white!important;
-    border-color:#1e8449!important;
-}
-.sel-on-ridondante-v57 {
-    background:#ff7900!important;
-    color:white!important;
-    border-color:#c75f00!important;
-}
-.sel-off-v57 {
-    background:#eef6ff!important;
-    color:#06499b!important;
-}
-
-
-/* V58 - ADMIN PREVENTIVI */
-.admin-preventivo-row {
-    background:#ffffff;
-    border:2px solid #bdd4ef;
-    border-radius:14px;
-    padding:12px;
-    margin-bottom:10px;
-}
-
-
-/* V59 - CRM ADMIN ALLINEATO */
-.admin-preventivo-row {
-    background:#ffffff!important;
-    border:2px solid #bdd4ef!important;
-    border-radius:14px!important;
-    padding:14px!important;
-    margin:16px 0 8px 0!important;
-    box-shadow:0 4px 12px rgba(6,73,155,0.08)!important;
-}
-.admin-preventivo-code {
-    color:#06499b!important;
-    font-size:20px!important;
-    font-weight:900!important;
-    margin-bottom:6px!important;
-}
-.admin-preventivo-line {
-    color:#111!important;
-    font-size:15px!important;
-    font-weight:700!important;
-    line-height:1.45!important;
-}
-.admin-action-spacer {
-    height:31px!important;
-}
-.admin-delete-note {
-    color:#eb5757!important;
-    font-size:13px!important;
-    font-weight:900!important;
-    margin-top:4px!important;
-}
-
-
-/* V63 - AREA RIVENDITORI PULITA */
-.extra-ricarico-box {
-    background:#fff8c7;
-    border:3px solid #06499b;
-    border-radius:14px;
-    padding:14px;
-    margin:12px 0;
-}
-.extra-ricarico-title {
-    color:#06499b;
-    font-size:18px;
-    font-weight:900;
-    margin-bottom:6px;
-}
-.extra-ricarico-note {
-    color:#111;
-    font-size:14px;
-    font-weight:800;
-    line-height:1.45;
-}
-
-
-/* V62 - SIDEBAR ACCESSO PIU LEGGIBILE */
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span {
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-section[data-testid="stSidebar"] input {
-    background:#ffffff!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border:2px solid #2f80ed!important;
-    border-radius:8px!important;
-    min-height:44px!important;
-}
-section[data-testid="stSidebar"] div[data-testid="stSelectbox"] div {
-    color:#111111!important;
-}
-section[data-testid="stSidebar"] button {
-    min-height:46px!important;
-    font-weight:900!important;
-}
-
-
-/* V64 - SELECTBOX SIDEBAR LEGGIBILE */
-section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
-    background:#ffffff!important;
-    color:#111111!important;
-    border:2px solid #2f80ed!important;
-    border-radius:8px!important;
-}
-section[data-testid="stSidebar"] div[data-baseweb="select"] span {
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    font-weight:900!important;
-}
-
-
-/* V67 - GRAFICA INCREMENTO PREZZO VENDITA */
-.incremento-box-v67 {
-    background:#ffffff;
-    border:2px solid #2f80ed;
-    border-radius:14px;
-    padding:12px;
-    margin:10px 0 8px 0;
-}
-.incremento-title-v67 {
-    color:#06499b!important;
-    font-size:17px!important;
-    font-weight:900!important;
-}
-.incremento-note-v67 {
-    color:#111111!important;
-    font-size:13px!important;
-    font-weight:800!important;
-    margin-top:4px!important;
-}
-.incremento-risultato-v67 {
-    background:#27ae60;
-    color:#ffffff!important;
-    border-radius:12px;
-    padding:10px 12px;
-    margin-top:8px;
-    font-size:15px;
-    font-weight:900;
-    text-align:center;
-}
-section[data-testid="stSidebar"] div[role="radiogroup"] {
-    display:flex!important;
-    gap:7px!important;
-    flex-wrap:wrap!important;
-}
-section[data-testid="stSidebar"] div[role="radiogroup"] label {
-    background:#ffffff!important;
-    border:2px solid #2f80ed!important;
-    border-radius:12px!important;
-    padding:8px 10px!important;
-    min-width:72px!important;
-    text-align:center!important;
-    color:#06499b!important;
-    font-weight:900!important;
-}
-section[data-testid="stSidebar"] div[role="radiogroup"] label p {
-    color:#06499b!important;
-    -webkit-text-fill-color:#06499b!important;
-    font-weight:900!important;
-    font-size:16px!important;
-}
-section[data-testid="stSidebar"] div[role="radiogroup"] input:checked + div {
-    background:#27ae60!important;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-
-# =========================
-# V300 - CLEAN DEFINITIVA SA-TEC
-# =========================
-st.markdown("""
-<style>
-:root{
-    --satec-blue:#0057D9;
-    --satec-blue-dark:#003C96;
-    --satec-orange:#F5B301;
-    --satec-bg:#F4F8FF;
-    --satec-text:#111827;
-    --satec-border:#C9DCF7;
-}
-
-/* BASE */
-.stApp{
-    background:linear-gradient(180deg,#F4F8FF 0%,#FFFFFF 65%)!important;
-}
-.block-container{
-    padding-top:1rem!important;
-}
-.block-container,
-.block-container *:not(svg):not(path){
-    color:var(--satec-text)!important;
-    -webkit-text-fill-color:var(--satec-text)!important;
-}
-.block-container h1,
-.block-container h2,
-.block-container h3{
-    color:var(--satec-blue-dark)!important;
-    -webkit-text-fill-color:var(--satec-blue-dark)!important;
-    font-weight:1000!important;
-}
-
-/* SIDEBAR */
-section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;
-    border-right:5px solid var(--satec-orange)!important;
-}
-section[data-testid="stSidebar"] h1,
-section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] div{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-}
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] textarea,
-section[data-testid="stSidebar"] [data-baseweb="input"] *,
-section[data-testid="stSidebar"] [data-baseweb="select"] *{
-    background:#FFFFFF!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:900!important;
-}
-
-/* Bottoni generali */
-.stButton button,
-.stDownloadButton button,
-section[data-testid="stSidebar"] .stButton button{
-    background:#FFFFFF!important;
-    color:#0057D9!important;
-    -webkit-text-fill-color:#0057D9!important;
-    border:2px solid #0057D9!important;
-    border-radius:13px!important;
-    min-height:48px!important;
-    font-size:15px!important;
-    font-weight:1000!important;
-    opacity:1!important;
-    box-shadow:0 4px 12px rgba(0,87,217,.10)!important;
-}
-.stButton button *,
-.stDownloadButton button *,
-section[data-testid="stSidebar"] .stButton button *{
-    color:inherit!important;
-    -webkit-text-fill-color:inherit!important;
-    font-weight:1000!important;
-    opacity:1!important;
-}
-.stButton button:hover,
-.stDownloadButton button:hover,
-section[data-testid="stSidebar"] .stButton button:hover{
-    background:#F5B301!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:#F5B301!important;
-}
-.stButton button:hover *,
-.stDownloadButton button:hover *,
-section[data-testid="stSidebar"] .stButton button:hover *{
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-}
-
-/* Menu admin centrale */
-div[data-testid="stHorizontalBlock"] .stButton button{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    border:2px solid #0057D9!important;
-    min-height:58px!important;
-    border-radius:14px!important;
-    box-shadow:0 8px 18px rgba(0,87,217,.20)!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button *,
-div[data-testid="stHorizontalBlock"] .stButton button p,
-div[data-testid="stHorizontalBlock"] .stButton button span,
-div[data-testid="stHorizontalBlock"] .stButton button div{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-weight:1000!important;
-    opacity:1!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button:hover,
-div[data-testid="stHorizontalBlock"] .stButton button:hover *{
-    background:#F5B301!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:#F5B301!important;
-}
-
-/* Blocchi Admin / titoli */
-.v100-title-bar,
-.v102-title-bar,
-.v90-section-title,
-.v101-menu-title,
-.v87-section-title,
-.v85-toggle-title{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    border:0!important;
-    border-radius:17px!important;
-    padding:16px 21px!important;
-    margin:18px 0 14px 0!important;
-    font-size:23px!important;
-    font-weight:1000!important;
-    box-shadow:0 8px 20px rgba(0,87,217,.18)!important;
-}
-.v100-title-bar *,
-.v102-title-bar *,
-.v90-section-title *,
-.v101-menu-title *,
-.v87-section-title *,
-.v85-toggle-title *{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-}
-
-/* Card e CRM */
-.card,
-.v100-row-card,
-.crm-detail-v68,
-.crm-white-box-v68,
-.crm-mini-card-v68,
-.v85-help-box{
-    background:#FFFFFF!important;
-    border-color:#C9DCF7!important;
-}
-.card *,
-.v100-row-card *,
-.crm-detail-v68 *,
-.crm-white-box-v68 *,
-.crm-mini-card-v68 *,
-.v85-help-box *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-.crm-detail-head-v68,
-.crm-detail-head-v68 *{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-}
-
-/* Tabelle */
-th{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-weight:1000!important;
-}
-td{
-    background:#FFFFFF!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-tr:nth-child(even) td{
-    background:#F3F7FF!important;
-}
-
-/* Alert/input */
-[data-testid="stAlert"],
-[data-testid="stAlert"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:850!important;
-}
-.block-container input,
-.block-container textarea,
-.block-container [data-baseweb="input"] *,
-.block-container [data-baseweb="select"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    background:#FFFFFF!important;
-    font-weight:850!important;
-}
-
-/* Nasconde la vecchia testata se resta per qualche motivo */
-.header,
-.powercore{
-    display:none!important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-
-# =========================
-# HEADER V303 FINALE
-# =========================
-st.markdown("""
-<style>
-:root{
-    --satec-blue:#0057D9;
-    --satec-dark:#003C96;
-    --satec-orange:#F5B301;
-    --satec-text:#111827;
-    --satec-border:#C9DCF7;
-}
-.stApp{
-    background:linear-gradient(180deg,#F4F8FF 0%,#FFFFFF 65%)!important;
-}
-.v303-header{
-    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%);
-    border-radius:18px;
-    padding:20px 26px;
-    margin:8px 0 18px 0;
-    box-shadow:0 12px 30px rgba(0,87,217,.28);
-    display:grid;
-    grid-template-columns:24% 42% 21% 13%;
-    align-items:center;
-    gap:20px;
-}
-.v303-brand{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:50px;
-    font-weight:1000;
-    letter-spacing:1px;
-    line-height:1;
-}
-.v303-brand-sub{
-    color:#EAF3FF!important;
-    -webkit-text-fill-color:#EAF3FF!important;
-    font-size:13px;
-    font-weight:1000;
-    letter-spacing:4px;
-    margin-top:12px;
-}
-.v303-title{
-    border-left:1px solid rgba(255,255,255,.45);
-    padding-left:24px;
-}
-.v303-title-main{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:32px;
-    line-height:1.05;
-    font-weight:1000;
-    letter-spacing:.4px;
-}
-.v303-title-main span{
-    color:#F5B301!important;
-    -webkit-text-fill-color:#F5B301!important;
-}
-.v303-title-sub{
-    color:#EAF3FF!important;
-    -webkit-text-fill-color:#EAF3FF!important;
-    font-size:14px;
-    font-weight:900;
-    margin-top:10px;
-}
-.v303-info{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:13px;
-    font-weight:900;
-    line-height:1.55;
-}
-.v303-info *{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-}
-.v303-sesamo{
-    border-left:1px solid rgba(255,255,255,.45);
-    padding-left:18px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-}
-.v303-sesamo-mark{
-    background:#F58220;
-    color:#071124!important;
-    -webkit-text-fill-color:#071124!important;
-    font-size:34px;
-    font-weight:1000;
-    padding:7px 12px;
-}
-.v303-sesamo-name{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:28px;
-    font-weight:1000;
-    line-height:1;
-}
-.v303-sesamo-sub{
-    color:#EAF3FF!important;
-    -webkit-text-fill-color:#EAF3FF!important;
-    font-size:10px;
-    font-weight:1000;
-    letter-spacing:.8px;
-    margin-top:4px;
-}
-.v303-product{
-    background:#FFFFFF;
-    border:1px solid #C9DCF7;
-    border-radius:16px;
-    padding:22px 26px;
-    margin:0 0 22px 0;
-    display:grid;
-    grid-template-columns:65% 35%;
-    align-items:center;
-    box-shadow:0 8px 22px rgba(0,87,217,.08);
-}
-.v303-product-title{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    font-size:31px;
-    font-weight:1000;
-}
-.v303-product-sub{
-    color:#334155!important;
-    -webkit-text-fill-color:#334155!important;
-    font-size:16px;
-    font-weight:800;
-    margin-top:9px;
-    line-height:1.45;
-}
-.v303-product-logo{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    gap:15px;
-}
-.v303-product-mark{
-    background:#F58220;
-    color:#071124!important;
-    -webkit-text-fill-color:#071124!important;
-    font-size:39px;
-    font-weight:1000;
-    padding:7px 14px;
-}
-.v303-product-name{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-size:39px;
-    font-weight:1000;
-    line-height:1;
-}
-.v303-product-tech{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-size:13px;
-    font-weight:1000;
-    letter-spacing:1px;
-    margin-top:5px;
-}
-
-/* Sidebar */
-section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;
-    border-right:5px solid #F5B301!important;
-}
-section[data-testid="stSidebar"] h1,
-section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] div{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-}
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] textarea,
-section[data-testid="stSidebar"] [data-baseweb="input"] *,
-section[data-testid="stSidebar"] [data-baseweb="select"] *{
-    background:#FFFFFF!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:900!important;
-}
-
-/* Pulsanti login e generali */
-.stButton button,
-.stDownloadButton button,
-section[data-testid="stSidebar"] .stButton button{
-    background:#FFFFFF!important;
-    color:#0057D9!important;
-    -webkit-text-fill-color:#0057D9!important;
-    border:2px solid #0057D9!important;
-    border-radius:13px!important;
-    min-height:48px!important;
-    font-size:15px!important;
-    font-weight:1000!important;
-    opacity:1!important;
-    box-shadow:0 4px 12px rgba(0,87,217,.10)!important;
-}
-.stButton button *,
-.stDownloadButton button *,
-section[data-testid="stSidebar"] .stButton button *{
-    color:inherit!important;
-    -webkit-text-fill-color:inherit!important;
-    font-weight:1000!important;
-    opacity:1!important;
-}
-.stButton button:hover,
-.stDownloadButton button:hover,
-section[data-testid="stSidebar"] .stButton button:hover{
-    background:#F5B301!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:#F5B301!important;
-}
-.stButton button:hover *,
-.stDownloadButton button:hover *,
-section[data-testid="stSidebar"] .stButton button:hover *{
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-}
-
-/* Menu admin centrale */
-div[data-testid="stHorizontalBlock"] .stButton button{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    border:2px solid #0057D9!important;
-    min-height:56px!important;
-    border-radius:14px!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button *,
-div[data-testid="stHorizontalBlock"] .stButton button p,
-div[data-testid="stHorizontalBlock"] .stButton button span,
-div[data-testid="stHorizontalBlock"] .stButton button div{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-weight:1000!important;
-}
-
-/* Titoli admin */
-.v87-section-title,
-.v85-toggle-title,
-.v100-title-bar,
-.v102-title-bar{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    border-radius:16px!important;
-}
-.v87-section-title *,
-.v85-toggle-title *,
-.v100-title-bar *,
-.v102-title-bar *{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-}
-
-@media(max-width:1100px){
-    .v303-header{
-        grid-template-columns:1fr;
-        text-align:center;
-    }
-    .v303-title,
-    .v303-sesamo{
-        border-left:0;
-        padding-left:0;
-    }
-    .v303-product{
-        grid-template-columns:1fr;
-        gap:18px;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<div class="v303-header">
-    <div>
-        <div class="v303-brand">SA-TEC</div>
-        <div class="v303-brand-sub">PORTE AUTOMATICHE</div>
-    </div>
-    <div class="v303-title">
-        <div class="v303-title-main">
-            CONFIGURATORE<br>
-            <span>PORTE AUTOMATICHE</span>
-        </div>
-        <div class="v303-title-sub">TECNOLOGIA, SICUREZZA E SOLUZIONI SU MISURA</div>
-    </div>
-    <div class="v303-info">
-        📍 SA-TEC S.R.L.s<br>
-        Via L. Settembrini 84<br>
-        88046 Lamezia Terme (CZ)<br>
-        ☎ 0968-036797<br>
-        ✉ sacco.tecnologie@gmail.com
-    </div>
-    <div class="v303-sesamo">
-        <div class="v303-sesamo-mark">▌</div>
-        <div>
-            <div class="v303-sesamo-name">SESAMO</div>
-            <div class="v303-sesamo-sub">THE DOOR TECHNOLOGY</div>
-        </div>
-    </div>
-</div>
-
-<div class="v303-product">
-    <div>
-        <div class="v303-product-title">SESAMO POWERCORE PW100</div>
-        <div class="v303-product-sub">
-            Automazione lineare per porte scorrevoli automatiche,<br>
-            affidabile, sicura e compatibile con la normativa EN16005.
-        </div>
-    </div>
-    <div class="v303-product-logo">
-        <div class="v303-product-mark">▌</div>
-        <div>
-            <div class="v303-product-name">SESAMO</div>
-            <div class="v303-product-tech">THE DOOR TECHNOLOGY</div>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-
-# =========================
-# V304 - FIX DEFINITIVO COLORI HEADER / PULSANTI
-# =========================
-st.markdown("""
-<style>
-/* HEADER V303: forza colore bianco/arancione anche se vecchi CSS tentano di sovrascrivere */
-.v303-header,
-.v303-header *{
-    text-shadow:none!important;
-}
-.v303-brand,
-.v303-brand *,
-.v303-logo,
-.v303-logo *,
-.v303-title-main,
-.v303-title-main *,
-.v303-title-sub,
-.v303-info,
-.v303-info *,
-.v303-sesamo-name,
-.v303-sesamo-sub{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-}
-.v303-brand{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:50px!important;
-    font-weight:1000!important;
-    letter-spacing:1.2px!important;
-}
-.v303-brand-sub{
-    color:#EAF3FF!important;
-    -webkit-text-fill-color:#EAF3FF!important;
-    font-size:14px!important;
-    letter-spacing:5px!important;
-}
-.v303-title-main{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:32px!important;
-    font-weight:1000!important;
-}
-.v303-title-main span{
-    color:#F5B301!important;
-    -webkit-text-fill-color:#F5B301!important;
-}
-.v303-title-sub{
-    color:#EAF3FF!important;
-    -webkit-text-fill-color:#EAF3FF!important;
-    font-weight:1000!important;
-}
-.v303-info,
-.v303-info *{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:13px!important;
-    font-weight:900!important;
-}
-.v303-sesamo{
-    margin-left:8px!important;
-}
-.v303-sesamo-name{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:30px!important;
-}
-.v303-sesamo-sub{
-    color:#EAF3FF!important;
-    -webkit-text-fill-color:#EAF3FF!important;
-}
-.v303-sesamo-mark,
-.v303-product-mark{
-    background:#F58220!important;
-    color:#071124!important;
-    -webkit-text-fill-color:#071124!important;
-}
-
-/* Testata leggermente più compatta */
-.v303-header{
-    padding:20px 26px!important;
-    min-height:128px!important;
-}
-
-/* Scheda prodotto pulita */
-.v303-product-title{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-}
-.v303-product-sub{
-    color:#334155!important;
-    -webkit-text-fill-color:#334155!important;
-}
-.v303-product-name,
-.v303-product-tech{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-
-/* Pulsanti login: Accedi/Esci sempre visibili */
-section[data-testid="stSidebar"] .stButton button{
-    background:#FFFFFF!important;
-    color:#0057D9!important;
-    -webkit-text-fill-color:#0057D9!important;
-    border:2px solid #FFFFFF!important;
-    border-radius:13px!important;
-    min-height:48px!important;
-    font-weight:1000!important;
-    opacity:1!important;
-}
-section[data-testid="stSidebar"] .stButton button *,
-section[data-testid="stSidebar"] .stButton button p,
-section[data-testid="stSidebar"] .stButton button span,
-section[data-testid="stSidebar"] .stButton button div{
-    color:#0057D9!important;
-    -webkit-text-fill-color:#0057D9!important;
-    font-weight:1000!important;
-    opacity:1!important;
-}
-section[data-testid="stSidebar"] .stButton button:hover,
-section[data-testid="stSidebar"] .stButton button:hover *{
-    background:#F5B301!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:#F5B301!important;
-}
-
-/* Pulsanti area admin centrale: blu vivo, testo bianco */
-div[data-testid="stHorizontalBlock"] .stButton button{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    border-color:#0057D9!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button *,
-div[data-testid="stHorizontalBlock"] .stButton button p,
-div[data-testid="stHorizontalBlock"] .stButton button span,
-div[data-testid="stHorizontalBlock"] .stButton button div{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-weight:1000!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button:hover,
-div[data-testid="stHorizontalBlock"] .stButton button:hover *{
-    background:#F5B301!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:#F5B301!important;
-}
-
-/* Evita che h1 globali vecchi rendano nero il titolo header */
-.v303-header h1,
-.v303-header h2,
-.v303-header h3,
-.v303-header p,
-.v303-header div,
-.v303-header span{
-    color:inherit;
-}
-</style>
-""", unsafe_allow_html=True)
-
+v400_style()
+v400_header()
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
+
+# V400: riapplica stile dopo login
+v400_style()
+
 
 
 
@@ -7262,7 +3968,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V305 - Definitiva Forzata")
+st.caption("Versione V400 CLEAN SA-TEC")
 
 st.markdown(f"""
 <div class="footer">
@@ -7454,3 +4160,12 @@ div[data-testid="stHorizontalBlock"] .stButton button:hover div{
 </style>
 """, unsafe_allow_html=True)
 
+
+
+# =========================
+# V400 - RIAPPLICA CSS A FINE FILE
+# =========================
+try:
+    v400_style()
+except Exception:
+    pass
