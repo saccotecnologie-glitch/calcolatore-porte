@@ -300,6 +300,74 @@ def aggiorna_ricarico_utente_supabase(username, nuovo_ricarico):
     except Exception as e:
         return False, str(e)
 
+
+def elimina_utente_supabase(username):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato"
+
+    try:
+        username = str(username or "").strip().upper()
+        if username == "ADMIN":
+            return False, "Non puoi eliminare ADMIN"
+
+        sb.table("utenti").delete().eq("username", username).execute()
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_utente_csv(username):
+    path = Path(UTENTI_CSV)
+    if not path.exists():
+        return False, "CSV utenti non presente"
+
+    try:
+        username = str(username or "").strip().upper()
+        if username == "ADMIN":
+            return False, "Non puoi eliminare ADMIN"
+
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+
+        if not righe:
+            return False, "CSV utenti vuoto"
+
+        fieldnames = list(righe[0].keys())
+        nuove = [
+            r for r in righe
+            if str(r.get("utente", "")).strip().upper() != username
+        ]
+
+        if len(nuove) == len(righe):
+            return False, "Utente non trovato nel CSV"
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_utente_admin(username):
+    username = str(username or "").strip().upper()
+
+    if username == "ADMIN":
+        return False, "Non puoi eliminare l'utente ADMIN"
+
+    ok_sb, err_sb = elimina_utente_supabase(username)
+    ok_csv, err_csv = elimina_utente_csv(username)
+
+    if ok_sb or ok_csv:
+        return True, f"Utente {username} eliminato. Lo storico preventivi resta nel CRM."
+
+    return False, f"Supabase: {err_sb} | CSV: {err_csv}"
+
+
+
 def utenti_rivenditori_grossisti():
     utenti = carica_tutti_utenti()
     righe = []
@@ -1160,6 +1228,166 @@ def html_export_preventivo_admin(p):
     line-height:1.55;
 }
 
+
+/* =========================================================
+   V87 - FIX DEFINITIVO COLORI CRM / ADMIN SA-TEC
+   ========================================================= */
+
+/* Area principale Admin */
+section.main,
+.stApp,
+.block-container {
+    color:#111827 !important;
+}
+
+/* Titoli e testi standard */
+h1, h2, h3, h4, h5, h6,
+p, label, span, div,
+[data-testid="stMarkdownContainer"],
+[data-testid="stMarkdownContainer"] * {
+    color:#111827 !important;
+    -webkit-text-fill-color:#111827 !important;
+}
+
+/* Titoli blu SA-TEC */
+h1, h2, h3 {
+    color:#06499b !important;
+    -webkit-text-fill-color:#06499b !important;
+    font-weight:900 !important;
+}
+
+/* Tabs Streamlit: Preventivi / Utenti CRM */
+.stTabs [data-baseweb="tab"],
+.stTabs [data-baseweb="tab"] *,
+button[data-baseweb="tab"],
+button[data-baseweb="tab"] * {
+    color:#111827 !important;
+    -webkit-text-fill-color:#111827 !important;
+    font-weight:900 !important;
+}
+
+.stTabs [aria-selected="true"],
+.stTabs [aria-selected="true"] * {
+    color:#06499b !important;
+    -webkit-text-fill-color:#06499b !important;
+    font-weight:900 !important;
+}
+
+/* Testi dentro alert/info/warning */
+[data-testid="stAlert"],
+[data-testid="stAlert"] *,
+.stAlert,
+.stAlert * {
+    color:#111827 !important;
+    -webkit-text-fill-color:#111827 !important;
+    font-weight:800 !important;
+}
+
+/* Input, select, textarea */
+input, textarea, select,
+[data-baseweb="input"] *,
+[data-baseweb="select"] *,
+[data-baseweb="textarea"] * {
+    color:#111827 !important;
+    -webkit-text-fill-color:#111827 !important;
+    background:#ffffff !important;
+    font-weight:800 !important;
+}
+
+/* Labels degli input */
+[data-testid="stTextInput"] label,
+[data-testid="stSelectbox"] label,
+[data-testid="stNumberInput"] label,
+[data-testid="stCheckbox"] label,
+[data-testid="stTextArea"] label,
+[data-testid="stTextInput"] label *,
+[data-testid="stSelectbox"] label *,
+[data-testid="stNumberInput"] label *,
+[data-testid="stCheckbox"] label *,
+[data-testid="stTextArea"] label * {
+    color:#111827 !important;
+    -webkit-text-fill-color:#111827 !important;
+    font-weight:900 !important;
+}
+
+/* Tabelle CRM */
+table, thead, tbody, tr, td, th {
+    color:#111827 !important;
+    -webkit-text-fill-color:#111827 !important;
+}
+
+th {
+    background:#06499b !important;
+    color:#ffffff !important;
+    -webkit-text-fill-color:#ffffff !important;
+    font-weight:900 !important;
+}
+
+td {
+    background:#ffffff !important;
+    color:#111827 !important;
+    -webkit-text-fill-color:#111827 !important;
+    font-weight:700 !important;
+}
+
+/* Card dashboard vecchie e nuove */
+.v84-dashboard,
+.v84-dashboard *,
+.v85-help-box,
+.v85-help-box *,
+.v85-toggle-title,
+.v85-toggle-title *,
+.v87-crm-title,
+.v87-crm-title *,
+.v87-section-title,
+.v87-section-title *,
+.v87-card,
+.v87-card * {
+    -webkit-text-fill-color: unset !important;
+}
+
+.v85-help-box,
+.v85-help-box * {
+    color:#111827 !important;
+    -webkit-text-fill-color:#111827 !important;
+}
+
+/* Titolo sezione pulito */
+.v87-section-title {
+    background:#06499b !important;
+    color:#ffffff !important;
+    -webkit-text-fill-color:#ffffff !important;
+    border-radius:14px !important;
+    padding:14px 18px !important;
+    margin:18px 0 12px 0 !important;
+    font-size:22px !important;
+    font-weight:900 !important;
+    box-shadow:0 5px 15px rgba(6,73,155,0.18) !important;
+}
+
+/* Bottoni */
+.stButton button,
+.stDownloadButton button {
+    font-weight:900 !important;
+    border-radius:12px !important;
+}
+
+/* Checkbox testo */
+[data-testid="stCheckbox"] span,
+[data-testid="stCheckbox"] p {
+    color:#111827 !important;
+    -webkit-text-fill-color:#111827 !important;
+}
+
+/* Sidebar mantiene leggibilità */
+section[data-testid="stSidebar"] *,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] div {
+    color:inherit;
+}
+
 </style>
     </head>
     <body>
@@ -1880,7 +2108,7 @@ def v84_render_dashboard(preventivi):
 
 def v83_render_admin(preventivi):
     st.markdown("""
-    <div class="v85-help-box">
+    <div class="v85-help-box" style="background:#eef6ff;color:#111827!important;-webkit-text-fill-color:#111827!important;border:2px solid #bdd4ef;border-radius:14px;padding:14px;margin:12px 0;font-weight:800;line-height:1.55;">
     <b>Simulazione funzionamento:</b><br>
     1) Entra come Cliente e salva un preventivo.<br>
     2) Entra come Rivenditore/Grossista e salva un preventivo con incremento prezzo.<br>
@@ -1892,11 +2120,11 @@ def v83_render_admin(preventivi):
         st.info("Nessun preventivo salvato ancora.")
         return
 
-    st.markdown("## CRM Commerciale")
+    st.markdown('<h2 style="color:#06499b!important;-webkit-text-fill-color:#06499b!important;font-weight:900;">CRM Commerciale</h2>', unsafe_allow_html=True)
     v84_render_dashboard(preventivi)
 
     st.markdown("---")
-    st.markdown("## Gestione preventivi")
+    st.markdown('<div class="v87-section-title">GESTIONE PREVENTIVI</div>', unsafe_allow_html=True)
 
     f1, f2 = st.columns([2,1])
     with f1:
@@ -2048,6 +2276,115 @@ def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
 # =========================
 # CLIENTI CSV
 # =========================
+
+
+def elimina_cliente_supabase(identificativo):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato"
+
+    try:
+        identificativo = str(identificativo or "").strip()
+        if not identificativo:
+            return False, "Cliente non valido"
+
+        # Prova eliminazione per email, telefono, nome o azienda.
+        # Basta che uno dei campi combaci.
+        eliminato = False
+
+        for campo in ["email", "telefono", "nome", "azienda"]:
+            try:
+                sb.table("clienti").delete().eq(campo, identificativo).execute()
+                eliminato = True
+            except Exception:
+                pass
+
+        return eliminato, "" if eliminato else "Cliente non trovato in Supabase"
+
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_cliente_csv(identificativo):
+    path = Path(CLIENTI_CSV)
+    if not path.exists():
+        return False, "CSV clienti non presente"
+
+    try:
+        identificativo = str(identificativo or "").strip()
+        if not identificativo:
+            return False, "Cliente non valido"
+
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+
+        if not righe:
+            return False, "CSV clienti vuoto"
+
+        fieldnames = list(righe[0].keys())
+
+        def match_cliente(r):
+            valori = [
+                str(r.get("email", "")).strip(),
+                str(r.get("telefono", "")).strip(),
+                str(r.get("nome", "")).strip(),
+                str(r.get("azienda", "")).strip(),
+                str(r.get("cliente_nome", "")).strip(),
+                str(r.get("cliente_azienda", "")).strip(),
+                str(r.get("cliente_email", "")).strip(),
+                str(r.get("cliente_telefono", "")).strip(),
+            ]
+            return identificativo in valori
+
+        nuove = [r for r in righe if not match_cliente(r)]
+
+        if len(nuove) == len(righe):
+            return False, "Cliente non trovato nel CSV"
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+
+        return True, ""
+
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_cliente_admin(identificativo):
+    identificativo = str(identificativo or "").strip()
+    if not identificativo:
+        return False, "Cliente non valido"
+
+    ok_sb, err_sb = elimina_cliente_supabase(identificativo)
+    ok_csv, err_csv = elimina_cliente_csv(identificativo)
+
+    if ok_sb or ok_csv:
+        return True, f"Cliente eliminato: {identificativo}. I preventivi storici non vengono cancellati."
+
+    return False, f"Supabase: {err_sb} | CSV: {err_csv}"
+
+
+def label_cliente_elimina(c):
+    nome = str(c.get("nome", c.get("cliente_nome", "")) or "").strip()
+    azienda = str(c.get("azienda", c.get("cliente_azienda", "")) or "").strip()
+    telefono = str(c.get("telefono", c.get("cliente_telefono", "")) or "").strip()
+    email = str(c.get("email", c.get("cliente_email", "")) or "").strip()
+
+    testo = " - ".join([x for x in [nome, azienda, telefono, email] if x])
+    return testo or "Cliente senza dati"
+
+
+def identificativo_cliente_elimina(c):
+    # Priorità: email, telefono, nome, azienda
+    for campo in ["email", "cliente_email", "telefono", "cliente_telefono", "nome", "cliente_nome", "azienda", "cliente_azienda"]:
+        val = str(c.get(campo, "") or "").strip()
+        if val:
+            return val
+    return ""
+
+
 
 def carica_clienti():
     clienti_sb = carica_clienti_supabase()
@@ -3730,6 +4067,8 @@ if profilo == "SA-TEC":
                 st.markdown(tabella_html_sicura(righe_riv), unsafe_allow_html=True)
 
                 codici_riv = [r["utente"] for r in righe_riv]
+
+                st.markdown("### Modifica ricarico")
                 col_riv1, col_riv2, col_riv3 = st.columns([2, 1, 1])
                 with col_riv1:
                     utente_riv_mod = st.selectbox("Utente rivenditore/grossista", codici_riv, key="utente_riv_mod")
@@ -3737,12 +4076,44 @@ if profilo == "SA-TEC":
                     nuovo_ricarico_riv = st.number_input("Nuovo ricarico %", min_value=0.0, max_value=200.0, value=30.0, step=1.0, key="nuovo_ricarico_riv")
                 with col_riv3:
                     st.markdown("<br>", unsafe_allow_html=True)
-                    if st.button("AGGIORNA RICARICO"):
+                    if st.button("AGGIORNA RICARICO", key="v86_aggiorna_ricarico"):
                         ok_riv, err_riv = aggiorna_ricarico_utente_supabase(utente_riv_mod, nuovo_ricarico_riv)
                         if ok_riv:
                             st.success(f"Ricarico aggiornato per {utente_riv_mod}: {nuovo_ricarico_riv:.0f}%")
                         else:
                             st.error(f"Ricarico non aggiornato: {err_riv}")
+
+                st.markdown("---")
+                st.markdown("### Elimina rivenditore / grossista")
+                st.warning("L'eliminazione blocca l'accesso dell'utente. Lo storico preventivi rimane nel CRM.")
+
+                col_del1, col_del2, col_del3 = st.columns([2, 1, 1])
+
+                with col_del1:
+                    utente_da_eliminare = st.selectbox(
+                        "Utente da eliminare",
+                        codici_riv,
+                        key="v86_utente_da_eliminare"
+                    )
+
+                with col_del2:
+                    conferma_elimina_utente = st.checkbox(
+                        "Confermo",
+                        key="v86_conferma_elimina_utente"
+                    )
+
+                with col_del3:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.button("ELIMINA UTENTE", key="v86_elimina_utente", use_container_width=True):
+                        if not conferma_elimina_utente:
+                            st.warning("Spunta prima Confermo.")
+                        else:
+                            ok_del_user, msg_del_user = elimina_utente_admin(utente_da_eliminare)
+                            if ok_del_user:
+                                st.success(msg_del_user)
+                                st.rerun()
+                            else:
+                                st.error(msg_del_user)
 
         st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -3775,6 +4146,49 @@ if profilo == "SA-TEC":
                 if Path(CLIENTI_CSV).exists():
                     with open(CLIENTI_CSV, "rb") as f:
                         st.download_button("Scarica CSV clienti", data=f, file_name="clienti_satec.csv", mime="text/csv")
+
+                st.markdown("---")
+                st.markdown("### Elimina cliente")
+                st.warning("L'eliminazione rimuove il cliente dall'archivio clienti. I preventivi storici restano nel CRM.")
+
+                opzioni_clienti = {}
+                for c in clienti_filtrati:
+                    label = label_cliente_elimina(c)
+                    ident = identificativo_cliente_elimina(c)
+                    if ident:
+                        opzioni_clienti[label] = ident
+
+                if not opzioni_clienti:
+                    st.info("Nessun cliente eliminabile con i dati attuali.")
+                else:
+                    col_cli_del1, col_cli_del2, col_cli_del3 = st.columns([2, 1, 1])
+
+                    with col_cli_del1:
+                        cliente_label_del = st.selectbox(
+                            "Cliente da eliminare",
+                            list(opzioni_clienti.keys()),
+                            key="v88_cliente_da_eliminare"
+                        )
+
+                    with col_cli_del2:
+                        conferma_elimina_cliente = st.checkbox(
+                            "Confermo",
+                            key="v88_conferma_elimina_cliente"
+                        )
+
+                    with col_cli_del3:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        if st.button("ELIMINA CLIENTE", key="v88_elimina_cliente", use_container_width=True):
+                            if not conferma_elimina_cliente:
+                                st.warning("Spunta prima Confermo.")
+                            else:
+                                identificativo = opzioni_clienti.get(cliente_label_del, "")
+                                ok_cli_del, msg_cli_del = elimina_cliente_admin(identificativo)
+                                if ok_cli_del:
+                                    st.success(msg_cli_del)
+                                    st.rerun()
+                                else:
+                                    st.error(msg_cli_del)
 
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -4620,7 +5034,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V85 - Sezioni Admin a scomparsa")
+st.caption("Versione V88 - Elimina Clienti da Admin")
 
 st.markdown(f"""
 <div class="footer">
