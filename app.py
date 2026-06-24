@@ -2884,6 +2884,149 @@ def v100_render_admin(preventivi):
         v100_render_simulazione()
 
 
+
+# =========================
+# V101 - HOME ADMIN REALE
+# =========================
+
+def v101_num(v, default=0.0):
+    try:
+        if v is None:
+            return default
+        if isinstance(v, (int, float)):
+            return float(v)
+        s = str(v).strip().replace("€", "").replace(" ", "")
+        if not s:
+            return default
+        if "," in s and "." in s and s.rfind(",") > s.rfind("."):
+            s = s.replace(".", "").replace(",", ".")
+        elif "," in s and "." not in s:
+            s = s.replace(",", ".")
+        return float(s)
+    except Exception:
+        return default
+
+
+def v101_imponibile(p):
+    imp = v101_num(p.get("imponibile", 0))
+    if imp > 0:
+        return imp
+    totale = v101_num(p.get("totale_iva", p.get("totale", 0)))
+    return totale / (1 + IVA) if totale > 0 else 0.0
+
+
+def v101_utile(p):
+    utile = v101_num(p.get("utile_lordo", 0))
+    return utile if utile > 0 else 0.0
+
+
+def v101_admin_home(preventivi):
+    totale_preventivi = len(preventivi)
+    valore = sum(v101_imponibile(p) for p in preventivi)
+    utile = sum(v101_utile(p) for p in preventivi)
+    accettati = sum(1 for p in preventivi if str(p.get("stato","")).strip() in ["Accettato","Ordinato"])
+
+    st.markdown(f"""
+    <div class="v101-admin-shell">
+        <div class="v101-top">
+            <div>
+                <h1>SA-TEC ADMIN</h1>
+                <p>Gestionale commerciale porte automatiche</p>
+            </div>
+            <div class="v101-badge">
+                🛡️ AREA<br>AMMINISTRATIVA
+            </div>
+        </div>
+
+        <div class="v101-grid">
+            <div class="v101-card">
+                <div class="label">Preventivi</div>
+                <div class="value">{totale_preventivi}</div>
+            </div>
+            <div class="v101-card">
+                <div class="label">Valore</div>
+                <div class="value">{euro(valore)}</div>
+            </div>
+            <div class="v101-card">
+                <div class="label">Utile</div>
+                <div class="value">{euro(utile)}</div>
+            </div>
+            <div class="v101-card">
+                <div class="label">Accettati / Ordinati</div>
+                <div class="value">{accettati}</div>
+            </div>
+        </div>
+
+        <div class="v101-note">
+            Usa i pulsanti sotto per entrare nelle sezioni: Preventivi, Clienti, Rivenditori e Simulazione.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def v101_render_admin_nuovo(preventivi):
+    v101_admin_home(preventivi)
+
+    if "v101_menu" not in st.session_state:
+        st.session_state.v101_menu = "preventivi"
+
+    st.markdown('<div class="v101-menu-title">Menu gestione</div>', unsafe_allow_html=True)
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+        if st.button("📋 PREVENTIVI", key="v101_prev", use_container_width=True):
+            st.session_state.v101_menu = "preventivi"
+            st.rerun()
+
+    with c2:
+        if st.button("👥 CLIENTI", key="v101_cli", use_container_width=True):
+            st.session_state.v101_menu = "clienti"
+            st.rerun()
+
+    with c3:
+        if st.button("🏪 RIVENDITORI", key="v101_riv", use_container_width=True):
+            st.session_state.v101_menu = "rivenditori"
+            st.rerun()
+
+    with c4:
+        if st.button("🧪 SIMULAZIONE", key="v101_sim", use_container_width=True):
+            st.session_state.v101_menu = "simulazione"
+            st.rerun()
+
+    st.markdown("---")
+
+    # Usa le funzioni esistenti se ci sono
+    if st.session_state.v101_menu == "preventivi":
+        if "v100_render_preventivi" in globals():
+            v100_render_preventivi(preventivi)
+        elif "v83_render_admin" in globals():
+            v83_render_admin(preventivi)
+        else:
+            st.warning("Sezione preventivi non trovata.")
+    elif st.session_state.v101_menu == "clienti":
+        if "v100_render_clienti" in globals():
+            v100_render_clienti()
+        else:
+            st.info("Apri Archivio Clienti nella sezione Admin.")
+    elif st.session_state.v101_menu == "rivenditori":
+        if "v100_render_rivenditori" in globals():
+            v100_render_rivenditori()
+        else:
+            st.info("Apri Gestione Rivenditori nella sezione Admin.")
+    elif st.session_state.v101_menu == "simulazione":
+        if "v100_render_simulazione" in globals():
+            v100_render_simulazione()
+        else:
+            st.markdown("""
+            <div class="v101-note">
+            1) Crea preventivo come Cliente.<br>
+            2) Crea preventivo come Rivenditore.<br>
+            3) Entra come Admin e verifica CRM.
+            </div>
+            """, unsafe_allow_html=True)
+
+
 def statistiche_stati_preventivi(preventivi):
     stats = {s: 0 for s in STATI_PREVENTIVO}
     for p in preventivi:
@@ -4699,7 +4842,7 @@ if profilo == "SA-TEC":
         tab1, tab2 = st.tabs(["Preventivi", "Utenti creati"])
 
         with tab1:
-            v100_render_admin(preventivi)
+            v101_render_admin_nuovo(preventivi)
 
         with tab2:
             if not utenti_csv:
@@ -4892,6 +5035,12 @@ st.markdown('\n<style>\n/* =====================================================
 # V100 - CSS GESTIONALE DEFINITIVO
 # =========================
 st.markdown('\n<style>\n/* V100 - UI GESTIONALE SA-TEC */\n.stApp { background:#f5f7fb !important; }\n.block-container { padding-top:1.5rem !important; }\n\n/* Sidebar più pulita */\nsection[data-testid="stSidebar"] {\n    background:#0b2a4a !important;\n    border-right:4px solid #f5b301 !important;\n}\nsection[data-testid="stSidebar"] .stButton button {\n    background:#ffffff !important;\n    color:#0b2a4a !important;\n    -webkit-text-fill-color:#0b2a4a !important;\n    border-radius:14px !important;\n    min-height:46px !important;\n    font-weight:900 !important;\n}\nsection[data-testid="stSidebar"] input,\nsection[data-testid="stSidebar"] textarea,\nsection[data-testid="stSidebar"] [data-baseweb="input"] *,\nsection[data-testid="stSidebar"] [data-baseweb="select"] * {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    background:#ffffff !important;\n}\n\n/* Testi area principale */\n.block-container,\n.block-container *:not(svg):not(path) {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n}\n.block-container h1,\n.block-container h2,\n.block-container h3 {\n    color:#0b2a4a !important;\n    -webkit-text-fill-color:#0b2a4a !important;\n    font-weight:900 !important;\n}\n\n/* Titoli e card */\n.v100-title-bar {\n    background:linear-gradient(135deg,#0b2a4a,#06499b);\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    border-radius:18px;\n    padding:16px 22px;\n    margin:18px 0 16px 0;\n    font-size:24px;\n    font-weight:900;\n    box-shadow:0 8px 20px rgba(6,73,155,.18);\n}\n.v100-row-card {\n    background:#ffffff;\n    border:1px solid #dbeafe;\n    border-radius:18px;\n    padding:17px;\n    margin:18px 0 12px 0;\n    box-shadow:0 7px 18px rgba(6,73,155,.09);\n}\n.v100-row-code {\n    color:#06499b !important;\n    -webkit-text-fill-color:#06499b !important;\n    font-size:22px;\n    font-weight:900;\n    margin-bottom:10px;\n}\n.v100-row-grid {\n    display:grid;\n    grid-template-columns:1.2fr 1fr 1.2fr .8fr .8fr;\n    gap:12px;\n    color:#111827;\n    font-size:14px;\n    font-weight:800;\n}\n.v100-row-grid b {\n    color:#64748b !important;\n    -webkit-text-fill-color:#64748b !important;\n    font-size:12px;\n    text-transform:uppercase;\n}\n.v100-info {\n    background:#eef6ff;\n    border:1px solid #bdd4ef;\n    border-radius:18px;\n    padding:18px;\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    font-size:16px;\n    font-weight:800;\n    line-height:1.65;\n}\n\n/* Tabelle */\nth {\n    background:#0b2a4a !important;\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    font-weight:900 !important;\n}\ntd {\n    background:#ffffff !important;\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    font-weight:800 !important;\n}\n.stButton button,\n.stDownloadButton button {\n    border-radius:14px !important;\n    min-height:46px !important;\n    font-weight:900 !important;\n}\n</style>\n', unsafe_allow_html=True)
+
+
+# =========================
+# V101 - CSS HOME ADMIN
+# =========================
+st.markdown('\n<style>\n/* V101 - HOME ADMIN VISIBILE */\n.v101-admin-shell{\n    background:#f3f7fb;\n    border-radius:26px;\n    padding:20px;\n    margin:18px 0;\n    border:1px solid #dbeafe;\n}\n.v101-top{\n    background:linear-gradient(135deg,#061b35,#06499b);\n    border-radius:24px;\n    padding:28px;\n    color:white!important;\n    display:flex;\n    justify-content:space-between;\n    align-items:center;\n    gap:20px;\n    box-shadow:0 14px 32px rgba(6,73,155,.25);\n}\n.v101-top h1{\n    color:white!important;\n    -webkit-text-fill-color:white!important;\n    font-size:44px!important;\n    font-weight:900!important;\n    margin:0!important;\n}\n.v101-top p{\n    color:#dbeafe!important;\n    -webkit-text-fill-color:#dbeafe!important;\n    font-size:18px!important;\n    font-weight:800!important;\n    margin:8px 0 0 0!important;\n}\n.v101-badge{\n    background:#f5b301;\n    color:#111827!important;\n    -webkit-text-fill-color:#111827!important;\n    border-radius:18px;\n    padding:18px 22px;\n    font-size:22px;\n    font-weight:900;\n    text-align:center;\n    min-width:230px;\n}\n.v101-grid{\n    display:grid;\n    grid-template-columns:repeat(4,1fr);\n    gap:16px;\n    margin-top:18px;\n}\n.v101-card{\n    background:white;\n    border:1px solid #dbeafe;\n    border-radius:20px;\n    padding:18px;\n    box-shadow:0 8px 20px rgba(6,73,155,.10);\n}\n.v101-card .label{\n    color:#06499b!important;\n    -webkit-text-fill-color:#06499b!important;\n    font-size:13px;\n    font-weight:900;\n    text-transform:uppercase;\n}\n.v101-card .value{\n    color:#111827!important;\n    -webkit-text-fill-color:#111827!important;\n    font-size:26px;\n    font-weight:900;\n    margin-top:8px;\n}\n.v101-menu-title{\n    background:#061b35;\n    color:white!important;\n    -webkit-text-fill-color:white!important;\n    border-radius:18px;\n    padding:16px 22px;\n    font-size:24px;\n    font-weight:900;\n    margin:22px 0 14px 0;\n}\n.v101-note{\n    background:#fff7d6;\n    color:#111827!important;\n    -webkit-text-fill-color:#111827!important;\n    border:2px solid #f5b301;\n    border-radius:18px;\n    padding:16px;\n    margin:16px 0;\n    font-weight:900;\n}\n\n/* Forza bottoni admin principali */\ndiv[data-testid="stHorizontalBlock"] .stButton button{\n    background:#06499b!important;\n    color:white!important;\n    -webkit-text-fill-color:white!important;\n    border-radius:16px!important;\n    min-height:54px!important;\n    font-size:16px!important;\n    font-weight:900!important;\n    border:0!important;\n}\n</style>\n', unsafe_allow_html=True)
 
 # =========================
 # CONFIGURATORE
@@ -5735,7 +5884,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V100 - Dashboard Admin Gestionale")
+st.caption("Versione V101 - Admin Nuovo Visibile")
 
 st.markdown(f"""
 <div class="footer">
