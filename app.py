@@ -7141,7 +7141,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V204 - Grafica Finale SA-TEC")
+st.caption("Versione V205 - Grafica Forzata Finale")
 
 st.markdown(f"""
 <div class="footer">
@@ -7150,3 +7150,197 @@ st.markdown(f"""
 <div>✉ {EMAIL}</div>
 </div>
 """, unsafe_allow_html=True)
+
+
+# =========================
+# V205 - CSS FINALE FORZATO A FINE FILE
+# =========================
+st.markdown("""
+<style>
+:root{
+    --satec-blue:#0057D9;
+    --satec-dark:#003C96;
+    --satec-orange:#F5B301;
+}
+
+/* FORZA TESTATA PRINCIPALE BLU VIVO */
+div[class*="hero"],
+div[class*="header"],
+div[class*="satec"],
+div[class*="admin"],
+.v90-hero,
+.v101-top,
+.v102-admin-hero,
+.v104-admin-hero,
+.v105-admin-header,
+.v106-admin-header,
+.v110-admin-header,
+.v111-admin-header{
+    background:linear-gradient(90deg,#0057D9,#003C96)!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    border:0!important;
+}
+
+/* FORZA TESTI BIANCHI IN TESTATA */
+div[class*="hero"] *,
+div[class*="header"] *,
+div[class*="satec"] *,
+div[class*="admin"] *,
+.v90-hero *,
+.v101-top *,
+.v102-admin-hero *,
+.v104-admin-hero *,
+.v105-admin-header *,
+.v106-admin-header *,
+.v110-admin-header *,
+.v111-admin-header *{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:1000!important;
+}
+
+/* LOGO / TITOLI GRANDI BIANCHI */
+h1,
+.v105-admin-title,
+.v106-admin-title,
+.v110-admin-title,
+.v111-admin-title,
+[class*="logo"],
+[class*="brand"]{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:1000!important;
+}
+
+/* PERO' TITOLI NORMALI FUORI DALLE TESTATE RESTANO BLU */
+.block-container > div:not([class*="hero"]):not([class*="header"]) h1,
+.block-container > div:not([class*="hero"]):not([class*="header"]) h2,
+.block-container > div:not([class*="hero"]):not([class*="header"]) h3{
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+/* BOTTONI MENU ADMIN: BLU CON SCRITTE BIANCHE SEMPRE */
+div[data-testid="stHorizontalBlock"] .stButton button{
+    background:#0057D9!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    border:2px solid #0057D9!important;
+    border-radius:14px!important;
+    min-height:58px!important;
+    font-weight:1000!important;
+}
+div[data-testid="stHorizontalBlock"] .stButton button *,
+div[data-testid="stHorizontalBlock"] .stButton button p,
+div[data-testid="stHorizontalBlock"] .stButton button span,
+div[data-testid="stHorizontalBlock"] .stButton button div{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:1000!important;
+    opacity:1!important;
+}
+div[data-testid="stHorizontalBlock"] .stButton button:hover{
+    background:#F5B301!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border-color:#F5B301!important;
+}
+div[data-testid="stHorizontalBlock"] .stButton button:hover *,
+div[data-testid="stHorizontalBlock"] .stButton button:hover p,
+div[data-testid="stHorizontalBlock"] .stButton button:hover span,
+div[data-testid="stHorizontalBlock"] .stButton button:hover div{
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+}
+
+/* BOTTONI GENERALI: BIANCO BLU, HOVER ARANCIONE */
+.stButton button,
+.stDownloadButton button{
+    background:#ffffff!important;
+    color:#0057D9!important;
+    -webkit-text-fill-color:#0057D9!important;
+    border:2px solid #0057D9!important;
+    border-radius:13px!important;
+    font-weight:1000!important;
+    opacity:1!important;
+}
+.stButton button *,
+.stDownloadButton button *{
+    color:inherit!important;
+    -webkit-text-fill-color:inherit!important;
+    font-weight:1000!important;
+    opacity:1!important;
+}
+.stButton button:hover,
+.stDownloadButton button:hover{
+    background:#F5B301!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border-color:#F5B301!important;
+}
+
+/* SIDEBAR */
+section[data-testid="stSidebar"]{
+    background:linear-gradient(180deg,#003C96,#0057D9)!important;
+    border-right:5px solid #F5B301!important;
+}
+section[data-testid="stSidebar"] *{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+section[data-testid="stSidebar"] input,
+section[data-testid="stSidebar"] textarea,
+section[data-testid="stSidebar"] [data-baseweb="input"] *,
+section[data-testid="stSidebar"] [data-baseweb="select"] *{
+    background:#ffffff!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+
+/* CARD E CONTENUTI NON DEVONO DIVENTARE BLU */
+.card,
+.v100-row-card,
+.crm-detail-v68,
+.crm-white-box-v68,
+.crm-mini-card-v68,
+.v85-help-box,
+.v200-panel,
+.v200-kpi{
+    background:#ffffff!important;
+}
+.card *,
+.v100-row-card *,
+.crm-detail-v68 *,
+.crm-white-box-v68 *,
+.crm-mini-card-v68 *,
+.v85-help-box *,
+.v200-panel *,
+.v200-kpi *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+
+/* DETTAGLIO PREVENTIVO TESTATA BLU */
+.crm-detail-head-v68,
+.crm-detail-head-v68 *{
+    background:#0057D9!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+/* TABELLE */
+th{
+    background:#0057D9!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+td{
+    background:#ffffff!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
