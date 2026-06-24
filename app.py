@@ -4548,8 +4548,9 @@ section[data-testid="stSidebar"] div[role="radiogroup"] input:checked + div {
 """, unsafe_allow_html=True)
 
 
+
 # =========================
-# V207 - DEFINITIVA SICURA SA-TEC
+# V300 - CLEAN DEFINITIVA SA-TEC
 # =========================
 st.markdown("""
 <style>
@@ -4557,115 +4558,35 @@ st.markdown("""
     --satec-blue:#0057D9;
     --satec-blue-dark:#003C96;
     --satec-orange:#F5B301;
-    --satec-text:#111827;
     --satec-bg:#F4F8FF;
+    --satec-text:#111827;
     --satec-border:#C9DCF7;
 }
 
+/* BASE */
 .stApp{
-    background:linear-gradient(180deg,#F4F8FF 0%,#FFFFFF 62%)!important;
+    background:linear-gradient(180deg,#F4F8FF 0%,#FFFFFF 65%)!important;
 }
-
-.header{
-    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%)!important;
-    border-radius:22px!important;
-    border:0!important;
-    box-shadow:0 12px 30px rgba(0,87,217,.28)!important;
-    padding:26px 30px!important;
-    margin:8px 0 18px 0!important;
-    display:grid!important;
-    grid-template-columns:27% 46% 27%!important;
-    align-items:center!important;
-    gap:20px!important;
-    min-height:150px!important;
+.block-container{
+    padding-top:1rem!important;
 }
-
-.logo-satec{
-    max-height:110px!important;
-    max-width:100%!important;
-    object-fit:contain!important;
-    filter:brightness(0) invert(1) drop-shadow(0 3px 6px rgba(0,0,0,.22))!important;
+.block-container,
+.block-container *:not(svg):not(path){
+    color:var(--satec-text)!important;
+    -webkit-text-fill-color:var(--satec-text)!important;
 }
-
-.header > div:first-child h1,
-.header > div:first-child{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:50px!important;
-    font-weight:1000!important;
-    letter-spacing:1px!important;
-    text-shadow:0 3px 8px rgba(0,0,0,.22)!important;
-}
-
-.header-title,
-.header-title *,
-.header-title h1,
-.header-title div{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    text-align:center!important;
-    text-shadow:none!important;
-}
-.header-title h1{
-    font-size:34px!important;
-    line-height:1.08!important;
-    font-weight:1000!important;
-    margin:0!important;
-    letter-spacing:.4px!important;
-}
-.header-title div{
-    color:#EAF3FF!important;
-    -webkit-text-fill-color:#EAF3FF!important;
-    font-size:15px!important;
-    font-weight:1000!important;
-    margin-top:10px!important;
-    letter-spacing:.4px!important;
-}
-
-.header-info,
-.header-info *{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:14px!important;
-    font-weight:900!important;
-    line-height:1.55!important;
-    text-align:right!important;
-}
-
-.powercore{
-    background:#FFFFFF!important;
-    border:1px solid #C9DCF7!important;
-    border-radius:18px!important;
-    box-shadow:0 8px 22px rgba(0,87,217,.08)!important;
-    padding:22px 28px!important;
-    margin-bottom:22px!important;
-}
-.powercore-title{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    font-size:34px!important;
+.block-container h1,
+.block-container h2,
+.block-container h3{
+    color:var(--satec-blue-dark)!important;
+    -webkit-text-fill-color:var(--satec-blue-dark)!important;
     font-weight:1000!important;
 }
-.powercore-title span{
-    color:#0057D9!important;
-    -webkit-text-fill-color:#0057D9!important;
-}
-.powercore-sub{
-    color:#334155!important;
-    -webkit-text-fill-color:#334155!important;
-    font-size:17px!important;
-    font-weight:800!important;
-    line-height:1.45!important;
-}
-.sesamo-logo{
-    max-height:105px!important;
-    max-width:380px!important;
-    object-fit:contain!important;
-}
 
+/* SIDEBAR */
 section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#003C96 0%,#0057D9 100%)!important;
-    border-right:5px solid #F5B301!important;
+    background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;
+    border-right:5px solid var(--satec-orange)!important;
 }
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
@@ -4687,6 +4608,7 @@ section[data-testid="stSidebar"] [data-baseweb="select"] *{
     font-weight:900!important;
 }
 
+/* Bottoni generali */
 .stButton button,
 .stDownloadButton button,
 section[data-testid="stSidebar"] .stButton button{
@@ -4724,6 +4646,7 @@ section[data-testid="stSidebar"] .stButton button:hover *{
     -webkit-text-fill-color:#111111!important;
 }
 
+/* Menu admin centrale */
 div[data-testid="stHorizontalBlock"] .stButton button{
     background:#0057D9!important;
     color:#FFFFFF!important;
@@ -4750,6 +4673,7 @@ div[data-testid="stHorizontalBlock"] .stButton button:hover *{
     border-color:#F5B301!important;
 }
 
+/* Blocchi Admin / titoli */
 .v100-title-bar,
 .v102-title-bar,
 .v90-section-title,
@@ -4762,6 +4686,7 @@ div[data-testid="stHorizontalBlock"] .stButton button:hover *{
     border:0!important;
     border-radius:17px!important;
     padding:16px 21px!important;
+    margin:18px 0 14px 0!important;
     font-size:23px!important;
     font-weight:1000!important;
     box-shadow:0 8px 20px rgba(0,87,217,.18)!important;
@@ -4776,6 +4701,7 @@ div[data-testid="stHorizontalBlock"] .stButton button:hover *{
     -webkit-text-fill-color:#FFFFFF!important;
 }
 
+/* Card e CRM */
 .card,
 .v100-row-card,
 .crm-detail-v68,
@@ -4801,6 +4727,7 @@ div[data-testid="stHorizontalBlock"] .stButton button:hover *{
     -webkit-text-fill-color:#FFFFFF!important;
 }
 
+/* Tabelle */
 th{
     background:#0057D9!important;
     color:#FFFFFF!important;
@@ -4816,6 +4743,7 @@ tr:nth-child(even) td{
     background:#F3F7FF!important;
 }
 
+/* Alert/input */
 [data-testid="stAlert"],
 [data-testid="stAlert"] *{
     color:#111827!important;
@@ -4832,17 +4760,10 @@ tr:nth-child(even) td{
     font-weight:850!important;
 }
 
-@media(max-width:950px){
-    .header{
-        grid-template-columns:1fr!important;
-        text-align:center!important;
-    }
-    .header-info{
-        text-align:center!important;
-    }
-    .powercore{
-        display:block!important;
-    }
+/* Nasconde la vecchia testata se resta per qualche motivo */
+.header,
+.powercore{
+    display:none!important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -4864,15 +4785,152 @@ sesamo_logo_html = f'<img class="sesamo-logo" src="data:image/png;base64,{logo_s
 </div>"""
 
 st.markdown(f"""
-<div class="header">
-<div>{logo_satec_html}</div>
-<div class="header-title"><h1>CONFIGURATORE<br>PORTE AUTOMATICHE</h1><div>TECNOLOGIA, SICUREZZA E SOLUZIONI SU MISURA</div></div>
-<div class="header-info">SA-TEC S.R.L.s<br>Via L. Settembrini 84<br>88046 Lamezia Terme (CZ)<br>P.IVA 04009610793<br>☎ 0968-036797<br>✉ sacco.tecnologie@gmail.com<br>✉ sa-tec@pec.it</div>
+<div style="
+    width:100%;
+    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%);
+    border-radius:22px;
+    padding:26px 30px;
+    margin:8px 0 20px 0;
+    box-shadow:0 12px 30px rgba(0,87,217,.28);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:26px;
+">
+    <div style="
+        min-width:235px;
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+        font-size:48px;
+        font-weight:1000;
+        letter-spacing:1px;
+        line-height:1;
+        text-shadow:0 3px 8px rgba(0,0,0,.25);
+    ">
+        SA-TEC
+        <div style="
+            color:#EAF3FF!important;
+            -webkit-text-fill-color:#EAF3FF!important;
+            font-size:15px;
+            font-weight:1000;
+            letter-spacing:5px;
+            margin-top:14px;
+        ">PORTE AUTOMATICHE</div>
+    </div>
+
+    <div style="width:1px;height:82px;background:rgba(255,255,255,.45);"></div>
+
+    <div style="flex:1;text-align:left;">
+        <div style="
+            color:#FFFFFF!important;
+            -webkit-text-fill-color:#FFFFFF!important;
+            font-size:34px;
+            line-height:1.08;
+            font-weight:1000;
+            letter-spacing:.4px;
+        ">
+            CONFIGURATORE<br>
+            <span style="color:#F5B301!important;-webkit-text-fill-color:#F5B301!important;">PORTE AUTOMATICHE</span>
+        </div>
+        <div style="
+            color:#EAF3FF!important;
+            -webkit-text-fill-color:#EAF3FF!important;
+            font-size:15px;
+            font-weight:900;
+            margin-top:12px;
+        ">TECNOLOGIA, SICUREZZA E SOLUZIONI SU MISURA</div>
+    </div>
+
+    <div style="
+        min-width:250px;
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+        font-size:14px;
+        font-weight:900;
+        line-height:1.55;
+        text-align:left;
+    ">
+        📍 SA-TEC S.R.L.s<br>
+        Via L. Settembrini 84<br>
+        88046 Lamezia Terme (CZ)<br>
+        ☎ 0968-036797<br>
+        ✉ sacco.tecnologie@gmail.com<br>
+        ✉ sa-tec@pec.it
+    </div>
+
+    <div style="width:1px;height:82px;background:rgba(255,255,255,.45);"></div>
+
+    <div style="min-width:230px;text-align:center;">
+        <div style="display:inline-flex;align-items:center;justify-content:center;gap:16px;">
+            <div style="
+                background:#F58220;
+                color:#071124!important;
+                -webkit-text-fill-color:#071124!important;
+                font-size:42px;
+                font-weight:1000;
+                padding:8px 15px;
+                border-radius:2px;
+            ">▌</div>
+            <div style="text-align:left;">
+                <div style="
+                    color:#FFFFFF!important;
+                    -webkit-text-fill-color:#FFFFFF!important;
+                    font-size:38px;
+                    font-weight:1000;
+                    line-height:1;
+                    letter-spacing:1px;
+                ">SESAMO</div>
+                <div style="
+                    color:#EAF3FF!important;
+                    -webkit-text-fill-color:#EAF3FF!important;
+                    font-size:13px;
+                    font-weight:1000;
+                    letter-spacing:1.2px;
+                    margin-top:5px;
+                ">THE DOOR TECHNOLOGY</div>
+            </div>
+        </div>
+    </div>
 </div>
-<div class="powercore">
-<div><div class="powercore-title">SESAMO <span>POWERCORE</span> PW100</div>
-<div class="powercore-sub">Automazione lineare per porte scorrevoli automatiche,<br>affidabile, sicura e compatibile con la normativa EN16005.</div></div>
-<div style="text-align:center;">{sesamo_logo_html}</div>
+
+<div style="
+    background:#FFFFFF;
+    border:1px solid #C9DCF7;
+    border-radius:18px;
+    padding:24px 30px;
+    margin:0 0 22px 0;
+    display:grid;
+    grid-template-columns:55% 45%;
+    align-items:center;
+    box-shadow:0 8px 22px rgba(0,87,217,.08);
+">
+    <div>
+        <div style="
+            color:#0B2A4A!important;
+            -webkit-text-fill-color:#0B2A4A!important;
+            font-size:34px;
+            font-weight:1000;
+            letter-spacing:.4px;
+        ">SESAMO POWERCORE PW100</div>
+        <div style="
+            color:#334155!important;
+            -webkit-text-fill-color:#334155!important;
+            font-size:17px;
+            font-weight:800;
+            margin-top:10px;
+            line-height:1.45;
+        ">Automazione lineare per porte scorrevoli automatiche,<br>
+        affidabile, sicura e compatibile con la normativa EN16005.</div>
+    </div>
+    <div style="text-align:center;">
+        <div style="display:inline-flex;align-items:center;justify-content:center;gap:18px;">
+            <div style="background:#F58220;color:#071124!important;-webkit-text-fill-color:#071124!important;font-size:42px;font-weight:1000;padding:8px 15px;">▌</div>
+            <div style="text-align:left;">
+                <div style="color:#111827!important;-webkit-text-fill-color:#111827!important;font-size:42px;font-weight:1000;line-height:1;letter-spacing:1px;">SESAMO</div>
+                <div style="color:#111827!important;-webkit-text-fill-color:#111827!important;font-size:14px;font-weight:1000;letter-spacing:1.2px;margin-top:5px;">THE DOOR TECHNOLOGY</div>
+            </div>
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -6877,7 +6935,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V207 - Definitiva Sicura SA-TEC")
+st.caption("Versione V300 - Clean Definitiva SA-TEC")
 
 st.markdown(f"""
 <div class="footer">
