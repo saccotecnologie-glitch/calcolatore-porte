@@ -5446,282 +5446,80 @@ section[data-testid="stSidebar"] .stButton button:hover{
 
 
 # =========================
-# V110 - CLEAN PROFESSIONAL FINAL CSS
+# V111 - GRAFICA DEFINITIVA SA-TEC
 # =========================
 st.markdown("""
 <style>
 :root{
-    --satec-blue:#06499B;
+    --satec-blue:#0057C8;
+    --satec-blue-dark:#003B86;
     --satec-dark:#0B2A4A;
     --satec-orange:#F5B301;
-    --satec-bg:#F5F7FA;
-    --satec-border:#D7E3F4;
+    --satec-bg:#F3F7FF;
+    --satec-border:#BFD7F5;
     --satec-text:#111827;
 }
+.stApp{background:linear-gradient(180deg,#F3F7FF 0%,#FFFFFF 55%)!important;}
+.block-container{padding-top:1rem!important;padding-left:2rem!important;padding-right:2rem!important;}
+.block-container,.block-container *:not(svg):not(path){color:var(--satec-text)!important;-webkit-text-fill-color:var(--satec-text)!important;}
+.block-container h1,.block-container h2,.block-container h3{color:var(--satec-dark)!important;-webkit-text-fill-color:var(--satec-dark)!important;font-weight:1000!important;}
 
-/* BASE */
-.stApp{
-    background:var(--satec-bg)!important;
-}
-.block-container{
-    padding-top:1rem!important;
-    padding-left:2rem!important;
-    padding-right:2rem!important;
-}
-.block-container,
-.block-container *:not(svg):not(path){
-    color:var(--satec-text)!important;
-    -webkit-text-fill-color:var(--satec-text)!important;
-}
-.block-container h1,
-.block-container h2,
-.block-container h3{
-    color:var(--satec-dark)!important;
-    -webkit-text-fill-color:var(--satec-dark)!important;
-    font-weight:900!important;
-}
+section[data-testid="stSidebar"]{background:linear-gradient(180deg,#0B2A4A 0%,#003B86 100%)!important;border-right:5px solid var(--satec-orange)!important;}
+section[data-testid="stSidebar"] h1,section[data-testid="stSidebar"] h2,section[data-testid="stSidebar"] h3,section[data-testid="stSidebar"] p,section[data-testid="stSidebar"] span,section[data-testid="stSidebar"] label,section[data-testid="stSidebar"] div{color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;}
+section[data-testid="stSidebar"] input,section[data-testid="stSidebar"] textarea,section[data-testid="stSidebar"] [data-baseweb="input"] *,section[data-testid="stSidebar"] [data-baseweb="select"] *{color:var(--satec-text)!important;-webkit-text-fill-color:var(--satec-text)!important;background:#ffffff!important;}
 
-/* SIDEBAR */
-section[data-testid="stSidebar"]{
-    background:var(--satec-dark)!important;
-    border-right:5px solid var(--satec-orange)!important;
+.stButton button,.stDownloadButton button,section[data-testid="stSidebar"] .stButton button{
+    background:#ffffff!important;color:var(--satec-blue)!important;-webkit-text-fill-color:var(--satec-blue)!important;
+    border:2px solid var(--satec-blue)!important;border-radius:13px!important;min-height:50px!important;
+    font-size:15px!important;font-weight:1000!important;box-shadow:0 4px 12px rgba(0,87,200,.08)!important;
+    transition:all .16s ease-in-out!important;opacity:1!important;
 }
-section[data-testid="stSidebar"] h1,
-section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] div{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
+.stButton button *,.stDownloadButton button *,section[data-testid="stSidebar"] .stButton button *{
+    color:inherit!important;-webkit-text-fill-color:inherit!important;font-weight:1000!important;opacity:1!important;
 }
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] textarea,
-section[data-testid="stSidebar"] [data-baseweb="input"] *,
-section[data-testid="stSidebar"] [data-baseweb="select"] *{
-    color:var(--satec-text)!important;
-    -webkit-text-fill-color:var(--satec-text)!important;
-    background:#ffffff!important;
+.stButton button:hover,.stDownloadButton button:hover,section[data-testid="stSidebar"] .stButton button:hover{
+    background:var(--satec-orange)!important;color:#111111!important;-webkit-text-fill-color:#111111!important;
+    border-color:var(--satec-orange)!important;box-shadow:0 8px 20px rgba(245,179,1,.30)!important;transform:translateY(-1px)!important;
+}
+.stButton button:focus,.stDownloadButton button:focus,.stButton button:active,.stDownloadButton button:active{
+    background:var(--satec-blue)!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;border-color:var(--satec-blue)!important;
 }
 
-/* BOTTONI GLOBALI - NORMALE BIANCO/BLU */
-.stButton button,
-.stDownloadButton button,
-section[data-testid="stSidebar"] .stButton button{
-    background:#ffffff!important;
-    color:var(--satec-blue)!important;
-    -webkit-text-fill-color:var(--satec-blue)!important;
-    border:2px solid var(--satec-blue)!important;
-    border-radius:12px!important;
-    min-height:48px!important;
-    font-weight:900!important;
-    box-shadow:none!important;
-    transition:all .18s ease-in-out!important;
+.v105-admin-header,.v106-admin-header,.v110-admin-header,.v111-admin-header{
+    background:#ffffff!important;border:1px solid var(--satec-border)!important;border-left:10px solid var(--satec-blue)!important;
+    border-radius:20px!important;padding:28px 32px!important;margin:12px 0 18px 0!important;
+    box-shadow:0 10px 26px rgba(0,87,200,.12)!important;display:flex!important;justify-content:space-between!important;align-items:center!important;gap:18px!important;
 }
-
-/* HOVER ARANCIONE */
-.stButton button:hover,
-.stDownloadButton button:hover,
-section[data-testid="stSidebar"] .stButton button:hover{
-    background:var(--satec-orange)!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:var(--satec-orange)!important;
-    box-shadow:0 6px 16px rgba(245,179,1,.28)!important;
+.v105-admin-title,.v106-admin-title,.v110-admin-title,.v111-admin-title{
+    color:var(--satec-blue)!important;-webkit-text-fill-color:var(--satec-blue)!important;font-size:44px!important;font-weight:1000!important;line-height:1.05!important;margin:0!important;text-shadow:none!important;
 }
-
-/* ACTIVE/FOCUS BLU */
-.stButton button:focus,
-.stDownloadButton button:focus,
-.stButton button:active,
-.stDownloadButton button:active{
-    background:var(--satec-blue)!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    border-color:var(--satec-blue)!important;
+.v105-admin-subtitle,.v106-admin-subtitle,.v110-admin-subtitle,.v111-admin-subtitle{
+    color:var(--satec-dark)!important;-webkit-text-fill-color:var(--satec-dark)!important;font-size:18px!important;font-weight:900!important;line-height:1.35!important;margin:8px 0 0 0!important;
 }
-
-/* HEADER ADMIN PULITO */
-.v105-admin-header,
-.v106-admin-header,
-.v110-admin-header{
-    background:#ffffff!important;
-    border:1px solid var(--satec-border)!important;
-    border-left:10px solid var(--satec-blue)!important;
-    border-radius:18px!important;
-    padding:26px 30px!important;
-    margin:12px 0 18px 0!important;
-    box-shadow:0 8px 22px rgba(6,73,155,.08)!important;
-    display:flex!important;
-    justify-content:space-between!important;
-    align-items:center!important;
-    gap:18px!important;
+.v105-admin-badge,.v106-admin-badge,.v110-admin-badge,.v111-admin-badge{
+    background:#FFF3C4!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border:2px solid var(--satec-orange)!important;border-radius:17px!important;
+    padding:16px 24px!important;font-size:20px!important;font-weight:1000!important;text-align:center!important;min-width:230px!important;box-shadow:0 6px 16px rgba(245,179,1,.18)!important;
 }
-
-.v105-admin-title,
-.v106-admin-title,
-.v110-admin-title{
-    color:var(--satec-dark)!important;
-    -webkit-text-fill-color:var(--satec-dark)!important;
-    font-size:42px!important;
-    font-weight:1000!important;
-    line-height:1.05!important;
-    margin:0!important;
-    text-shadow:none!important;
+.v100-title-bar,.v102-title-bar,.v90-section-title,.v101-menu-title{
+    background:#ffffff!important;color:var(--satec-blue)!important;-webkit-text-fill-color:var(--satec-blue)!important;
+    border:1px solid var(--satec-border)!important;border-left:8px solid var(--satec-blue)!important;border-radius:17px!important;
+    padding:16px 21px!important;margin:18px 0 14px 0!important;font-size:23px!important;font-weight:1000!important;box-shadow:0 7px 18px rgba(0,87,200,.08)!important;
 }
-
-.v105-admin-subtitle,
-.v106-admin-subtitle,
-.v110-admin-subtitle{
-    color:#475569!important;
-    -webkit-text-fill-color:#475569!important;
-    font-size:18px!important;
-    font-weight:800!important;
-    line-height:1.35!important;
-    margin:8px 0 0 0!important;
-    text-shadow:none!important;
-}
-
-.v105-admin-badge,
-.v106-admin-badge,
-.v110-admin-badge{
-    background:#FFF3C4!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    border:2px solid var(--satec-orange)!important;
-    border-radius:16px!important;
-    padding:16px 22px!important;
-    font-size:20px!important;
-    font-weight:1000!important;
-    text-align:center!important;
-    min-width:220px!important;
-    box-shadow:none!important;
-}
-
-/* TITOLI SEZIONE */
-.v100-title-bar,
-.v102-title-bar,
-.v90-section-title,
-.v101-menu-title{
-    background:#ffffff!important;
-    color:var(--satec-dark)!important;
-    -webkit-text-fill-color:var(--satec-dark)!important;
-    border:1px solid var(--satec-border)!important;
-    border-left:8px solid var(--satec-blue)!important;
-    border-radius:16px!important;
-    padding:15px 20px!important;
-    margin:18px 0 14px 0!important;
-    font-size:23px!important;
-    font-weight:1000!important;
-    box-shadow:0 6px 16px rgba(6,73,155,.06)!important;
-}
-
-/* CARD PREVENTIVI */
-.v100-row-card{
-    background:#ffffff!important;
-    border:1px solid var(--satec-border)!important;
-    border-left:6px solid var(--satec-blue)!important;
-    border-radius:18px!important;
-    padding:18px!important;
-    margin:14px 0 12px 0!important;
-    box-shadow:0 6px 16px rgba(6,73,155,.06)!important;
-}
-.v100-row-code{
-    color:var(--satec-blue)!important;
-    -webkit-text-fill-color:var(--satec-blue)!important;
-    font-size:22px!important;
-    font-weight:1000!important;
-}
-
-/* TABELLE */
-table{
-    border-collapse:separate!important;
-    border-spacing:0!important;
-    width:100%!important;
-    border:1px solid var(--satec-border)!important;
-    border-radius:14px!important;
-    overflow:hidden!important;
-    background:#ffffff!important;
-    box-shadow:0 6px 16px rgba(6,73,155,.05)!important;
-}
-th{
-    background:var(--satec-blue)!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:900!important;
-    padding:11px!important;
-}
-td{
-    background:#ffffff!important;
-    color:var(--satec-text)!important;
-    -webkit-text-fill-color:var(--satec-text)!important;
-    font-weight:700!important;
-    padding:10px!important;
-    border-bottom:1px solid #EEF2F7!important;
-}
-tr:nth-child(even) td{
-    background:#F8FAFC!important;
-}
-
-/* ALERT */
-[data-testid="stAlert"],
-[data-testid="stAlert"] *{
-    color:var(--satec-text)!important;
-    -webkit-text-fill-color:var(--satec-text)!important;
-    font-weight:800!important;
-}
-
-/* INPUT MAIN */
-.block-container input,
-.block-container textarea,
-.block-container [data-baseweb="input"] *,
-.block-container [data-baseweb="select"] *{
-    color:var(--satec-text)!important;
-    -webkit-text-fill-color:var(--satec-text)!important;
-    background:#ffffff!important;
-    font-weight:800!important;
-}
-
-/* DISATTIVA VECCHI GRADIENTI PESANTI */
-.v90-hero,
-.v101-top,
-.v102-admin-hero,
-.v104-admin-hero{
-    background:#ffffff!important;
-    border:1px solid var(--satec-border)!important;
-    border-left:8px solid var(--satec-blue)!important;
-    box-shadow:0 6px 16px rgba(6,73,155,.06)!important;
-}
-.v90-hero h1,
-.v101-top h1,
-.v102-admin-hero h1,
-.v104-admin-title{
-    color:var(--satec-dark)!important;
-    -webkit-text-fill-color:var(--satec-dark)!important;
-    text-shadow:none!important;
-}
-.v90-hero p,
-.v101-top p,
-.v102-admin-hero p,
-.v104-admin-subtitle{
-    color:#475569!important;
-    -webkit-text-fill-color:#475569!important;
-    text-shadow:none!important;
-}
-
+.v100-row-card{background:#ffffff!important;border:1px solid var(--satec-border)!important;border-left:6px solid var(--satec-blue)!important;border-radius:18px!important;padding:18px!important;margin:14px 0 12px 0!important;box-shadow:0 7px 18px rgba(0,87,200,.08)!important;}
+.v100-row-code{color:var(--satec-blue)!important;-webkit-text-fill-color:var(--satec-blue)!important;font-size:23px!important;font-weight:1000!important;}
+table{border-collapse:separate!important;border-spacing:0!important;width:100%!important;border:1px solid var(--satec-border)!important;border-radius:15px!important;overflow:hidden!important;background:#ffffff!important;box-shadow:0 7px 18px rgba(0,87,200,.06)!important;}
+th{background:var(--satec-blue)!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;font-weight:1000!important;padding:12px!important;}
+td{background:#ffffff!important;color:var(--satec-text)!important;-webkit-text-fill-color:var(--satec-text)!important;font-weight:750!important;padding:10px!important;border-bottom:1px solid #EEF2F7!important;}
+tr:nth-child(even) td{background:#F3F7FF!important;}
+[data-testid="stAlert"],[data-testid="stAlert"] *{color:var(--satec-text)!important;-webkit-text-fill-color:var(--satec-text)!important;font-weight:850!important;}
+.block-container input,.block-container textarea,.block-container [data-baseweb="input"] *,.block-container [data-baseweb="select"] *{color:var(--satec-text)!important;-webkit-text-fill-color:var(--satec-text)!important;background:#ffffff!important;font-weight:850!important;}
+.v90-hero,.v101-top,.v102-admin-hero,.v104-admin-hero{background:#ffffff!important;border:1px solid var(--satec-border)!important;border-left:8px solid var(--satec-blue)!important;box-shadow:0 7px 18px rgba(0,87,200,.08)!important;}
+.v90-hero h1,.v101-top h1,.v102-admin-hero h1,.v104-admin-title{color:var(--satec-blue)!important;-webkit-text-fill-color:var(--satec-blue)!important;text-shadow:none!important;}
+.v90-hero p,.v101-top p,.v102-admin-hero p,.v104-admin-subtitle{color:var(--satec-dark)!important;-webkit-text-fill-color:var(--satec-dark)!important;text-shadow:none!important;}
+section[data-testid="stSidebar"] [data-testid="stAlert"],section[data-testid="stSidebar"] [data-testid="stAlert"] *{color:#111827!important;-webkit-text-fill-color:#111827!important;}
 @media(max-width:900px){
-    .v105-admin-header,
-    .v106-admin-header,
-    .v110-admin-header{
-        flex-direction:column!important;
-        align-items:stretch!important;
-    }
-    .v105-admin-badge,
-    .v106-admin-badge,
-    .v110-admin-badge{
-        min-width:100%!important;
-    }
+    .v105-admin-header,.v106-admin-header,.v110-admin-header,.v111-admin-header{flex-direction:column!important;align-items:stretch!important;}
+    .v105-admin-badge,.v106-admin-badge,.v110-admin-badge,.v111-admin-badge{min-width:100%!important;}
 }
 </style>
 """, unsafe_allow_html=True)
@@ -5785,12 +5583,12 @@ if profilo == "SA-TEC":
     preventivi = carica_preventivi()
 
     st.markdown("""
-    <div class="v110-admin-header">
+    <div class="v111-admin-header">
         <div>
-            <div class="v110-admin-title">SA-TEC ADMIN</div>
-            <div class="v110-admin-subtitle">Gestionale commerciale porte automatiche · Preventivi · Clienti · Rivenditori</div>
+            <div class="v111-admin-title">SA-TEC ADMIN</div>
+            <div class="v111-admin-subtitle">Gestionale commerciale porte automatiche · Preventivi · Clienti · Rivenditori</div>
         </div>
-        <div class="v110-admin-badge">🛡️ AREA<br>AMMINISTRATIVA</div>
+        <div class="v111-admin-badge">🛡️ AREA<br>AMMINISTRATIVA</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -6789,7 +6587,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V110 - Clean Professional")
+st.caption("Versione V111 - Grafica Definitiva")
 
 st.markdown(f"""
 <div class="footer">
