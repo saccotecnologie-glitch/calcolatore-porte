@@ -1793,7 +1793,7 @@ body {{
 .total b {{
     display:block;
     color:#06499b;
-    font-size:30px;
+    font-size:32px;
     margin-top:6px;
 }}
 .cards {{
@@ -3726,7 +3726,7 @@ div[data-testid="stNumberInput"] label {color:#111!important;font-size:15px!impo
 div[data-testid="stNumberInput"] input {border:2px solid #8998b0!important;border-radius:0!important;text-align:center!important;font-size:28px!important;font-weight:800!important;color:#06499b!important;height:54px!important;}
 div[data-testid="stTextInput"] input {background:#ffffff!important;color:#06499b!important;border:2px solid #8998b0!important;border-radius:6px!important;font-weight:800!important;}
 .measure-total {border:2px solid #bdd4ef;background:#f8fbff;border-radius:10px;padding:14px;display:grid;grid-template-columns:1fr 200px;align-items:center;color:#06499b;margin-top:10px;}
-.measure-total .big {font-size:30px;font-weight:900;text-align:center;}
+.measure-total .big {font-size:32px;font-weight:900;text-align:center;}
 .measure-total .small {font-size:18px;font-weight:900;text-align:center;}
 .option-box {border:2px solid #06499b;border-radius:12px;padding:18px;margin-bottom:18px;background:white;}
 .option-title {font-size:20px;font-weight:900;color:#06499b;margin-bottom:12px;}
@@ -4788,7 +4788,7 @@ st.markdown("""
 .v303-header{
     background:linear-gradient(90deg,#0057D9 0%,#003C96 100%);
     border-radius:18px;
-    padding:22px 28px;
+    padding:20px 26px;
     margin:8px 0 18px 0;
     box-shadow:0 12px 30px rgba(0,87,217,.28);
     display:grid;
@@ -4799,7 +4799,7 @@ st.markdown("""
 .v303-brand{
     color:#FFFFFF!important;
     -webkit-text-fill-color:#FFFFFF!important;
-    font-size:46px;
+    font-size:50px;
     font-weight:1000;
     letter-spacing:1px;
     line-height:1;
@@ -4819,7 +4819,7 @@ st.markdown("""
 .v303-title-main{
     color:#FFFFFF!important;
     -webkit-text-fill-color:#FFFFFF!important;
-    font-size:30px;
+    font-size:32px;
     line-height:1.05;
     font-weight:1000;
     letter-spacing:.4px;
@@ -5095,6 +5095,170 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+
+# =========================
+# V304 - FIX DEFINITIVO COLORI HEADER / PULSANTI
+# =========================
+st.markdown("""
+<style>
+/* HEADER V303: forza colore bianco/arancione anche se vecchi CSS tentano di sovrascrivere */
+.v303-header,
+.v303-header *{
+    text-shadow:none!important;
+}
+.v303-brand,
+.v303-brand *,
+.v303-logo,
+.v303-logo *,
+.v303-title-main,
+.v303-title-main *,
+.v303-title-sub,
+.v303-info,
+.v303-info *,
+.v303-sesamo-name,
+.v303-sesamo-sub{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+}
+.v303-brand{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:50px!important;
+    font-weight:1000!important;
+    letter-spacing:1.2px!important;
+}
+.v303-brand-sub{
+    color:#EAF3FF!important;
+    -webkit-text-fill-color:#EAF3FF!important;
+    font-size:14px!important;
+    letter-spacing:5px!important;
+}
+.v303-title-main{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:32px!important;
+    font-weight:1000!important;
+}
+.v303-title-main span{
+    color:#F5B301!important;
+    -webkit-text-fill-color:#F5B301!important;
+}
+.v303-title-sub{
+    color:#EAF3FF!important;
+    -webkit-text-fill-color:#EAF3FF!important;
+    font-weight:1000!important;
+}
+.v303-info,
+.v303-info *{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:13px!important;
+    font-weight:900!important;
+}
+.v303-sesamo{
+    margin-left:8px!important;
+}
+.v303-sesamo-name{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:30px!important;
+}
+.v303-sesamo-sub{
+    color:#EAF3FF!important;
+    -webkit-text-fill-color:#EAF3FF!important;
+}
+.v303-sesamo-mark,
+.v303-product-mark{
+    background:#F58220!important;
+    color:#071124!important;
+    -webkit-text-fill-color:#071124!important;
+}
+
+/* Testata leggermente più compatta */
+.v303-header{
+    padding:20px 26px!important;
+    min-height:128px!important;
+}
+
+/* Scheda prodotto pulita */
+.v303-product-title{
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+}
+.v303-product-sub{
+    color:#334155!important;
+    -webkit-text-fill-color:#334155!important;
+}
+.v303-product-name,
+.v303-product-tech{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+
+/* Pulsanti login: Accedi/Esci sempre visibili */
+section[data-testid="stSidebar"] .stButton button{
+    background:#FFFFFF!important;
+    color:#0057D9!important;
+    -webkit-text-fill-color:#0057D9!important;
+    border:2px solid #FFFFFF!important;
+    border-radius:13px!important;
+    min-height:48px!important;
+    font-weight:1000!important;
+    opacity:1!important;
+}
+section[data-testid="stSidebar"] .stButton button *,
+section[data-testid="stSidebar"] .stButton button p,
+section[data-testid="stSidebar"] .stButton button span,
+section[data-testid="stSidebar"] .stButton button div{
+    color:#0057D9!important;
+    -webkit-text-fill-color:#0057D9!important;
+    font-weight:1000!important;
+    opacity:1!important;
+}
+section[data-testid="stSidebar"] .stButton button:hover,
+section[data-testid="stSidebar"] .stButton button:hover *{
+    background:#F5B301!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border-color:#F5B301!important;
+}
+
+/* Pulsanti area admin centrale: blu vivo, testo bianco */
+div[data-testid="stHorizontalBlock"] .stButton button{
+    background:#0057D9!important;
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    border-color:#0057D9!important;
+}
+div[data-testid="stHorizontalBlock"] .stButton button *,
+div[data-testid="stHorizontalBlock"] .stButton button p,
+div[data-testid="stHorizontalBlock"] .stButton button span,
+div[data-testid="stHorizontalBlock"] .stButton button div{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-weight:1000!important;
+}
+div[data-testid="stHorizontalBlock"] .stButton button:hover,
+div[data-testid="stHorizontalBlock"] .stButton button:hover *{
+    background:#F5B301!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border-color:#F5B301!important;
+}
+
+/* Evita che h1 globali vecchi rendano nero il titolo header */
+.v303-header h1,
+.v303-header h2,
+.v303-header h3,
+.v303-header p,
+.v303-header div,
+.v303-header span{
+    color:inherit;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
@@ -6746,7 +6910,7 @@ html_stampa = f"""
 body {{font-family:Arial,sans-serif;color:#18324f;margin:28px;background:#ffffff;}}
 .header {{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:5px solid #06499b;padding-bottom:18px;margin-bottom:22px;}}
 .company {{text-align:right;font-size:13px;line-height:1.45;color:#111;}}
-h1 {{color:#06499b;font-size:30px;margin:10px 0 2px 0;}}
+h1 {{color:#06499b;font-size:32px;margin:10px 0 2px 0;}}
 h2 {{color:#06499b;font-size:20px;margin:18px 0 10px 0;}}
 .doc-code {{font-size:24px;font-weight:900;color:#111;margin-bottom:18px;}}
 .box {{border:2px solid #d7e6f7;border-left:8px solid #06499b;border-radius:12px;padding:16px;margin-bottom:18px;background:#f8fbff;}}
@@ -6885,7 +7049,7 @@ def crea_html_ordine_fornitore(codice_preventivo, articoli, scelta, luce_mm, alt
     <style>
     body {{font-family:Arial,sans-serif;margin:30px;color:#111;}}
     .header {{display:flex;justify-content:space-between;border-bottom:5px solid #06499b;padding-bottom:18px;margin-bottom:22px;}}
-    h1 {{color:#06499b;margin:0;font-size:30px;}}
+    h1 {{color:#06499b;margin:0;font-size:32px;}}
     h2 {{color:#06499b;margin-top:20px;}}
     .company {{text-align:right;font-size:13px;line-height:1.5;}}
     .box {{border:2px solid #d7e6f7;border-left:8px solid #06499b;border-radius:12px;padding:16px;margin-bottom:18px;background:#f8fbff;}}
@@ -7098,7 +7262,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V303 - Finale Testata e Pulsanti")
+st.caption("Versione V304 - Definitiva SA-TEC")
 
 st.markdown(f"""
 <div class="footer">
