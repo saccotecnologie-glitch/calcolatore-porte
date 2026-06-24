@@ -7262,7 +7262,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V304 - Definitiva SA-TEC")
+st.caption("Versione V305 - Definitiva Forzata")
 
 st.markdown(f"""
 <div class="footer">
@@ -7272,4 +7272,185 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+
+
+# =========================
+# V305 - CSS FINALE ASSOLUTO A FINE FILE
+# =========================
+st.markdown("""
+<style>
+/* V305: vince su tutti perché è l'ultimo CSS del file */
+
+/* HEADER */
+.v303-header{
+    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%)!important;
+    border-radius:18px!important;
+    padding:20px 26px!important;
+    min-height:120px!important;
+    box-shadow:0 12px 30px rgba(0,87,217,.28)!important;
+}
+.v303-header,
+.v303-header div,
+.v303-header span,
+.v303-header p,
+.v303-header h1,
+.v303-header h2,
+.v303-header h3{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    opacity:1!important;
+    text-shadow:none!important;
+}
+.v303-brand{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:50px!important;
+    font-weight:1000!important;
+    letter-spacing:1.2px!important;
+}
+.v303-brand-sub{
+    color:#EAF3FF!important;
+    -webkit-text-fill-color:#EAF3FF!important;
+    font-size:14px!important;
+    font-weight:1000!important;
+    letter-spacing:5px!important;
+}
+.v303-title-main{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:32px!important;
+    font-weight:1000!important;
+}
+.v303-title-main span{
+    color:#F5B301!important;
+    -webkit-text-fill-color:#F5B301!important;
+}
+.v303-title-sub{
+    color:#EAF3FF!important;
+    -webkit-text-fill-color:#EAF3FF!important;
+    font-weight:1000!important;
+}
+.v303-info,
+.v303-info div,
+.v303-info span{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:13px!important;
+    font-weight:900!important;
+}
+.v303-sesamo-name{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:30px!important;
+    font-weight:1000!important;
+}
+.v303-sesamo-sub{
+    color:#EAF3FF!important;
+    -webkit-text-fill-color:#EAF3FF!important;
+}
+.v303-sesamo-mark,
+.v303-product-mark{
+    background:#F58220!important;
+    color:#071124!important;
+    -webkit-text-fill-color:#071124!important;
+}
+
+/* PRODOTTO */
+.v303-product{
+    background:#FFFFFF!important;
+    border:1px solid #C9DCF7!important;
+    border-radius:16px!important;
+    box-shadow:0 8px 22px rgba(0,87,217,.08)!important;
+}
+.v303-product-title{
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+}
+.v303-product-sub{
+    color:#334155!important;
+    -webkit-text-fill-color:#334155!important;
+}
+.v303-product-name,
+.v303-product-tech{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+
+/* SIDEBAR */
+section[data-testid="stSidebar"]{
+    background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;
+    border-right:5px solid #F5B301!important;
+}
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] div{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+}
+
+/* INPUT SIDEBAR */
+section[data-testid="stSidebar"] input,
+section[data-testid="stSidebar"] textarea,
+section[data-testid="stSidebar"] [data-baseweb="input"],
+section[data-testid="stSidebar"] [data-baseweb="input"] *,
+section[data-testid="stSidebar"] [data-baseweb="select"],
+section[data-testid="stSidebar"] [data-baseweb="select"] *{
+    background:#FFFFFF!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-weight:900!important;
+}
+
+/* PULSANTI SIDEBAR LOGIN */
+section[data-testid="stSidebar"] .stButton button,
+section[data-testid="stSidebar"] .stButton button *,
+section[data-testid="stSidebar"] .stButton button p,
+section[data-testid="stSidebar"] .stButton button span,
+section[data-testid="stSidebar"] .stButton button div{
+    background:#FFFFFF!important;
+    color:#0057D9!important;
+    -webkit-text-fill-color:#0057D9!important;
+    border-color:#FFFFFF!important;
+    font-weight:1000!important;
+    opacity:1!important;
+}
+section[data-testid="stSidebar"] .stButton button:hover,
+section[data-testid="stSidebar"] .stButton button:hover *,
+section[data-testid="stSidebar"] .stButton button:hover p,
+section[data-testid="stSidebar"] .stButton button:hover span,
+section[data-testid="stSidebar"] .stButton button:hover div{
+    background:#F5B301!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border-color:#F5B301!important;
+}
+
+/* PULSANTI ADMIN CENTRALI */
+div[data-testid="stHorizontalBlock"] .stButton button,
+div[data-testid="stHorizontalBlock"] .stButton button *,
+div[data-testid="stHorizontalBlock"] .stButton button p,
+div[data-testid="stHorizontalBlock"] .stButton button span,
+div[data-testid="stHorizontalBlock"] .stButton button div{
+    background:#0057D9!important;
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    border-color:#0057D9!important;
+    font-weight:1000!important;
+}
+div[data-testid="stHorizontalBlock"] .stButton button:hover,
+div[data-testid="stHorizontalBlock"] .stButton button:hover *,
+div[data-testid="stHorizontalBlock"] .stButton button:hover p,
+div[data-testid="stHorizontalBlock"] .stButton button:hover span,
+div[data-testid="stHorizontalBlock"] .stButton button:hover div{
+    background:#F5B301!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border-color:#F5B301!important;
+}
+</style>
+""", unsafe_allow_html=True)
 
