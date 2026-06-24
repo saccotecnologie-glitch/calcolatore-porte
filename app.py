@@ -5424,6 +5424,26 @@ section[data-testid="stSidebar"] .stButton button:hover{
 """, unsafe_allow_html=True)
 
 
+
+# =========================
+# V107 - BOTTONE CREA PREVENTIVO VISIBILE
+# =========================
+st.markdown("""
+<style>
+section[data-testid="stSidebar"] .stButton button{
+    min-height:50px!important;
+    font-size:15px!important;
+    font-weight:1000!important;
+}
+section[data-testid="stSidebar"] .stButton button:hover{
+    background:#F5B301!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 # =========================
 # ADMIN V102 - GESTIONALE SUBITO VISIBILE
 # =========================
@@ -5431,6 +5451,14 @@ section[data-testid="stSidebar"] .stButton button:hover{
 if profilo == "SA-TEC":
     st.sidebar.markdown("---")
     st.sidebar.success("AREA ADMIN ATTIVA")
+
+    if st.sidebar.button("➕ CREA PREVENTIVO", key="sidebar_crea_preventivo_v107", use_container_width=True):
+        st.session_state.admin_menu_v102 = "configuratore"
+        st.rerun()
+
+    if st.sidebar.button("📋 GESTIONE PREVENTIVI", key="sidebar_gestione_preventivi_v107", use_container_width=True):
+        st.session_state.admin_menu_v102 = "preventivi"
+        st.rerun()
 
     st.sidebar.markdown("""
     <div class="v102-side-logo">
@@ -6482,7 +6510,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V106 - Admin Vivo + Crea Preventivo")
+st.caption("Versione V107 - Crea Preventivo Admin Visibile")
 
 st.markdown(f"""
 <div class="footer">
