@@ -29,7 +29,7 @@ from datetime import datetime, date
 st.set_page_config(
     page_title="Configuratore Porte Automatiche SA-TEC",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 AZIENDA = "SA-TEC S.R.L.s"
@@ -2884,149 +2884,6 @@ def v100_render_admin(preventivi):
         v100_render_simulazione()
 
 
-
-# =========================
-# V101 - HOME ADMIN REALE
-# =========================
-
-def v101_num(v, default=0.0):
-    try:
-        if v is None:
-            return default
-        if isinstance(v, (int, float)):
-            return float(v)
-        s = str(v).strip().replace("€", "").replace(" ", "")
-        if not s:
-            return default
-        if "," in s and "." in s and s.rfind(",") > s.rfind("."):
-            s = s.replace(".", "").replace(",", ".")
-        elif "," in s and "." not in s:
-            s = s.replace(",", ".")
-        return float(s)
-    except Exception:
-        return default
-
-
-def v101_imponibile(p):
-    imp = v101_num(p.get("imponibile", 0))
-    if imp > 0:
-        return imp
-    totale = v101_num(p.get("totale_iva", p.get("totale", 0)))
-    return totale / (1 + IVA) if totale > 0 else 0.0
-
-
-def v101_utile(p):
-    utile = v101_num(p.get("utile_lordo", 0))
-    return utile if utile > 0 else 0.0
-
-
-def v101_admin_home(preventivi):
-    totale_preventivi = len(preventivi)
-    valore = sum(v101_imponibile(p) for p in preventivi)
-    utile = sum(v101_utile(p) for p in preventivi)
-    accettati = sum(1 for p in preventivi if str(p.get("stato","")).strip() in ["Accettato","Ordinato"])
-
-    st.markdown(f"""
-    <div class="v101-admin-shell">
-        <div class="v101-top">
-            <div>
-                <h1>SA-TEC ADMIN</h1>
-                <p>Gestionale commerciale porte automatiche</p>
-            </div>
-            <div class="v101-badge">
-                🛡️ AREA<br>AMMINISTRATIVA
-            </div>
-        </div>
-
-        <div class="v101-grid">
-            <div class="v101-card">
-                <div class="label">Preventivi</div>
-                <div class="value">{totale_preventivi}</div>
-            </div>
-            <div class="v101-card">
-                <div class="label">Valore</div>
-                <div class="value">{euro(valore)}</div>
-            </div>
-            <div class="v101-card">
-                <div class="label">Utile</div>
-                <div class="value">{euro(utile)}</div>
-            </div>
-            <div class="v101-card">
-                <div class="label">Accettati / Ordinati</div>
-                <div class="value">{accettati}</div>
-            </div>
-        </div>
-
-        <div class="v101-note">
-            Usa i pulsanti sotto per entrare nelle sezioni: Preventivi, Clienti, Rivenditori e Simulazione.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def v101_render_admin_nuovo(preventivi):
-    v101_admin_home(preventivi)
-
-    if "v101_menu" not in st.session_state:
-        st.session_state.v101_menu = "preventivi"
-
-    st.markdown('<div class="v101-menu-title">Menu gestione</div>', unsafe_allow_html=True)
-
-    c1, c2, c3, c4 = st.columns(4)
-
-    with c1:
-        if st.button("📋 PREVENTIVI", key="v101_prev", use_container_width=True):
-            st.session_state.v101_menu = "preventivi"
-            st.rerun()
-
-    with c2:
-        if st.button("👥 CLIENTI", key="v101_cli", use_container_width=True):
-            st.session_state.v101_menu = "clienti"
-            st.rerun()
-
-    with c3:
-        if st.button("🏪 RIVENDITORI", key="v101_riv", use_container_width=True):
-            st.session_state.v101_menu = "rivenditori"
-            st.rerun()
-
-    with c4:
-        if st.button("🧪 SIMULAZIONE", key="v101_sim", use_container_width=True):
-            st.session_state.v101_menu = "simulazione"
-            st.rerun()
-
-    st.markdown("---")
-
-    # Usa le funzioni esistenti se ci sono
-    if st.session_state.v101_menu == "preventivi":
-        if "v100_render_preventivi" in globals():
-            v100_render_preventivi(preventivi)
-        elif "v83_render_admin" in globals():
-            v83_render_admin(preventivi)
-        else:
-            st.warning("Sezione preventivi non trovata.")
-    elif st.session_state.v101_menu == "clienti":
-        if "v100_render_clienti" in globals():
-            v100_render_clienti()
-        else:
-            st.info("Apri Archivio Clienti nella sezione Admin.")
-    elif st.session_state.v101_menu == "rivenditori":
-        if "v100_render_rivenditori" in globals():
-            v100_render_rivenditori()
-        else:
-            st.info("Apri Gestione Rivenditori nella sezione Admin.")
-    elif st.session_state.v101_menu == "simulazione":
-        if "v100_render_simulazione" in globals():
-            v100_render_simulazione()
-        else:
-            st.markdown("""
-            <div class="v101-note">
-            1) Crea preventivo come Cliente.<br>
-            2) Crea preventivo come Rivenditore.<br>
-            3) Entra come Admin e verifica CRM.
-            </div>
-            """, unsafe_allow_html=True)
-
-
 def statistiche_stati_preventivi(preventivi):
     stats = {s: 0 for s in STATI_PREVENTIVO}
     for p in preventivi:
@@ -4809,238 +4666,378 @@ if supabase_attivo():
 else:
     st.sidebar.warning("Supabase non collegato - uso CSV")
 
+
 # =========================
-# ADMIN
+# V102 - CSS ADMIN REALE VISIBILE
+# =========================
+st.markdown("""
+<style>
+.stApp{
+    background:#f5f7fb!important;
+}
+
+/* Sidebar sempre professionale */
+section[data-testid="stSidebar"]{
+    background:linear-gradient(180deg,#061b35 0%,#0b2a4a 60%,#03152f 100%)!important;
+    border-right:4px solid #f5b301!important;
+}
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] div{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+section[data-testid="stSidebar"] input,
+section[data-testid="stSidebar"] textarea,
+section[data-testid="stSidebar"] [data-baseweb="input"] *,
+section[data-testid="stSidebar"] [data-baseweb="select"] *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    background:#ffffff!important;
+}
+section[data-testid="stSidebar"] .stButton button{
+    background:#ffffff!important;
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+    border-radius:14px!important;
+    min-height:48px!important;
+    font-weight:900!important;
+    border:2px solid rgba(255,255,255,.35)!important;
+}
+section[data-testid="stSidebar"] .stButton button:hover{
+    background:#f5b301!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+/* Area principale */
+.block-container{
+    padding-top:1.2rem!important;
+}
+.block-container,
+.block-container *:not(svg):not(path){
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+.block-container h1,
+.block-container h2,
+.block-container h3{
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+    font-weight:900!important;
+}
+
+/* Admin hero */
+.v102-admin-hero{
+    background:linear-gradient(135deg,#061b35,#06499b);
+    border-radius:26px;
+    padding:28px;
+    margin:10px 0 22px 0;
+    box-shadow:0 14px 32px rgba(6,73,155,.25);
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+    align-items:center;
+}
+.v102-admin-hero h1{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-size:42px!important;
+    margin:0!important;
+    font-weight:900!important;
+}
+.v102-admin-hero p{
+    color:#dbeafe!important;
+    -webkit-text-fill-color:#dbeafe!important;
+    font-size:18px!important;
+    margin:8px 0 0 0!important;
+    font-weight:800!important;
+}
+.v102-admin-badge{
+    background:#f5b301;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    border-radius:20px;
+    padding:18px 24px;
+    font-size:24px;
+    font-weight:900;
+    text-align:center;
+    min-width:240px;
+}
+
+/* Cards e righe */
+.v100-title-bar,
+.v102-title-bar{
+    background:linear-gradient(135deg,#0b2a4a,#06499b)!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    border-radius:18px!important;
+    padding:16px 22px!important;
+    margin:18px 0 16px 0!important;
+    font-size:24px!important;
+    font-weight:900!important;
+}
+.v100-row-card{
+    background:#ffffff!important;
+    border:1px solid #dbeafe!important;
+    border-radius:18px!important;
+    box-shadow:0 7px 18px rgba(6,73,155,.09)!important;
+}
+
+/* Tabelle */
+th{
+    background:#06499b!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:900!important;
+}
+td{
+    background:#ffffff!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-weight:800!important;
+}
+
+/* Bottoni */
+.stButton button,
+.stDownloadButton button{
+    border-radius:14px!important;
+    min-height:46px!important;
+    font-weight:900!important;
+}
+
+/* Box sidebar logo */
+.v102-side-logo{
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:18px;
+    padding:18px;
+    text-align:center;
+    margin-bottom:14px;
+}
+.v102-side-logo .brand{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-size:38px;
+    font-weight:900;
+}
+.v102-side-logo .sub{
+    color:#dbeafe!important;
+    -webkit-text-fill-color:#dbeafe!important;
+    font-size:13px;
+    font-weight:900;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+
+# =========================
+# ADMIN V102 - GESTIONALE SUBITO VISIBILE
 # =========================
 
 if profilo == "SA-TEC":
-    st.sidebar.success("AREA ADMIN ATTIVA")
     st.sidebar.markdown("---")
-    mostra_dashboard = st.sidebar.checkbox("Mostra dashboard SA-TEC", value=False)
+    st.sidebar.success("AREA ADMIN ATTIVA")
 
-    with st.sidebar.expander("Crea utente manuale"):
+    st.sidebar.markdown("""
+    <div class="v102-side-logo">
+        <div class="brand">SA-TEC</div>
+        <div class="sub">GESTIONALE ADMIN</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.sidebar.expander("Crea utente manuale", expanded=False):
         utenti_now = carica_tutti_utenti()
-        profilo_new = st.selectbox("Profilo nuovo utente", ["CLIENTE", "RIVENDITORE", "GROSSISTA"], key="admin_profilo_new")
-        nome_new = st.text_input("Nome", key="admin_nome_new")
-        azienda_new = st.text_input("Azienda", key="admin_azienda_new")
-        telefono_new = st.text_input("Telefono", key="admin_tel_new")
-        email_new = st.text_input("Email", key="admin_email_new")
-        ricarico_new = st.number_input("Ricarico %", min_value=0.0, max_value=100.0, value=ricarico_default(profilo_new), step=1.0, key="admin_ricarico_new")
-        if st.button("CREA UTENTE"):
+        profilo_new = st.selectbox("Profilo nuovo utente", ["CLIENTE", "RIVENDITORE", "GROSSISTA"], key="admin_profilo_new_v102")
+        nome_new = st.text_input("Nome", key="admin_nome_new_v102")
+        azienda_new = st.text_input("Azienda", key="admin_azienda_new_v102")
+        telefono_new = st.text_input("Telefono", key="admin_tel_new_v102")
+        email_new = st.text_input("Email", key="admin_email_new_v102")
+        ricarico_new = st.number_input(
+            "Ricarico %",
+            min_value=0.0,
+            max_value=100.0,
+            value=ricarico_default(profilo_new),
+            step=1.0,
+            key="admin_ricarico_new_v102"
+        )
+
+        if st.button("CREA UTENTE", key="crea_utente_v102", use_container_width=True):
             codice = genera_codice_progressivo(profilo_new, utenti_now)
             pwd = genera_password()
-            salva_utente_csv(codice, pwd, profilo_new, nome_new, azienda_new, telefono_new, email_new, str(ricarico_new))
+            salva_utente_csv(
+                codice,
+                pwd,
+                profilo_new,
+                nome_new,
+                azienda_new,
+                telefono_new,
+                email_new,
+                str(ricarico_new)
+            )
             st.success("Utente creato")
             st.code(f"Utente: {codice}\nPassword: {pwd}\nProfilo: {profilo_new}\nRicarico: {ricarico_new}%")
 
-    if mostra_dashboard:
-        st.markdown('<div class="admin-box"><h2 style="color:#06499b;">Dashboard SA-TEC</h2>', unsafe_allow_html=True)
+    preventivi = carica_preventivi()
 
-        preventivi = carica_preventivi()
-        utenti_csv = carica_utenti_csv()
+    st.markdown("""
+    <div class="v102-admin-hero">
+        <div>
+            <h1>SA-TEC ADMIN</h1>
+            <p>Gestionale commerciale porte automatiche</p>
+        </div>
+        <div class="v102-admin-badge">
+            🛡️ AREA<br>AMMINISTRATIVA
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-        tab1, tab2 = st.tabs(["Preventivi", "Utenti creati"])
+    if "admin_menu_v102" not in st.session_state:
+        st.session_state.admin_menu_v102 = "preventivi"
 
-        with tab1:
-            v101_render_admin_nuovo(preventivi)
+    m1, m2, m3, m4 = st.columns(4)
 
-        with tab2:
-            if not utenti_csv:
-                st.info("Nessun utente creato da CSV.")
-            else:
-                righe = []
-                for u, d in utenti_csv.items():
-                    righe.append({
-                        "Utente": u,
-                        "Password": d["password"],
-                        "Profilo": d["profilo"],
-                        "Nome": d["nome"],
-                        "Azienda": d["azienda"],
-                        "Telefono": d["telefono"],
-                        "Email": d["email"],
-                        "Ricarico %": d.get("ricarico", ""),
-                    })
-                st.markdown(tabella_html_sicura(righe), unsafe_allow_html=True)
-                if Path(UTENTI_CSV).exists():
-                    with open(UTENTI_CSV, "rb") as f:
-                        st.download_button("Scarica CSV utenti", data=f, file_name="utenti_satec.csv", mime="text/csv")
-                else:
-                    st.caption("Backup CSV utenti non ancora creato.")
-
-
-
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.markdown('<div class="v85-toggle-title">Anagrafiche e gestione commerciale</div>', unsafe_allow_html=True)
-
-        # =========================
-        # GESTIONE RIVENDITORI / GROSSISTI A SCOMPARSA
-        # =========================
-        if "v85_show_rivenditori" not in st.session_state:
-            st.session_state.v85_show_rivenditori = False
-
-        label_riv = "▼ Nascondi Gestione Rivenditori / Grossisti" if st.session_state.v85_show_rivenditori else "► Mostra Gestione Rivenditori / Grossisti"
-        if st.button(label_riv, key="v85_toggle_rivenditori", use_container_width=True):
-            st.session_state.v85_show_rivenditori = not st.session_state.v85_show_rivenditori
+    with m1:
+        if st.button("📋 PREVENTIVI", key="menu_prev_v102", use_container_width=True):
+            st.session_state.admin_menu_v102 = "preventivi"
             st.rerun()
 
-        if st.session_state.v85_show_rivenditori:
-            st.markdown('<h3 style="color:#06499b;">Gestione Rivenditori / Grossisti</h3>', unsafe_allow_html=True)
+    with m2:
+        if st.button("👥 CLIENTI", key="menu_cli_v102", use_container_width=True):
+            st.session_state.admin_menu_v102 = "clienti"
+            st.rerun()
 
-            righe_riv = utenti_rivenditori_grossisti()
-            if not righe_riv:
-                st.info("Nessun rivenditore o grossista presente.")
-            else:
-                st.markdown(tabella_html_sicura(righe_riv), unsafe_allow_html=True)
+    with m3:
+        if st.button("🏪 RIVENDITORI", key="menu_riv_v102", use_container_width=True):
+            st.session_state.admin_menu_v102 = "rivenditori"
+            st.rerun()
 
-                codici_riv = [r["utente"] for r in righe_riv]
+    with m4:
+        if st.button("🧪 SIMULAZIONE", key="menu_sim_v102", use_container_width=True):
+            st.session_state.admin_menu_v102 = "simulazione"
+            st.rerun()
 
-                st.markdown("### Modifica ricarico")
-                col_riv1, col_riv2, col_riv3 = st.columns([2, 1, 1])
-                with col_riv1:
-                    utente_riv_mod = st.selectbox("Utente rivenditore/grossista", codici_riv, key="utente_riv_mod")
-                with col_riv2:
-                    nuovo_ricarico_riv = st.number_input("Nuovo ricarico %", min_value=0.0, max_value=200.0, value=30.0, step=1.0, key="nuovo_ricarico_riv")
-                with col_riv3:
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    if st.button("AGGIORNA RICARICO", key="v86_aggiorna_ricarico"):
-                        ok_riv, err_riv = aggiorna_ricarico_utente_supabase(utente_riv_mod, nuovo_ricarico_riv)
-                        if ok_riv:
-                            st.success(f"Ricarico aggiornato per {utente_riv_mod}: {nuovo_ricarico_riv:.0f}%")
-                        else:
-                            st.error(f"Ricarico non aggiornato: {err_riv}")
+    st.markdown("---")
 
-                st.markdown("---")
-                st.markdown("### Elimina rivenditore / grossista")
-                st.warning("L'eliminazione blocca l'accesso dell'utente. Lo storico preventivi rimane nel CRM.")
+    if st.session_state.admin_menu_v102 == "preventivi":
+        v100_render_admin(preventivi)
 
-                col_del1, col_del2, col_del3 = st.columns([2, 1, 1])
+    elif st.session_state.admin_menu_v102 == "clienti":
+        st.markdown('<div class="v102-title-bar">👥 ARCHIVIO CLIENTI</div>', unsafe_allow_html=True)
+        clienti = carica_clienti()
+        cerca_cliente_dash = st.text_input(
+            "Cerca cliente",
+            placeholder="Nome, azienda, telefono, email o codice preventivo",
+            key="cerca_cliente_dash_v102"
+        )
+        clienti_filtrati = filtra_clienti_dashboard(clienti, cerca_cliente_dash)
 
-                with col_del1:
-                    utente_da_eliminare = st.selectbox(
-                        "Utente da eliminare",
-                        codici_riv,
-                        key="v86_utente_da_eliminare"
+        if not clienti:
+            st.info("Nessun cliente salvato ancora.")
+        elif not clienti_filtrati:
+            st.warning("Nessun cliente trovato.")
+        else:
+            st.write(f"Clienti trovati: **{len(clienti_filtrati)}**")
+            st.markdown(tabella_html_sicura(righe_clienti_dashboard(clienti_filtrati)), unsafe_allow_html=True)
+
+            st.markdown("---")
+            st.markdown("### Elimina cliente")
+            st.warning("L'eliminazione rimuove il cliente dall'archivio. I preventivi storici restano.")
+
+            opzioni_clienti = {}
+            for c in clienti_filtrati:
+                label = label_cliente_elimina(c)
+                ident = identificativo_cliente_elimina(c)
+                if ident:
+                    opzioni_clienti[label] = ident
+
+            if opzioni_clienti:
+                cdel1, cdel2, cdel3 = st.columns([2, 1, 1])
+                with cdel1:
+                    cliente_label_del = st.selectbox(
+                        "Cliente da eliminare",
+                        list(opzioni_clienti.keys()),
+                        key="cliente_del_v102"
                     )
-
-                with col_del2:
-                    conferma_elimina_utente = st.checkbox(
-                        "Confermo",
-                        key="v86_conferma_elimina_utente"
-                    )
-
-                with col_del3:
+                with cdel2:
+                    conferma_elimina_cliente = st.checkbox("Confermo", key="conf_cliente_del_v102")
+                with cdel3:
                     st.markdown("<br>", unsafe_allow_html=True)
-                    if st.button("ELIMINA UTENTE", key="v86_elimina_utente", use_container_width=True):
-                        if not conferma_elimina_utente:
+                    if st.button("ELIMINA CLIENTE", key="btn_cliente_del_v102", use_container_width=True):
+                        if not conferma_elimina_cliente:
                             st.warning("Spunta prima Confermo.")
                         else:
-                            ok_del_user, msg_del_user = elimina_utente_admin(utente_da_eliminare)
-                            if ok_del_user:
-                                st.success(msg_del_user)
+                            ok_cli_del, msg_cli_del = elimina_cliente_admin(opzioni_clienti.get(cliente_label_del, ""))
+                            if ok_cli_del:
+                                st.success(msg_cli_del)
                                 st.rerun()
                             else:
-                                st.error(msg_del_user)
+                                st.error(msg_cli_del)
 
-        st.markdown("<hr>", unsafe_allow_html=True)
+    elif st.session_state.admin_menu_v102 == "rivenditori":
+        st.markdown('<div class="v102-title-bar">🏪 RIVENDITORI / GROSSISTI</div>', unsafe_allow_html=True)
+        righe_riv = utenti_rivenditori_grossisti()
 
-        # =========================
-        # ARCHIVIO CLIENTI A SCOMPARSA
-        # =========================
-        if "v85_show_clienti" not in st.session_state:
-            st.session_state.v85_show_clienti = False
+        if not righe_riv:
+            st.info("Nessun rivenditore o grossista presente.")
+        else:
+            st.markdown(tabella_html_sicura(righe_riv), unsafe_allow_html=True)
+            codici_riv = [r["utente"] for r in righe_riv]
 
-        label_cli = "▼ Nascondi Archivio Clienti" if st.session_state.v85_show_clienti else "► Mostra Archivio Clienti"
-        if st.button(label_cli, key="v85_toggle_clienti", use_container_width=True):
-            st.session_state.v85_show_clienti = not st.session_state.v85_show_clienti
-            st.rerun()
+            st.markdown("### Modifica ricarico")
+            r1, r2, r3 = st.columns([2, 1, 1])
+            with r1:
+                utente_riv_mod = st.selectbox("Utente", codici_riv, key="riv_mod_v102")
+            with r2:
+                nuovo_ricarico_riv = st.number_input(
+                    "Nuovo ricarico %",
+                    min_value=0.0,
+                    max_value=200.0,
+                    value=30.0,
+                    step=1.0,
+                    key="ricarico_riv_v102"
+                )
+            with r3:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("AGGIORNA", key="agg_riv_v102", use_container_width=True):
+                    ok_riv, err_riv = aggiorna_ricarico_utente_supabase(utente_riv_mod, nuovo_ricarico_riv)
+                    if ok_riv:
+                        st.success(f"Ricarico aggiornato per {utente_riv_mod}")
+                    else:
+                        st.error(f"Ricarico non aggiornato: {err_riv}")
 
-        if st.session_state.v85_show_clienti:
-            st.markdown('<h3 style="color:#06499b;">Archivio Clienti</h3>', unsafe_allow_html=True)
+            st.markdown("---")
+            st.markdown("### Elimina rivenditore / grossista")
+            st.warning("L'eliminazione blocca l'accesso dell'utente. Lo storico preventivi resta.")
+            d1, d2, d3 = st.columns([2, 1, 1])
+            with d1:
+                utente_da_eliminare = st.selectbox("Utente da eliminare", codici_riv, key="riv_del_v102")
+            with d2:
+                conferma_elimina_utente = st.checkbox("Confermo", key="conf_riv_del_v102")
+            with d3:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("ELIMINA UTENTE", key="btn_riv_del_v102", use_container_width=True):
+                    if not conferma_elimina_utente:
+                        st.warning("Spunta prima Confermo.")
+                    else:
+                        ok_del_user, msg_del_user = elimina_utente_admin(utente_da_eliminare)
+                        if ok_del_user:
+                            st.success(msg_del_user)
+                            st.rerun()
+                        else:
+                            st.error(msg_del_user)
 
-            clienti = carica_clienti()
-            cerca_cliente_dash = st.text_input("Cerca cliente", placeholder="Nome, azienda, telefono, email o codice preventivo", key="cerca_cliente_dash")
-            clienti_filtrati = filtra_clienti_dashboard(clienti, cerca_cliente_dash)
+    elif st.session_state.admin_menu_v102 == "simulazione":
+        st.markdown('<div class="v102-title-bar">🧪 SIMULAZIONE FUNZIONAMENTO</div>', unsafe_allow_html=True)
+        st.info("1) Esci da Admin e salva un preventivo come Cliente. 2) Entra come Rivenditore/Grossista e salva un preventivo. 3) Rientra come Admin e controlla preventivi, clienti e rivenditori.")
 
-            if not clienti:
-                st.info("Nessun cliente salvato ancora. Verrà creato automaticamente al salvataggio del primo preventivo.")
-            elif not clienti_filtrati:
-                st.warning("Nessun cliente trovato con questo filtro.")
-            else:
-                st.write(f"Clienti trovati: **{len(clienti_filtrati)}**")
-                st.markdown(tabella_html_sicura(righe_clienti_dashboard(clienti_filtrati)), unsafe_allow_html=True)
+    st.stop()
 
-                if Path(CLIENTI_CSV).exists():
-                    with open(CLIENTI_CSV, "rb") as f:
-                        st.download_button("Scarica CSV clienti", data=f, file_name="clienti_satec.csv", mime="text/csv")
-
-                st.markdown("---")
-                st.markdown("### Elimina cliente")
-                st.warning("L'eliminazione rimuove il cliente dall'archivio clienti. I preventivi storici restano nel CRM.")
-
-                opzioni_clienti = {}
-                for c in clienti_filtrati:
-                    label = label_cliente_elimina(c)
-                    ident = identificativo_cliente_elimina(c)
-                    if ident:
-                        opzioni_clienti[label] = ident
-
-                if not opzioni_clienti:
-                    st.info("Nessun cliente eliminabile con i dati attuali.")
-                else:
-                    col_cli_del1, col_cli_del2, col_cli_del3 = st.columns([2, 1, 1])
-
-                    with col_cli_del1:
-                        cliente_label_del = st.selectbox(
-                            "Cliente da eliminare",
-                            list(opzioni_clienti.keys()),
-                            key="v88_cliente_da_eliminare"
-                        )
-
-                    with col_cli_del2:
-                        conferma_elimina_cliente = st.checkbox(
-                            "Confermo",
-                            key="v88_conferma_elimina_cliente"
-                        )
-
-                    with col_cli_del3:
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        if st.button("ELIMINA CLIENTE", key="v88_elimina_cliente", use_container_width=True):
-                            if not conferma_elimina_cliente:
-                                st.warning("Spunta prima Confermo.")
-                            else:
-                                identificativo = opzioni_clienti.get(cliente_label_del, "")
-                                ok_cli_del, msg_cli_del = elimina_cliente_admin(identificativo)
-                                if ok_cli_del:
-                                    st.success(msg_cli_del)
-                                    st.rerun()
-                                else:
-                                    st.error(msg_cli_del)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-
-# =========================
-# V89 - CSS FINALE ANTI TESTO INVISIBILE
-# =========================
-st.markdown('\n<style>\n/* =========================================================\n   V89 - FIX DEFINITIVO TESTI INVISIBILI / BIANCO SU BIANCO\n   ========================================================= */\n\n/* Base: tutto leggibile nell\'app */\n.stApp,\n.stApp *:not(section[data-testid="stSidebar"] *):not(svg):not(path) {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n}\n\n/* Titoli principali */\n.stApp h1,\n.stApp h2,\n.stApp h3,\n.stApp h4,\n.stApp h5,\n.stApp h6,\n.stApp h1 *,\n.stApp h2 *,\n.stApp h3 *,\n.stApp h4 *,\n.stApp h5 *,\n.stApp h6 * {\n    color:#06499b !important;\n    -webkit-text-fill-color:#06499b !important;\n    font-weight:900 !important;\n}\n\n/* Tab Streamlit */\n.stTabs [data-baseweb="tab"],\n.stTabs [data-baseweb="tab"] *,\nbutton[data-baseweb="tab"],\nbutton[data-baseweb="tab"] *,\n[role="tab"],\n[role="tab"] * {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    font-weight:900 !important;\n    opacity:1 !important;\n}\n\n.stTabs [aria-selected="true"],\n.stTabs [aria-selected="true"] *,\n[role="tab"][aria-selected="true"],\n[role="tab"][aria-selected="true"] * {\n    color:#06499b !important;\n    -webkit-text-fill-color:#06499b !important;\n    font-weight:900 !important;\n}\n\n/* Markdown, paragrafi, label, span, div */\n[data-testid="stMarkdownContainer"],\n[data-testid="stMarkdownContainer"] *,\n[data-testid="stVerticalBlock"],\n[data-testid="stVerticalBlock"] *,\n[data-testid="stHorizontalBlock"],\n[data-testid="stHorizontalBlock"] *,\np, span, label, div {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n}\n\n/* Alert: info / warning / success / error */\n[data-testid="stAlert"],\n[data-testid="stAlert"] *,\n.stAlert,\n.stAlert * {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    font-weight:800 !important;\n    opacity:1 !important;\n}\n\n/* Metriche */\n[data-testid="stMetric"],\n[data-testid="stMetric"] *,\n[data-testid="metric-container"],\n[data-testid="metric-container"] * {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    opacity:1 !important;\n}\n\n/* Input, select, textarea */\ninput,\ntextarea,\nselect,\n[data-baseweb="input"],\n[data-baseweb="input"] *,\n[data-baseweb="select"],\n[data-baseweb="select"] *,\n[data-baseweb="textarea"],\n[data-baseweb="textarea"] *,\n[data-testid="stTextInput"],\n[data-testid="stTextInput"] *,\n[data-testid="stSelectbox"],\n[data-testid="stSelectbox"] *,\n[data-testid="stNumberInput"],\n[data-testid="stNumberInput"] *,\n[data-testid="stTextArea"],\n[data-testid="stTextArea"] * {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    background-color:#ffffff !important;\n    opacity:1 !important;\n    font-weight:800 !important;\n}\n\n/* Checkbox */\n[data-testid="stCheckbox"],\n[data-testid="stCheckbox"] *,\n[data-testid="stCheckbox"] label,\n[data-testid="stCheckbox"] label *,\n[data-testid="stCheckbox"] p,\n[data-testid="stCheckbox"] span {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    font-weight:900 !important;\n    opacity:1 !important;\n}\n\n/* Bottoni */\n.stButton button,\n.stButton button *,\n.stDownloadButton button,\n.stDownloadButton button * {\n    font-weight:900 !important;\n    opacity:1 !important;\n}\n\n/* Tabelle generate con to_html */\ntable,\ntable *,\nthead,\ntbody,\ntr,\ntd,\nth {\n    opacity:1 !important;\n}\n\nth {\n    background:#06499b !important;\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    font-weight:900 !important;\n}\n\ntd {\n    background:#ffffff !important;\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    font-weight:800 !important;\n}\n\n/* Sezioni SA-TEC colorate: testo bianco reale solo dove serve */\n.v85-toggle-title,\n.v85-toggle-title *,\n.v87-section-title,\n.v87-section-title * {\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n}\n\n/* Box guida: testo nero */\n.v85-help-box,\n.v85-help-box *,\n.v84-dashboard,\n.v84-dashboard * {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n}\n\n/* Titoli blu interni */\n.v81-code,\n.v81-detail-title,\n.v83-title,\n.v87-crm-title,\n.v87-crm-title * {\n    color:#06499b !important;\n    -webkit-text-fill-color:#06499b !important;\n}\n\n/* Link */\na, a * {\n    color:#06499b !important;\n    -webkit-text-fill-color:#06499b !important;\n    font-weight:900 !important;\n}\n\n/* Sidebar: mantieni leggibile con testo bianco su blu, ma input nero */\nsection[data-testid="stSidebar"] {\n    color:#ffffff !important;\n}\n\nsection[data-testid="stSidebar"] h1,\nsection[data-testid="stSidebar"] h2,\nsection[data-testid="stSidebar"] h3,\nsection[data-testid="stSidebar"] p,\nsection[data-testid="stSidebar"] span,\nsection[data-testid="stSidebar"] label,\nsection[data-testid="stSidebar"] div {\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n}\n\nsection[data-testid="stSidebar"] input,\nsection[data-testid="stSidebar"] textarea,\nsection[data-testid="stSidebar"] [data-baseweb="select"],\nsection[data-testid="stSidebar"] [data-baseweb="select"] *,\nsection[data-testid="stSidebar"] [data-baseweb="input"] *,\nsection[data-testid="stSidebar"] [data-baseweb="textarea"] * {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    background:#ffffff !important;\n}\n\n/* Evita che Streamlit faccia testi trasparenti */\n* {\n    text-shadow:none !important;\n}\n</style>\n', unsafe_allow_html=True)
-
-
-# =========================
-# V90 - CSS PROFESSIONALE SA-TEC
-# =========================
-st.markdown('\n<style>\n/* =========================================================\n   V90 - GRAFICA PROFESSIONALE SA-TEC\n   ========================================================= */\n.stApp { background:#f4f7fb !important; }\n\n/* Sidebar professionale */\nsection[data-testid="stSidebar"] {\n    background:linear-gradient(180deg,#03152f 0%,#05244a 55%,#021022 100%) !important;\n    border-right:4px solid #f5b301 !important;\n}\nsection[data-testid="stSidebar"] > div { padding-top:1rem !important; }\n\n/* Sidebar testi */\nsection[data-testid="stSidebar"] h1,\nsection[data-testid="stSidebar"] h2,\nsection[data-testid="stSidebar"] h3,\nsection[data-testid="stSidebar"] p,\nsection[data-testid="stSidebar"] span,\nsection[data-testid="stSidebar"] label,\nsection[data-testid="stSidebar"] div {\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n}\n\n/* Sidebar input leggibili */\nsection[data-testid="stSidebar"] input,\nsection[data-testid="stSidebar"] textarea,\nsection[data-testid="stSidebar"] [data-baseweb="input"] *,\nsection[data-testid="stSidebar"] [data-baseweb="select"] *,\nsection[data-testid="stSidebar"] [data-baseweb="textarea"] * {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    background:#ffffff !important;\n}\n\n/* Bottoni sidebar */\nsection[data-testid="stSidebar"] .stButton button {\n    background:#ffffff !important;\n    color:#06499b !important;\n    -webkit-text-fill-color:#06499b !important;\n    border:2px solid rgba(255,255,255,0.35) !important;\n    border-radius:14px !important;\n    min-height:48px !important;\n    font-weight:900 !important;\n    box-shadow:0 4px 12px rgba(0,0,0,0.18) !important;\n}\nsection[data-testid="stSidebar"] .stButton button:hover {\n    background:#f5b301 !important;\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    border-color:#ffd84d !important;\n}\n\n/* Header logo V90 */\n.v90-sidebar-logo {\n    background:rgba(255,255,255,0.08);\n    border:2px solid rgba(255,255,255,0.20);\n    border-radius:20px;\n    padding:22px 12px;\n    text-align:center;\n    margin-bottom:16px;\n    box-shadow:0 8px 22px rgba(0,0,0,.22);\n}\n.v90-sidebar-logo .brand {\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    font-size:42px;\n    font-weight:900;\n    letter-spacing:1px;\n    line-height:1;\n}\n.v90-sidebar-logo .sub {\n    color:#dbeafe !important;\n    -webkit-text-fill-color:#dbeafe !important;\n    font-size:14px;\n    font-weight:900;\n    margin-top:8px;\n    text-transform:uppercase;\n}\n\n/* Box ingresso Admin */\n.v90-admin-box {\n    background:linear-gradient(135deg,#f5b301,#d68a00);\n    border:3px solid #ffd84d;\n    border-radius:20px;\n    padding:18px;\n    text-align:center;\n    margin:18px 0;\n    box-shadow:0 0 24px rgba(245,179,1,.40);\n}\n.v90-admin-box .title {\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    font-size:24px;\n    font-weight:900;\n    line-height:1.1;\n}\n.v90-admin-box .subtitle {\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    font-size:14px;\n    font-weight:800;\n    margin-top:6px;\n}\n.v90-admin-box .arrow {\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    font-size:58px;\n    font-weight:900;\n    line-height:1;\n    margin-top:8px;\n}\n\n/* Hero principale */\n.v90-hero {\n    background:linear-gradient(135deg,#06499b,#0b5cff);\n    border-radius:24px;\n    padding:28px;\n    margin:12px 0 24px 0;\n    box-shadow:0 10px 26px rgba(6,73,155,.20);\n}\n.v90-hero h1 {\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    font-size:42px !important;\n    font-weight:900 !important;\n    margin:0 !important;\n}\n.v90-hero p {\n    color:#eaf3ff !important;\n    -webkit-text-fill-color:#eaf3ff !important;\n    font-size:18px !important;\n    font-weight:800 !important;\n    margin:8px 0 0 0 !important;\n}\n\n/* Titoli sezioni */\n.v90-section-title {\n    background:#06499b;\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    border-radius:16px;\n    padding:15px 20px;\n    margin:20px 0 14px 0;\n    font-size:24px;\n    font-weight:900;\n    box-shadow:0 6px 16px rgba(6,73,155,.18);\n}\n.v90-card {\n    background:#ffffff;\n    border:1px solid #dbeafe;\n    border-radius:18px;\n    padding:18px;\n    box-shadow:0 6px 18px rgba(6,73,155,.10);\n    color:#111827 !important;\n}\n\n/* Forza leggibilità area principale */\n.block-container,\n.block-container *:not(svg):not(path) {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n}\n.block-container h1,\n.block-container h2,\n.block-container h3,\n.block-container h4 {\n    color:#06499b !important;\n    -webkit-text-fill-color:#06499b !important;\n    font-weight:900 !important;\n}\n.v90-hero *,\n.v90-section-title *,\n.v90-admin-box *,\n.v90-sidebar-logo * {\n    -webkit-text-fill-color:inherit !important;\n}\n\n/* Pulsanti main */\n.stButton button,\n.stDownloadButton button {\n    border-radius:14px !important;\n    min-height:46px !important;\n    font-weight:900 !important;\n}\n\n/* Tabelle */\nth {\n    background:#06499b !important;\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    font-weight:900 !important;\n}\ntd {\n    background:#ffffff !important;\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    font-weight:800 !important;\n}\n\n/* Tabs */\n.stTabs [data-baseweb="tab"],\n.stTabs [data-baseweb="tab"] *,\n[role="tab"],\n[role="tab"] * {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    font-weight:900 !important;\n}\n.stTabs [aria-selected="true"],\n.stTabs [aria-selected="true"] * {\n    color:#06499b !important;\n    -webkit-text-fill-color:#06499b !important;\n}\n</style>\n', unsafe_allow_html=True)
-
-
-# =========================
-# V100 - CSS GESTIONALE DEFINITIVO
-# =========================
-st.markdown('\n<style>\n/* V100 - UI GESTIONALE SA-TEC */\n.stApp { background:#f5f7fb !important; }\n.block-container { padding-top:1.5rem !important; }\n\n/* Sidebar più pulita */\nsection[data-testid="stSidebar"] {\n    background:#0b2a4a !important;\n    border-right:4px solid #f5b301 !important;\n}\nsection[data-testid="stSidebar"] .stButton button {\n    background:#ffffff !important;\n    color:#0b2a4a !important;\n    -webkit-text-fill-color:#0b2a4a !important;\n    border-radius:14px !important;\n    min-height:46px !important;\n    font-weight:900 !important;\n}\nsection[data-testid="stSidebar"] input,\nsection[data-testid="stSidebar"] textarea,\nsection[data-testid="stSidebar"] [data-baseweb="input"] *,\nsection[data-testid="stSidebar"] [data-baseweb="select"] * {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    background:#ffffff !important;\n}\n\n/* Testi area principale */\n.block-container,\n.block-container *:not(svg):not(path) {\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n}\n.block-container h1,\n.block-container h2,\n.block-container h3 {\n    color:#0b2a4a !important;\n    -webkit-text-fill-color:#0b2a4a !important;\n    font-weight:900 !important;\n}\n\n/* Titoli e card */\n.v100-title-bar {\n    background:linear-gradient(135deg,#0b2a4a,#06499b);\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    border-radius:18px;\n    padding:16px 22px;\n    margin:18px 0 16px 0;\n    font-size:24px;\n    font-weight:900;\n    box-shadow:0 8px 20px rgba(6,73,155,.18);\n}\n.v100-row-card {\n    background:#ffffff;\n    border:1px solid #dbeafe;\n    border-radius:18px;\n    padding:17px;\n    margin:18px 0 12px 0;\n    box-shadow:0 7px 18px rgba(6,73,155,.09);\n}\n.v100-row-code {\n    color:#06499b !important;\n    -webkit-text-fill-color:#06499b !important;\n    font-size:22px;\n    font-weight:900;\n    margin-bottom:10px;\n}\n.v100-row-grid {\n    display:grid;\n    grid-template-columns:1.2fr 1fr 1.2fr .8fr .8fr;\n    gap:12px;\n    color:#111827;\n    font-size:14px;\n    font-weight:800;\n}\n.v100-row-grid b {\n    color:#64748b !important;\n    -webkit-text-fill-color:#64748b !important;\n    font-size:12px;\n    text-transform:uppercase;\n}\n.v100-info {\n    background:#eef6ff;\n    border:1px solid #bdd4ef;\n    border-radius:18px;\n    padding:18px;\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    font-size:16px;\n    font-weight:800;\n    line-height:1.65;\n}\n\n/* Tabelle */\nth {\n    background:#0b2a4a !important;\n    color:#ffffff !important;\n    -webkit-text-fill-color:#ffffff !important;\n    font-weight:900 !important;\n}\ntd {\n    background:#ffffff !important;\n    color:#111827 !important;\n    -webkit-text-fill-color:#111827 !important;\n    font-weight:800 !important;\n}\n.stButton button,\n.stDownloadButton button {\n    border-radius:14px !important;\n    min-height:46px !important;\n    font-weight:900 !important;\n}\n</style>\n', unsafe_allow_html=True)
-
-
-# =========================
-# V101 - CSS HOME ADMIN
-# =========================
-st.markdown('\n<style>\n/* V101 - HOME ADMIN VISIBILE */\n.v101-admin-shell{\n    background:#f3f7fb;\n    border-radius:26px;\n    padding:20px;\n    margin:18px 0;\n    border:1px solid #dbeafe;\n}\n.v101-top{\n    background:linear-gradient(135deg,#061b35,#06499b);\n    border-radius:24px;\n    padding:28px;\n    color:white!important;\n    display:flex;\n    justify-content:space-between;\n    align-items:center;\n    gap:20px;\n    box-shadow:0 14px 32px rgba(6,73,155,.25);\n}\n.v101-top h1{\n    color:white!important;\n    -webkit-text-fill-color:white!important;\n    font-size:44px!important;\n    font-weight:900!important;\n    margin:0!important;\n}\n.v101-top p{\n    color:#dbeafe!important;\n    -webkit-text-fill-color:#dbeafe!important;\n    font-size:18px!important;\n    font-weight:800!important;\n    margin:8px 0 0 0!important;\n}\n.v101-badge{\n    background:#f5b301;\n    color:#111827!important;\n    -webkit-text-fill-color:#111827!important;\n    border-radius:18px;\n    padding:18px 22px;\n    font-size:22px;\n    font-weight:900;\n    text-align:center;\n    min-width:230px;\n}\n.v101-grid{\n    display:grid;\n    grid-template-columns:repeat(4,1fr);\n    gap:16px;\n    margin-top:18px;\n}\n.v101-card{\n    background:white;\n    border:1px solid #dbeafe;\n    border-radius:20px;\n    padding:18px;\n    box-shadow:0 8px 20px rgba(6,73,155,.10);\n}\n.v101-card .label{\n    color:#06499b!important;\n    -webkit-text-fill-color:#06499b!important;\n    font-size:13px;\n    font-weight:900;\n    text-transform:uppercase;\n}\n.v101-card .value{\n    color:#111827!important;\n    -webkit-text-fill-color:#111827!important;\n    font-size:26px;\n    font-weight:900;\n    margin-top:8px;\n}\n.v101-menu-title{\n    background:#061b35;\n    color:white!important;\n    -webkit-text-fill-color:white!important;\n    border-radius:18px;\n    padding:16px 22px;\n    font-size:24px;\n    font-weight:900;\n    margin:22px 0 14px 0;\n}\n.v101-note{\n    background:#fff7d6;\n    color:#111827!important;\n    -webkit-text-fill-color:#111827!important;\n    border:2px solid #f5b301;\n    border-radius:18px;\n    padding:16px;\n    margin:16px 0;\n    font-weight:900;\n}\n\n/* Forza bottoni admin principali */\ndiv[data-testid="stHorizontalBlock"] .stButton button{\n    background:#06499b!important;\n    color:white!important;\n    -webkit-text-fill-color:white!important;\n    border-radius:16px!important;\n    min-height:54px!important;\n    font-size:16px!important;\n    font-weight:900!important;\n    border:0!important;\n}\n</style>\n', unsafe_allow_html=True)
 
 # =========================
 # CONFIGURATORE
@@ -5884,7 +5881,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V101 - Admin Nuovo Visibile")
+st.caption("Versione V102 - Admin Reale Visibile")
 
 st.markdown(f"""
 <div class="footer">
