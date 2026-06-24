@@ -4963,6 +4963,325 @@ div[data-testid="stHorizontalBlock"] .stButton button:hover{
 """, unsafe_allow_html=True)
 
 
+
+# =========================
+# V105 - MINIMAL PROFESSIONAL ADMIN
+# =========================
+st.markdown("""
+<style>
+
+/* RESET ADMIN PROFESSIONALE */
+.stApp{
+    background:#F5F7FA!important;
+}
+
+.block-container{
+    padding-top:1rem!important;
+    padding-left:2rem!important;
+    padding-right:2rem!important;
+}
+
+/* Testi sempre leggibili */
+.block-container,
+.block-container *:not(svg):not(path){
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+
+.block-container h1,
+.block-container h2,
+.block-container h3{
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+    font-weight:900!important;
+}
+
+/* SIDEBAR PULITA */
+section[data-testid="stSidebar"]{
+    background:#0B2A4A!important;
+    border-right:4px solid #F5B301!important;
+}
+
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] div{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+section[data-testid="stSidebar"] input,
+section[data-testid="stSidebar"] textarea,
+section[data-testid="stSidebar"] [data-baseweb="input"] *,
+section[data-testid="stSidebar"] [data-baseweb="select"] *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    background:#ffffff!important;
+}
+
+section[data-testid="stSidebar"] .stButton button{
+    background:#ffffff!important;
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+    border:1px solid #D7E3F4!important;
+    border-radius:12px!important;
+    min-height:44px!important;
+    font-weight:900!important;
+    box-shadow:none!important;
+}
+
+section[data-testid="stSidebar"] .stButton button:hover{
+    background:#F5B301!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+
+/* HEADER ADMIN MINIMAL */
+.v102-admin-hero,
+.v104-admin-hero,
+.v105-admin-header{
+    background:#ffffff!important;
+    border:1px solid #D7E3F4!important;
+    border-left:8px solid #06499B!important;
+    border-radius:18px!important;
+    padding:26px 30px!important;
+    margin:12px 0 18px 0!important;
+    box-shadow:0 8px 22px rgba(6,73,155,.08)!important;
+    display:flex!important;
+    justify-content:space-between!important;
+    align-items:center!important;
+    gap:18px!important;
+    min-height:130px!important;
+}
+
+/* Titolo Admin */
+.v102-admin-hero h1,
+.v102-admin-hero h1 *,
+.v104-admin-title,
+.v104-admin-title *,
+.v105-admin-title,
+.v105-admin-title *{
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+    font-size:42px!important;
+    font-weight:1000!important;
+    letter-spacing:.2px!important;
+    line-height:1.05!important;
+    margin:0!important;
+    text-shadow:none!important;
+}
+
+/* Sottotitolo Admin */
+.v102-admin-hero p,
+.v102-admin-hero p *,
+.v104-admin-subtitle,
+.v104-admin-subtitle *,
+.v105-admin-subtitle,
+.v105-admin-subtitle *{
+    color:#475569!important;
+    -webkit-text-fill-color:#475569!important;
+    font-size:18px!important;
+    font-weight:800!important;
+    line-height:1.35!important;
+    margin:8px 0 0 0!important;
+    text-shadow:none!important;
+}
+
+/* Badge area admin */
+.v102-admin-badge,
+.v104-admin-badge,
+.v105-admin-badge{
+    background:#FFF3C4!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    border:2px solid #F5B301!important;
+    border-radius:16px!important;
+    padding:16px 22px!important;
+    font-size:20px!important;
+    font-weight:1000!important;
+    text-align:center!important;
+    min-width:220px!important;
+    box-shadow:none!important;
+    line-height:1.25!important;
+}
+
+/* Separatore vecchio meno invadente */
+.v104-admin-separator{
+    background:#ffffff!important;
+    border:1px solid #D7E3F4!important;
+    border-left:6px solid #F5B301!important;
+    border-radius:14px!important;
+    padding:10px 16px!important;
+    margin:12px 0!important;
+    box-shadow:none!important;
+}
+.v104-admin-separator span{
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+    font-size:18px!important;
+    font-weight:900!important;
+}
+
+/* MENU ADMIN */
+div[data-testid="stHorizontalBlock"] .stButton button{
+    background:#ffffff!important;
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+    border:1px solid #D7E3F4!important;
+    border-radius:14px!important;
+    min-height:54px!important;
+    font-size:16px!important;
+    font-weight:900!important;
+    box-shadow:0 4px 12px rgba(6,73,155,.06)!important;
+}
+
+div[data-testid="stHorizontalBlock"] .stButton button:hover{
+    background:#06499B!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+/* TITOLI SEZIONE */
+.v100-title-bar,
+.v102-title-bar,
+.v90-section-title,
+.v101-menu-title{
+    background:#ffffff!important;
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+    border:1px solid #D7E3F4!important;
+    border-left:8px solid #06499B!important;
+    border-radius:16px!important;
+    padding:15px 20px!important;
+    margin:18px 0 14px 0!important;
+    font-size:23px!important;
+    font-weight:1000!important;
+    box-shadow:0 6px 16px rgba(6,73,155,.06)!important;
+}
+
+/* CRM DASHBOARD IFRAME: contenitore neutro */
+iframe{
+    border-radius:18px!important;
+}
+
+/* CARD PREVENTIVI */
+.v100-row-card{
+    background:#ffffff!important;
+    border:1px solid #D7E3F4!important;
+    border-radius:18px!important;
+    padding:18px!important;
+    margin:14px 0 12px 0!important;
+    box-shadow:0 6px 16px rgba(6,73,155,.06)!important;
+}
+
+.v100-row-code{
+    color:#06499B!important;
+    -webkit-text-fill-color:#06499B!important;
+    font-size:22px!important;
+    font-weight:1000!important;
+}
+
+/* TABELLE */
+table{
+    border-collapse:separate!important;
+    border-spacing:0!important;
+    width:100%!important;
+    border:1px solid #D7E3F4!important;
+    border-radius:14px!important;
+    overflow:hidden!important;
+    background:#ffffff!important;
+    box-shadow:0 6px 16px rgba(6,73,155,.05)!important;
+}
+
+th{
+    background:#0B2A4A!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:900!important;
+    padding:11px!important;
+}
+
+td{
+    background:#ffffff!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-weight:700!important;
+    padding:10px!important;
+    border-bottom:1px solid #EEF2F7!important;
+}
+
+tr:nth-child(even) td{
+    background:#F8FAFC!important;
+}
+
+/* INPUT / SELECT */
+.block-container input,
+.block-container textarea,
+.block-container [data-baseweb="input"] *,
+.block-container [data-baseweb="select"] *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    background:#ffffff!important;
+    font-weight:800!important;
+}
+
+/* Alert leggibili */
+[data-testid="stAlert"],
+[data-testid="stAlert"] *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-weight:800!important;
+}
+
+/* Bottoni generali */
+.stButton button,
+.stDownloadButton button{
+    border-radius:12px!important;
+    min-height:44px!important;
+    font-weight:900!important;
+}
+
+/* Evita vecchi gradienti/test-shadow */
+.v90-hero,
+.v101-top{
+    background:#ffffff!important;
+    border:1px solid #D7E3F4!important;
+    border-left:8px solid #06499B!important;
+    box-shadow:0 6px 16px rgba(6,73,155,.06)!important;
+}
+
+.v90-hero h1,
+.v101-top h1{
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+}
+
+.v90-hero p,
+.v101-top p{
+    color:#475569!important;
+    -webkit-text-fill-color:#475569!important;
+}
+
+@media(max-width:900px){
+    .v102-admin-hero,
+    .v104-admin-hero,
+    .v105-admin-header{
+        flex-direction:column!important;
+        align-items:stretch!important;
+    }
+    .v102-admin-badge,
+    .v104-admin-badge,
+    .v105-admin-badge{
+        min-width:100%!important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 # =========================
 # ADMIN V102 - GESTIONALE SUBITO VISIBILE
 # =========================
@@ -5013,20 +5332,14 @@ if profilo == "SA-TEC":
     preventivi = carica_preventivi()
 
     st.markdown("""
-    <div class="v104-admin-separator">
-        <span>🛡️ AREA AMMINISTRATIVA SA-TEC</span>
-    </div>
-
-    <div class="v102-admin-hero v104-admin-hero" style="background:linear-gradient(135deg,#061b35 0%,#06499b 55%,#0b5cff 100%)!important;border-radius:28px!important;padding:34px 38px!important;margin:8px 0 16px 0!important;box-shadow:0 18px 40px rgba(6,73,155,.32)!important;display:flex!important;justify-content:space-between!important;align-items:center!important;min-height:175px!important;border:2px solid rgba(255,255,255,.24)!important;">
+    <div class="v105-admin-header">
         <div>
-            <div class="v104-admin-title" style="color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;font-size:56px!important;font-weight:1000!important;letter-spacing:.5px!important;margin:0!important;line-height:1!important;text-shadow:0 4px 12px rgba(0,0,0,.45)!important;">
-                SA-TEC ADMIN
-            </div>
-            <div class="v104-admin-subtitle" style="color:#eaf3ff!important;-webkit-text-fill-color:#eaf3ff!important;font-size:21px!important;font-weight:900!important;margin:12px 0 0 0!important;line-height:1.35!important;text-shadow:0 3px 10px rgba(0,0,0,.35)!important;">
+            <div class="v105-admin-title">SA-TEC ADMIN</div>
+            <div class="v105-admin-subtitle">
                 Gestionale commerciale porte automatiche · Preventivi · Clienti · Rivenditori
             </div>
         </div>
-        <div class="v102-admin-badge v104-admin-badge" style="background:linear-gradient(135deg,#ffd84d,#f5b301)!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-radius:24px!important;padding:24px 34px!important;font-size:28px!important;font-weight:1000!important;text-align:center!important;min-width:300px!important;box-shadow:0 12px 30px rgba(245,179,1,.42)!important;border:4px solid #fff0a8!important;line-height:1.25!important;">
+        <div class="v105-admin-badge">
             🛡️ AREA<br>AMMINISTRATIVA
         </div>
     </div>
@@ -6016,7 +6329,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V104 - Contrasto Admin Definitivo")
+st.caption("Versione V105 - Minimal Professional")
 
 st.markdown(f"""
 <div class="footer">
