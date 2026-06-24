@@ -3381,7 +3381,7 @@ def login_box():
         esci = st.button("ESCI", key="btn_esci")
 
     st.sidebar.markdown("### Accesso rapido")
-    st.sidebar.info("Inserisci le credenziali per accedere alla tua area.")
+    st.sidebar.info("Inserisci utente e password per accedere alla tua area.")
 
     if esci:
         st.session_state.logged_profilo = "CLIENTE"
@@ -5520,522 +5520,6 @@ section[data-testid="stSidebar"] [data-testid="stAlert"],section[data-testid="st
 """, unsafe_allow_html=True)
 
 
-
-# =========================
-# V200 - PROFESSIONAL CRM SA-TEC
-# =========================
-st.markdown("""
-<style>
-:root{
-    --v200-blue:#0057D9;
-    --v200-blue-dark:#003C96;
-    --v200-orange:#F5B301;
-    --v200-bg:#F4F8FF;
-    --v200-card:#FFFFFF;
-    --v200-border:#C9DCF7;
-    --v200-text:#0F172A;
-    --v200-muted:#475569;
-}
-
-/* BASE */
-.stApp{
-    background:var(--v200-bg)!important;
-}
-.block-container{
-    padding-top:1rem!important;
-    padding-left:1.8rem!important;
-    padding-right:1.8rem!important;
-}
-.block-container,
-.block-container *:not(svg):not(path){
-    color:var(--v200-text)!important;
-    -webkit-text-fill-color:var(--v200-text)!important;
-}
-.block-container h1,
-.block-container h2,
-.block-container h3{
-    color:var(--v200-blue-dark)!important;
-    -webkit-text-fill-color:var(--v200-blue-dark)!important;
-    font-weight:1000!important;
-}
-
-/* NASCONDE ELEMENTI STREAMLIT BRUTTI */
-#MainMenu, footer, header{
-    visibility:hidden!important;
-}
-
-/* SIDEBAR PROFESSIONALE */
-section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#003C96 0%,#0057D9 100%)!important;
-    border-right:6px solid var(--v200-orange)!important;
-}
-section[data-testid="stSidebar"] h1,
-section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] div{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] textarea,
-section[data-testid="stSidebar"] [data-baseweb="input"] *,
-section[data-testid="stSidebar"] [data-baseweb="select"] *{
-    background:#ffffff!important;
-    color:var(--v200-text)!important;
-    -webkit-text-fill-color:var(--v200-text)!important;
-    font-weight:900!important;
-}
-
-/* BOTTONI DEFINITIVI */
-.stButton button,
-.stDownloadButton button,
-section[data-testid="stSidebar"] .stButton button{
-    background:#ffffff!important;
-    color:var(--v200-blue)!important;
-    -webkit-text-fill-color:var(--v200-blue)!important;
-    border:2px solid var(--v200-blue)!important;
-    border-radius:13px!important;
-    min-height:50px!important;
-    font-size:15px!important;
-    font-weight:1000!important;
-    box-shadow:0 4px 12px rgba(0,87,217,.08)!important;
-    transition:all .16s ease-in-out!important;
-    opacity:1!important;
-}
-.stButton button *,
-.stDownloadButton button *,
-section[data-testid="stSidebar"] .stButton button *{
-    color:inherit!important;
-    -webkit-text-fill-color:inherit!important;
-    font-weight:1000!important;
-}
-.stButton button:hover,
-.stDownloadButton button:hover,
-section[data-testid="stSidebar"] .stButton button:hover{
-    background:var(--v200-orange)!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:var(--v200-orange)!important;
-    box-shadow:0 8px 20px rgba(245,179,1,.30)!important;
-    transform:translateY(-1px)!important;
-}
-.stButton button:active,
-.stButton button:focus,
-.stDownloadButton button:active,
-.stDownloadButton button:focus{
-    background:var(--v200-blue)!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-
-/* HEADER BLU VIVO */
-.v200-topbar{
-    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%);
-    border-radius:0 0 22px 22px;
-    padding:24px 30px;
-    margin:-10px 0 24px 0;
-    box-shadow:0 12px 30px rgba(0,87,217,.25);
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:18px;
-}
-.v200-brand{
-    display:flex;
-    align-items:center;
-    gap:20px;
-}
-.v200-logo{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-size:48px;
-    font-weight:1000;
-    letter-spacing:.5px;
-    line-height:1;
-}
-.v200-divider{
-    width:1px;
-    height:44px;
-    background:rgba(255,255,255,.42);
-}
-.v200-title{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-size:23px;
-    font-weight:1000;
-    text-transform:uppercase;
-}
-.v200-status{
-    display:flex;
-    gap:22px;
-    align-items:center;
-    flex-wrap:wrap;
-}
-.v200-pill{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:900;
-    font-size:15px;
-    white-space:nowrap;
-}
-
-/* DASHBOARD HOME */
-.v200-welcome{
-    background:#ffffff;
-    border:1px solid var(--v200-border);
-    border-radius:18px;
-    padding:26px 30px;
-    margin:12px 0 22px 0;
-    box-shadow:0 8px 22px rgba(0,87,217,.07);
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:18px;
-}
-.v200-welcome h1{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-size:31px!important;
-    margin:0 0 8px 0!important;
-    font-weight:1000!important;
-}
-.v200-welcome p{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    font-size:17px!important;
-    font-weight:800!important;
-    margin:0!important;
-}
-.v200-mark{
-    color:#000!important;
-    -webkit-text-fill-color:#000!important;
-    font-size:46px;
-    font-weight:1000;
-    white-space:nowrap;
-}
-.v200-mark small{
-    display:block;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-size:13px;
-    letter-spacing:1px;
-}
-
-/* KPI */
-.v200-kpi-grid{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:18px;
-    margin:18px 0 22px 0;
-}
-.v200-kpi{
-    background:#ffffff;
-    border:1px solid var(--v200-border);
-    border-radius:18px;
-    padding:20px;
-    box-shadow:0 8px 22px rgba(0,87,217,.07);
-    display:flex;
-    gap:16px;
-    align-items:center;
-}
-.v200-kpi-icon{
-    width:60px;
-    height:60px;
-    border-radius:50%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:28px;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:1000;
-}
-.v200-kpi-icon.blue{background:#0057D9;}
-.v200-kpi-icon.green{background:#159947;}
-.v200-kpi-icon.orange{background:#F28C00;}
-.v200-kpi-icon.purple{background:#6B35B8;}
-.v200-kpi-num{
-    color:#0057D9!important;
-    -webkit-text-fill-color:#0057D9!important;
-    font-size:34px;
-    font-weight:1000;
-    line-height:1;
-}
-.v200-kpi-label{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    font-size:15px;
-    font-weight:1000;
-    text-transform:uppercase;
-    margin-top:4px;
-}
-.v200-kpi-sub{
-    color:#475569!important;
-    -webkit-text-fill-color:#475569!important;
-    font-size:14px;
-    font-weight:800;
-    margin-top:8px;
-}
-
-/* PANEL */
-.v200-panel{
-    background:#ffffff;
-    border:1px solid var(--v200-border);
-    border-radius:18px;
-    padding:22px;
-    box-shadow:0 8px 22px rgba(0,87,217,.07);
-    margin-bottom:18px;
-}
-.v200-panel-title{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    font-size:21px;
-    font-weight:1000;
-    margin-bottom:16px;
-    text-transform:uppercase;
-}
-
-/* SEZIONI ESISTENTI */
-.v100-title-bar,
-.v102-title-bar,
-.v90-section-title,
-.v101-menu-title{
-    background:#ffffff!important;
-    color:#0057D9!important;
-    -webkit-text-fill-color:#0057D9!important;
-    border:1px solid var(--v200-border)!important;
-    border-left:8px solid #0057D9!important;
-    border-radius:17px!important;
-    padding:16px 21px!important;
-    margin:18px 0 14px 0!important;
-    font-size:23px!important;
-    font-weight:1000!important;
-    box-shadow:0 7px 18px rgba(0,87,217,.08)!important;
-}
-.v100-row-card{
-    background:#ffffff!important;
-    border:1px solid var(--v200-border)!important;
-    border-left:6px solid #0057D9!important;
-    border-radius:18px!important;
-    padding:18px!important;
-    margin:14px 0 12px 0!important;
-    box-shadow:0 7px 18px rgba(0,87,217,.08)!important;
-}
-.v100-row-code{
-    color:#0057D9!important;
-    -webkit-text-fill-color:#0057D9!important;
-    font-size:23px!important;
-    font-weight:1000!important;
-}
-
-/* TABELLE */
-table{
-    border-collapse:separate!important;
-    border-spacing:0!important;
-    width:100%!important;
-    border:1px solid var(--v200-border)!important;
-    border-radius:15px!important;
-    overflow:hidden!important;
-    background:#ffffff!important;
-    box-shadow:0 7px 18px rgba(0,87,217,.06)!important;
-}
-th{
-    background:#0057D9!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:1000!important;
-    padding:12px!important;
-}
-td{
-    background:#ffffff!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:750!important;
-    padding:10px!important;
-    border-bottom:1px solid #EEF2F7!important;
-}
-tr:nth-child(even) td{
-    background:#F3F7FF!important;
-}
-
-/* ALERT E INPUT */
-[data-testid="stAlert"],
-[data-testid="stAlert"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:850!important;
-}
-.block-container input,
-.block-container textarea,
-.block-container [data-baseweb="input"] *,
-.block-container [data-baseweb="select"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    background:#ffffff!important;
-    font-weight:850!important;
-}
-
-/* NASCONDE BANNER VECCHIO SE PRESENTE */
-.v200-hide-old-header .old-header,
-.v200-hide-old-header .banner,
-.v200-hide-old-header .hero-old{
-    display:none!important;
-}
-
-/* RESPONSIVE */
-@media(max-width:1000px){
-    .v200-topbar,.v200-welcome{flex-direction:column;align-items:flex-start;}
-    .v200-kpi-grid{grid-template-columns:repeat(2,1fr);}
-}
-@media(max-width:650px){
-    .v200-kpi-grid{grid-template-columns:1fr;}
-    .v200-logo{font-size:38px;}
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-
-# =========================
-# V200 - PROFESSIONAL LAYOUT HELPERS
-# =========================
-
-def v200_num(v, default=0.0):
-    try:
-        if v is None:
-            return default
-        if isinstance(v, (int, float)):
-            return float(v)
-        s = str(v).strip().replace("€", "").replace(" ", "")
-        if not s:
-            return default
-        if "," in s and "." in s and s.rfind(",") > s.rfind("."):
-            s = s.replace(".", "").replace(",", ".")
-        elif "," in s and "." not in s:
-            s = s.replace(",", ".")
-        return float(s)
-    except Exception:
-        return default
-
-
-def v200_imponibile(p):
-    imp = v200_num(p.get("imponibile", 0))
-    if imp > 0:
-        return imp
-    totale = v200_num(p.get("totale_iva", p.get("totale", 0)))
-    return totale / (1 + IVA) if totale > 0 else 0.0
-
-
-def v200_render_topbar(profilo, nome_utente=""):
-    profilo_label = PROFILI.get(profilo, profilo or "Cliente finale")
-    oggi = datetime.now().strftime("%d/%m/%Y")
-    ora = datetime.now().strftime("%H:%M")
-    st.markdown(f"""
-    <div class="v200-topbar">
-        <div class="v200-brand">
-            <div class="v200-logo">SA-TEC</div>
-            <div class="v200-divider"></div>
-            <div class="v200-title">Configuratore Porte Automatiche V200</div>
-        </div>
-        <div class="v200-status">
-            <div class="v200-pill">📡 Nessun modem rilevato</div>
-            <div class="v200-pill">👤 {profilo_label}</div>
-            <div class="v200-pill">📅 {oggi}</div>
-            <div class="v200-pill">🕒 {ora}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def v200_render_dashboard(preventivi, clienti=None, rivenditori=None):
-    clienti = clienti or []
-    rivenditori = rivenditori or []
-    totale_prev = len(preventivi)
-    valore = sum(v200_imponibile(p) for p in preventivi)
-    n_clienti = len(clienti)
-    n_riv = len(rivenditori)
-
-    st.markdown("""
-    <div class="v200-welcome">
-        <div>
-            <h1>BENVENUTO NEL CONFIGURATORE SA-TEC</h1>
-            <p>Configura in modo semplice, sicuro e professionale le tue porte automatiche.</p>
-        </div>
-        <div class="v200-mark">SA-TEC<small>THE DOOR TECHNOLOGY</small></div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown(f"""
-    <div class="v200-kpi-grid">
-        <div class="v200-kpi">
-            <div class="v200-kpi-icon blue">📄</div>
-            <div>
-                <div class="v200-kpi-num">{totale_prev}</div>
-                <div class="v200-kpi-label">Preventivi</div>
-                <div class="v200-kpi-sub">Totale preventivi creati</div>
-            </div>
-        </div>
-        <div class="v200-kpi">
-            <div class="v200-kpi-icon green">👥</div>
-            <div>
-                <div class="v200-kpi-num">{n_clienti}</div>
-                <div class="v200-kpi-label">Clienti</div>
-                <div class="v200-kpi-sub">Clienti registrati</div>
-            </div>
-        </div>
-        <div class="v200-kpi">
-            <div class="v200-kpi-icon orange">🏪</div>
-            <div>
-                <div class="v200-kpi-num">{n_riv}</div>
-                <div class="v200-kpi-label">Rivenditori</div>
-                <div class="v200-kpi-sub">Rivenditori attivi</div>
-            </div>
-        </div>
-        <div class="v200-kpi">
-            <div class="v200-kpi-icon purple">€</div>
-            <div>
-                <div class="v200-kpi-num">{euro(valore)}</div>
-                <div class="v200-kpi-label">Valore</div>
-                <div class="v200-kpi-sub">Valore totale imponibile</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def v200_sidebar_nav(profilo):
-    st.sidebar.markdown("## SA-TEC")
-    st.sidebar.markdown("**Configuratore Porte Automatiche V200**")
-
-    # Admin solo se sei già SA-TEC. Da cliente NON appare Entra in Admin.
-    if profilo == "SA-TEC":
-        if st.sidebar.button("🏠 DASHBOARD", key="v200_nav_dashboard", use_container_width=True):
-            st.session_state.admin_menu_v102 = "dashboard"
-            st.rerun()
-        if st.sidebar.button("➕ NUOVO PREVENTIVO", key="v200_nav_nuovo", use_container_width=True):
-            st.session_state.admin_menu_v102 = "configuratore"
-            st.rerun()
-        if st.sidebar.button("📋 PREVENTIVI", key="v200_nav_preventivi", use_container_width=True):
-            st.session_state.admin_menu_v102 = "preventivi"
-            st.rerun()
-        if st.sidebar.button("👥 CLIENTI", key="v200_nav_clienti", use_container_width=True):
-            st.session_state.admin_menu_v102 = "clienti"
-            st.rerun()
-        if st.sidebar.button("🏪 RIVENDITORI", key="v200_nav_rivenditori", use_container_width=True):
-            st.session_state.admin_menu_v102 = "rivenditori"
-            st.rerun()
-        if st.sidebar.button("🧪 SIMULAZIONE", key="v200_nav_sim", use_container_width=True):
-            st.session_state.admin_menu_v102 = "simulazione"
-            st.rerun()
-    else:
-        if st.sidebar.button("➕ NUOVO PREVENTIVO", key="v200_cliente_nuovo", use_container_width=True):
-            st.session_state.admin_menu_v102 = "configuratore"
-            st.rerun()
-
-
 # =========================
 # ADMIN V102 - GESTIONALE SUBITO VISIBILE
 # =========================
@@ -6043,6 +5527,14 @@ def v200_sidebar_nav(profilo):
 if profilo == "SA-TEC":
     st.sidebar.markdown("---")
     st.sidebar.success("AREA ADMIN ATTIVA")
+
+    if st.sidebar.button("➕ CREA PREVENTIVO", key="sidebar_crea_preventivo_v201", use_container_width=True):
+        st.session_state.admin_menu_v102 = "configuratore"
+        st.rerun()
+
+    if st.sidebar.button("📋 GESTIONE PREVENTIVI", key="sidebar_gestione_preventivi_v201", use_container_width=True):
+        st.session_state.admin_menu_v102 = "preventivi"
+        st.rerun()
 
     if st.sidebar.button("➕ CREA PREVENTIVO", key="sidebar_crea_preventivo_v107", use_container_width=True):
         st.session_state.admin_menu_v102 = "configuratore"
@@ -6257,10 +5749,258 @@ if profilo == "SA-TEC":
 
 
 
-# V200_TOPBAR_CLIENTE_INSERITO
-if profilo != "SA-TEC":
-    v200_render_topbar(profilo, st.session_state.get("logged_nome", ""))
-    v200_sidebar_nav(profilo)
+# =========================
+# V201 - EMERGENZA: GRAFICA CORRETTA SENZA TOCCARE FRECCE
+# =========================
+st.markdown("""
+<style>
+:root{
+    --satec-blue:#0057D9;
+    --satec-blue-dark:#003C96;
+    --satec-orange:#F5B301;
+    --satec-bg:#F3F7FF;
+    --satec-border:#BFD7F5;
+    --satec-text:#111827;
+}
+
+/* Base */
+.stApp{
+    background:linear-gradient(180deg,#F3F7FF 0%,#FFFFFF 55%)!important;
+}
+.block-container{
+    padding-top:1rem!important;
+}
+
+/* Testi sempre leggibili */
+.block-container,
+.block-container *:not(svg):not(path){
+    color:var(--satec-text)!important;
+    -webkit-text-fill-color:var(--satec-text)!important;
+}
+.block-container h1,
+.block-container h2,
+.block-container h3{
+    color:var(--satec-blue-dark)!important;
+    -webkit-text-fill-color:var(--satec-blue-dark)!important;
+    font-weight:1000!important;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"]{
+    background:linear-gradient(180deg,#003C96 0%,#0057D9 100%)!important;
+    border-right:5px solid var(--satec-orange)!important;
+}
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] div{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+section[data-testid="stSidebar"] input,
+section[data-testid="stSidebar"] textarea,
+section[data-testid="stSidebar"] [data-baseweb="input"] *,
+section[data-testid="stSidebar"] [data-baseweb="select"] *{
+    background:#ffffff!important;
+    color:var(--satec-text)!important;
+    -webkit-text-fill-color:var(--satec-text)!important;
+    font-weight:900!important;
+}
+
+/* Testata principale / banner: blu vivo e lettere bianche */
+.v200-topbar,
+.v111-admin-header,
+.v110-admin-header,
+.v105-admin-header,
+.v102-admin-hero,
+.v104-admin-hero,
+.v90-hero,
+.v101-top,
+.satec-header,
+.header-satec,
+.main-header,
+.hero,
+.banner,
+[class*="header"],
+[class*="hero"]{
+    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%)!important;
+    border-radius:18px!important;
+    border:0!important;
+    box-shadow:0 10px 26px rgba(0,87,217,.22)!important;
+}
+
+/* Dentro testata tutto bianco */
+.v200-topbar *,
+.v111-admin-header *,
+.v110-admin-header *,
+.v105-admin-header *,
+.v102-admin-hero *,
+.v104-admin-hero *,
+.v90-hero *,
+.v101-top *,
+.satec-header *,
+.header-satec *,
+.main-header *,
+.hero *,
+.banner *,
+[class*="header"] *,
+[class*="hero"] *{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    text-shadow:none!important;
+}
+
+/* ATTENZIONE: le card e i dettagli NON devono diventare blu */
+.card,
+.v100-row-card,
+.crm-detail-v68,
+.crm-white-box-v68,
+.crm-mini-card-v68,
+.v85-help-box,
+.v200-kpi,
+.v200-panel{
+    background:#ffffff!important;
+}
+.card *,
+.v100-row-card *,
+.crm-detail-v68 *,
+.crm-white-box-v68 *,
+.crm-mini-card-v68 *,
+.v85-help-box *,
+.v200-kpi *,
+.v200-panel *{
+    color:var(--satec-text)!important;
+    -webkit-text-fill-color:var(--satec-text)!important;
+}
+
+/* Bottoni definitivi: testo sempre visibile anche senza mouse */
+.stButton button,
+.stDownloadButton button,
+section[data-testid="stSidebar"] .stButton button{
+    background:#ffffff!important;
+    color:var(--satec-blue)!important;
+    -webkit-text-fill-color:var(--satec-blue)!important;
+    border:2px solid var(--satec-blue)!important;
+    border-radius:13px!important;
+    min-height:50px!important;
+    font-size:15px!important;
+    font-weight:1000!important;
+    box-shadow:0 4px 12px rgba(0,87,217,.08)!important;
+    opacity:1!important;
+}
+.stButton button *,
+.stDownloadButton button *,
+section[data-testid="stSidebar"] .stButton button *{
+    color:inherit!important;
+    -webkit-text-fill-color:inherit!important;
+    opacity:1!important;
+    font-weight:1000!important;
+}
+.stButton button:hover,
+.stDownloadButton button:hover,
+section[data-testid="stSidebar"] .stButton button:hover{
+    background:var(--satec-orange)!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border-color:var(--satec-orange)!important;
+    box-shadow:0 8px 20px rgba(245,179,1,.30)!important;
+}
+.stButton button:hover *,
+.stDownloadButton button:hover *{
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+}
+.stButton button:focus,
+.stButton button:active,
+.stDownloadButton button:focus,
+.stDownloadButton button:active{
+    background:var(--satec-blue)!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    border-color:var(--satec-blue)!important;
+}
+
+/* Titoli sezione */
+.v100-title-bar,
+.v102-title-bar,
+.v90-section-title,
+.v101-menu-title,
+.v87-section-title,
+.v85-toggle-title{
+    background:#ffffff!important;
+    color:var(--satec-blue)!important;
+    -webkit-text-fill-color:var(--satec-blue)!important;
+    border:1px solid var(--satec-border)!important;
+    border-left:8px solid var(--satec-blue)!important;
+    border-radius:17px!important;
+    padding:16px 21px!important;
+    margin:18px 0 14px 0!important;
+    font-size:23px!important;
+    font-weight:1000!important;
+    box-shadow:0 7px 18px rgba(0,87,217,.08)!important;
+}
+.v100-title-bar *,
+.v102-title-bar *,
+.v90-section-title *,
+.v101-menu-title *,
+.v87-section-title *,
+.v85-toggle-title *{
+    color:var(--satec-blue)!important;
+    -webkit-text-fill-color:var(--satec-blue)!important;
+}
+
+/* Tabelle */
+table{
+    border-collapse:separate!important;
+    border-spacing:0!important;
+    width:100%!important;
+    border:1px solid var(--satec-border)!important;
+    border-radius:15px!important;
+    overflow:hidden!important;
+    background:#ffffff!important;
+}
+th{
+    background:var(--satec-blue)!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:1000!important;
+    padding:12px!important;
+}
+td{
+    background:#ffffff!important;
+    color:var(--satec-text)!important;
+    -webkit-text-fill-color:var(--satec-text)!important;
+    font-weight:750!important;
+    padding:10px!important;
+}
+tr:nth-child(even) td{
+    background:#F3F7FF!important;
+}
+
+/* Alert leggibili */
+[data-testid="stAlert"],
+[data-testid="stAlert"] *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-weight:850!important;
+}
+
+/* Input main leggibili */
+.block-container input,
+.block-container textarea,
+.block-container [data-baseweb="input"] *,
+.block-container [data-baseweb="select"] *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    background:#ffffff!important;
+    font-weight:850!important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 # =========================
 # CONFIGURATORE
@@ -7104,7 +6844,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V200 - Professional CRM SA-TEC")
+st.caption("Versione V201 - Emergenza Frecce Ripristinate")
 
 st.markdown(f"""
 <div class="footer">
