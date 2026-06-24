@@ -6008,6 +6008,297 @@ section[data-testid="stSidebar"] .stAlert *{
 """, unsafe_allow_html=True)
 
 
+
+# =========================
+# V204 - GRAFICA FINALE SA-TEC
+# =========================
+st.markdown("""
+<style>
+:root{
+    --satec-blue:#0057D9;
+    --satec-blue-dark:#003C96;
+    --satec-orange:#F5B301;
+    --satec-text:#111827;
+    --satec-bg:#F3F7FF;
+}
+
+/* SFONDO */
+.stApp{
+    background:linear-gradient(180deg,#F3F7FF 0%,#FFFFFF 65%)!important;
+}
+
+/* TESTATA / LOGO PRINCIPALE BLU VIVO */
+.v90-hero,
+.v101-top,
+.v102-admin-hero,
+.v104-admin-hero,
+.v105-admin-header,
+.v106-admin-header,
+.v110-admin-header,
+.v111-admin-header,
+.v200-topbar,
+.satec-header,
+.header-satec,
+.main-header,
+.hero-satec,
+[class*="satec"][class*="header"],
+[class*="admin"][class*="header"]{
+    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%)!important;
+    border:0!important;
+    border-radius:20px!important;
+    box-shadow:0 12px 30px rgba(0,87,217,.26)!important;
+}
+
+/* TUTTO NELLA TESTATA BIANCO */
+.v90-hero *,
+.v101-top *,
+.v102-admin-hero *,
+.v104-admin-hero *,
+.v105-admin-header *,
+.v106-admin-header *,
+.v110-admin-header *,
+.v111-admin-header *,
+.v200-topbar *,
+.satec-header *,
+.header-satec *,
+.main-header *,
+.hero-satec *,
+[class*="satec"][class*="header"] *,
+[class*="admin"][class*="header"] *{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-weight:1000!important;
+    text-shadow:none!important;
+}
+
+/* LOGO SA-TEC PIU' DEFINITO */
+.v90-hero h1,
+.v101-top h1,
+.v102-admin-hero h1,
+.v105-admin-title,
+.v106-admin-title,
+.v110-admin-title,
+.v111-admin-title,
+.v200-logo,
+[class*="logo"],
+[class*="brand"]{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:44px!important;
+    font-weight:1000!important;
+    letter-spacing:1px!important;
+    line-height:1.05!important;
+    text-shadow:0 2px 6px rgba(0,0,0,.22)!important;
+}
+
+/* SIDEBAR */
+section[data-testid="stSidebar"]{
+    background:linear-gradient(180deg,#003C96 0%,#0057D9 100%)!important;
+    border-right:5px solid #F5B301!important;
+}
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] div{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+}
+section[data-testid="stSidebar"] input,
+section[data-testid="stSidebar"] textarea,
+section[data-testid="stSidebar"] [data-baseweb="input"] *,
+section[data-testid="stSidebar"] [data-baseweb="select"] *{
+    background:#FFFFFF!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-weight:900!important;
+}
+
+/* BOTTONI BASE: SEMPRE LEGGIBILI */
+.stButton button,
+.stDownloadButton button,
+section[data-testid="stSidebar"] .stButton button{
+    background:#FFFFFF!important;
+    color:#0057D9!important;
+    -webkit-text-fill-color:#0057D9!important;
+    border:2px solid #0057D9!important;
+    border-radius:13px!important;
+    min-height:50px!important;
+    font-size:15px!important;
+    font-weight:1000!important;
+    opacity:1!important;
+    box-shadow:0 4px 12px rgba(0,87,217,.10)!important;
+}
+
+/* TESTO INTERNO BOTTONI SEMPRE VISIBILE */
+.stButton button *,
+.stDownloadButton button *,
+section[data-testid="stSidebar"] .stButton button *{
+    color:inherit!important;
+    -webkit-text-fill-color:inherit!important;
+    font-weight:1000!important;
+    opacity:1!important;
+}
+
+/* HOVER ARANCIONE */
+.stButton button:hover,
+.stDownloadButton button:hover,
+section[data-testid="stSidebar"] .stButton button:hover{
+    background:#F5B301!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border-color:#F5B301!important;
+    box-shadow:0 8px 20px rgba(245,179,1,.30)!important;
+}
+.stButton button:hover *,
+.stDownloadButton button:hover *,
+section[data-testid="stSidebar"] .stButton button:hover *{
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+}
+
+/* ACTIVE BLU */
+.stButton button:focus,
+.stButton button:active,
+.stDownloadButton button:focus,
+.stDownloadButton button:active{
+    background:#0057D9!important;
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    border-color:#0057D9!important;
+}
+
+/* MENU ADMIN CENTRALE: BLU CON TESTO E DESCRIZIONE BIANCHI */
+div[data-testid="stHorizontalBlock"] .stButton button{
+    background:#0057D9!important;
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    border:2px solid #0057D9!important;
+    min-height:58px!important;
+    box-shadow:0 8px 18px rgba(0,87,217,.20)!important;
+}
+div[data-testid="stHorizontalBlock"] .stButton button *,
+div[data-testid="stHorizontalBlock"] .stButton button p,
+div[data-testid="stHorizontalBlock"] .stButton button span,
+div[data-testid="stHorizontalBlock"] .stButton button div{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-weight:1000!important;
+    opacity:1!important;
+}
+div[data-testid="stHorizontalBlock"] .stButton button:hover{
+    background:#F5B301!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border-color:#F5B301!important;
+}
+div[data-testid="stHorizontalBlock"] .stButton button:hover *,
+div[data-testid="stHorizontalBlock"] .stButton button:hover p,
+div[data-testid="stHorizontalBlock"] .stButton button:hover span,
+div[data-testid="stHorizontalBlock"] .stButton button:hover div{
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+}
+
+/* TITOLI SEZIONE */
+.v100-title-bar,
+.v102-title-bar,
+.v90-section-title,
+.v101-menu-title,
+.v87-section-title,
+.v85-toggle-title{
+    background:#0057D9!important;
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    border:0!important;
+    border-radius:17px!important;
+    padding:16px 21px!important;
+    margin:18px 0 14px 0!important;
+    font-size:23px!important;
+    font-weight:1000!important;
+    box-shadow:0 8px 20px rgba(0,87,217,.18)!important;
+}
+.v100-title-bar *,
+.v102-title-bar *,
+.v90-section-title *,
+.v101-menu-title *,
+.v87-section-title *,
+.v85-toggle-title *{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+}
+
+/* CARD E CONTENUTI RESTANO CHIARI */
+.card,
+.v100-row-card,
+.crm-detail-v68,
+.crm-white-box-v68,
+.crm-mini-card-v68,
+.v85-help-box,
+.v200-kpi,
+.v200-panel{
+    background:#FFFFFF!important;
+}
+.card *,
+.v100-row-card *,
+.crm-detail-v68 *,
+.crm-white-box-v68 *,
+.crm-mini-card-v68 *,
+.v85-help-box *,
+.v200-kpi *,
+.v200-panel *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+
+/* TESTA DETTAGLIO PREVENTIVO BLU E TESTO BIANCO */
+.crm-detail-head-v68,
+.crm-detail-head-v68 *{
+    background:#0057D9!important;
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+}
+
+/* TABELLE */
+th{
+    background:#0057D9!important;
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-weight:1000!important;
+}
+td{
+    background:#FFFFFF!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+tr:nth-child(even) td{
+    background:#F3F7FF!important;
+}
+
+/* ALERT */
+[data-testid="stAlert"],
+[data-testid="stAlert"] *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-weight:850!important;
+}
+
+/* INPUT MAIN */
+.block-container input,
+.block-container textarea,
+.block-container [data-baseweb="input"] *,
+.block-container [data-baseweb="select"] *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    background:#FFFFFF!important;
+    font-weight:850!important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 # =========================
 # CONFIGURATORE
 # =========================
@@ -6850,7 +7141,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V203 - Pulizia Admin")
+st.caption("Versione V204 - Grafica Finale SA-TEC")
 
 st.markdown(f"""
 <div class="footer">
