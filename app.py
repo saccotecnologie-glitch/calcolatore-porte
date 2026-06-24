@@ -5528,21 +5528,6 @@ if profilo == "SA-TEC":
     st.sidebar.markdown("---")
     st.sidebar.success("AREA ADMIN ATTIVA")
 
-    if st.sidebar.button("➕ CREA PREVENTIVO", key="sidebar_crea_preventivo_v201", use_container_width=True):
-        st.session_state.admin_menu_v102 = "configuratore"
-        st.rerun()
-
-    if st.sidebar.button("📋 GESTIONE PREVENTIVI", key="sidebar_gestione_preventivi_v201", use_container_width=True):
-        st.session_state.admin_menu_v102 = "preventivi"
-        st.rerun()
-
-    if st.sidebar.button("➕ CREA PREVENTIVO", key="sidebar_crea_preventivo_v107", use_container_width=True):
-        st.session_state.admin_menu_v102 = "configuratore"
-        st.rerun()
-
-    if st.sidebar.button("📋 GESTIONE PREVENTIVI", key="sidebar_gestione_preventivi_v107", use_container_width=True):
-        st.session_state.admin_menu_v102 = "preventivi"
-        st.rerun()
 
     st.sidebar.markdown("""
     <div class="v102-side-logo">
@@ -5997,6 +5982,27 @@ tr:nth-child(even) td{
     -webkit-text-fill-color:#111827!important;
     background:#ffffff!important;
     font-weight:850!important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+
+# =========================
+# V203 - PULIZIA SIDEBAR ADMIN
+# =========================
+st.markdown("""
+<style>
+/* Sidebar Admin più pulita: nessun doppione comandi */
+section[data-testid="stSidebar"]{
+    background:linear-gradient(180deg,#003C96 0%,#0057D9 100%)!important;
+    border-right:5px solid #F5B301!important;
+}
+section[data-testid="stSidebar"] [data-testid="stAlert"] *,
+section[data-testid="stSidebar"] .stAlert *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-weight:900!important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -6844,7 +6850,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V201 - Emergenza Frecce Ripristinate")
+st.caption("Versione V203 - Pulizia Admin")
 
 st.markdown(f"""
 <div class="footer">
