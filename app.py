@@ -5282,6 +5282,148 @@ tr:nth-child(even) td{
 """, unsafe_allow_html=True)
 
 
+
+# =========================
+# V106 - ADMIN VIVO + CREA PREVENTIVO
+# =========================
+st.markdown("""
+<style>
+
+/* Colori più vivi */
+:root{
+    --satec-blue:#06499B;
+    --satec-dark:#0B2A4A;
+    --satec-orange:#F5B301;
+    --satec-bg:#F2F7FF;
+}
+
+/* Sfondo */
+.stApp{
+    background:linear-gradient(180deg,#F2F7FF 0%,#FFFFFF 55%)!important;
+}
+
+/* Header Admin più vivo */
+.v105-admin-header,
+.v106-admin-header{
+    background:linear-gradient(135deg,#ffffff 0%,#eef6ff 100%)!important;
+    border:1px solid #b9d5f5!important;
+    border-left:10px solid #06499B!important;
+    border-radius:20px!important;
+    padding:28px 32px!important;
+    margin:12px 0 18px 0!important;
+    box-shadow:0 10px 28px rgba(6,73,155,.14)!important;
+}
+
+.v105-admin-title,
+.v106-admin-title{
+    color:#06499B!important;
+    -webkit-text-fill-color:#06499B!important;
+    font-size:46px!important;
+    font-weight:1000!important;
+}
+
+.v105-admin-subtitle,
+.v106-admin-subtitle{
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+    font-size:19px!important;
+    font-weight:900!important;
+}
+
+.v105-admin-badge,
+.v106-admin-badge{
+    background:linear-gradient(135deg,#F5B301,#FFD766)!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    border:2px solid #e2a300!important;
+    border-radius:18px!important;
+    box-shadow:0 8px 20px rgba(245,179,1,.25)!important;
+}
+
+/* Menu admin più acceso */
+div[data-testid="stHorizontalBlock"] .stButton button{
+    background:#06499B!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    border:0!important;
+    border-radius:14px!important;
+    min-height:58px!important;
+    font-size:16px!important;
+    font-weight:1000!important;
+    box-shadow:0 8px 18px rgba(6,73,155,.22)!important;
+}
+
+div[data-testid="stHorizontalBlock"] .stButton button:hover{
+    background:#F5B301!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+
+/* Bottone crea preventivo evidenziato */
+button[kind="secondary"]:has(div p){
+    font-weight:900!important;
+}
+
+/* Titoli sezioni più vivi */
+.v100-title-bar,
+.v102-title-bar,
+.v90-section-title,
+.v101-menu-title{
+    background:linear-gradient(135deg,#06499B,#0b5cff)!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    border:0!important;
+    border-radius:18px!important;
+    box-shadow:0 8px 20px rgba(6,73,155,.18)!important;
+}
+
+/* Card preventivi */
+.v100-row-card{
+    border:1px solid #b9d5f5!important;
+    border-left:6px solid #06499B!important;
+    box-shadow:0 8px 20px rgba(6,73,155,.10)!important;
+}
+
+/* Tabelle */
+th{
+    background:#06499B!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+tr:nth-child(even) td{
+    background:#F2F7FF!important;
+}
+
+/* Sidebar viva */
+section[data-testid="stSidebar"]{
+    background:linear-gradient(180deg,#0B2A4A,#06499B)!important;
+    border-right:5px solid #F5B301!important;
+}
+
+section[data-testid="stSidebar"] .stButton button{
+    background:#ffffff!important;
+    color:#06499B!important;
+    -webkit-text-fill-color:#06499B!important;
+    border-radius:14px!important;
+    font-weight:1000!important;
+}
+section[data-testid="stSidebar"] .stButton button:hover{
+    background:#F5B301!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+
+/* Info box */
+[data-testid="stAlert"],
+[data-testid="stAlert"] *{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-weight:850!important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 # =========================
 # ADMIN V102 - GESTIONALE SUBITO VISIBILE
 # =========================
@@ -5332,14 +5474,14 @@ if profilo == "SA-TEC":
     preventivi = carica_preventivi()
 
     st.markdown("""
-    <div class="v105-admin-header">
+    <div class="v105-admin-header v106-admin-header">
         <div>
-            <div class="v105-admin-title">SA-TEC ADMIN</div>
-            <div class="v105-admin-subtitle">
+            <div class="v105-admin-title v106-admin-title">SA-TEC ADMIN</div>
+            <div class="v105-admin-subtitle v106-admin-subtitle">
                 Gestionale commerciale porte automatiche · Preventivi · Clienti · Rivenditori
             </div>
         </div>
-        <div class="v105-admin-badge">
+        <div class="v105-admin-badge v106-admin-badge">
             🛡️ AREA<br>AMMINISTRATIVA
         </div>
     </div>
@@ -5348,31 +5490,41 @@ if profilo == "SA-TEC":
     if "admin_menu_v102" not in st.session_state:
         st.session_state.admin_menu_v102 = "preventivi"
 
-    m1, m2, m3, m4 = st.columns(4)
+    m1, m2, m3, m4, m5 = st.columns(5)
 
     with m1:
+        if st.button("➕ CREA PREVENTIVO", key="menu_config_v106", use_container_width=True):
+            st.session_state.admin_menu_v102 = "configuratore"
+            st.rerun()
+
+    with m2:
         if st.button("📋 PREVENTIVI", key="menu_prev_v102", use_container_width=True):
             st.session_state.admin_menu_v102 = "preventivi"
             st.rerun()
 
-    with m2:
+    with m3:
         if st.button("👥 CLIENTI", key="menu_cli_v102", use_container_width=True):
             st.session_state.admin_menu_v102 = "clienti"
             st.rerun()
 
-    with m3:
+    with m4:
         if st.button("🏪 RIVENDITORI", key="menu_riv_v102", use_container_width=True):
             st.session_state.admin_menu_v102 = "rivenditori"
             st.rerun()
 
-    with m4:
+    with m5:
         if st.button("🧪 SIMULAZIONE", key="menu_sim_v102", use_container_width=True):
             st.session_state.admin_menu_v102 = "simulazione"
             st.rerun()
 
     st.markdown("---")
 
-    if st.session_state.admin_menu_v102 == "preventivi":
+    if st.session_state.admin_menu_v102 == "configuratore":
+        st.markdown('<div class="v102-title-bar">➕ CREA PREVENTIVO DA ADMIN</div>', unsafe_allow_html=True)
+        st.info("Modalità Admin: puoi creare un preventivo usando il configuratore sotto. Il preventivo verrà salvato nel CRM.")
+        # Non faccio st.stop(): lascio proseguire al configuratore sotto.
+
+    elif st.session_state.admin_menu_v102 == "preventivi":
         v100_render_admin(preventivi)
 
     elif st.session_state.admin_menu_v102 == "clienti":
@@ -5484,7 +5636,8 @@ if profilo == "SA-TEC":
         st.markdown('<div class="v102-title-bar">🧪 SIMULAZIONE FUNZIONAMENTO</div>', unsafe_allow_html=True)
         st.info("1) Esci da Admin e salva un preventivo come Cliente. 2) Entra come Rivenditore/Grossista e salva un preventivo. 3) Rientra come Admin e controlla preventivi, clienti e rivenditori.")
 
-    st.stop()
+    if st.session_state.get("admin_menu_v102") != "configuratore":
+        st.stop()
 
 
 # =========================
@@ -6329,7 +6482,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V105 - Minimal Professional")
+st.caption("Versione V106 - Admin Vivo + Crea Preventivo")
 
 st.markdown(f"""
 <div class="footer">
