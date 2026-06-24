@@ -4771,12 +4771,328 @@ tr:nth-child(even) td{
 
 
 # =========================
-# HEADER V302 FIX
+# HEADER V303 FINALE
 # =========================
 st.markdown("""
-<div style="background:linear-gradient(90deg,#0057D9,#003C96);padding:25px;border-radius:18px;color:white;">
-<h1 style="color:white;margin:0;">SA-TEC - CONFIGURATORE PORTE AUTOMATICHE</h1>
-<p style="color:white;margin:8px 0 0 0;">Tecnologia, sicurezza e soluzioni su misura</p>
+<style>
+:root{
+    --satec-blue:#0057D9;
+    --satec-dark:#003C96;
+    --satec-orange:#F5B301;
+    --satec-text:#111827;
+    --satec-border:#C9DCF7;
+}
+.stApp{
+    background:linear-gradient(180deg,#F4F8FF 0%,#FFFFFF 65%)!important;
+}
+.v303-header{
+    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%);
+    border-radius:18px;
+    padding:22px 28px;
+    margin:8px 0 18px 0;
+    box-shadow:0 12px 30px rgba(0,87,217,.28);
+    display:grid;
+    grid-template-columns:24% 42% 21% 13%;
+    align-items:center;
+    gap:20px;
+}
+.v303-brand{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:46px;
+    font-weight:1000;
+    letter-spacing:1px;
+    line-height:1;
+}
+.v303-brand-sub{
+    color:#EAF3FF!important;
+    -webkit-text-fill-color:#EAF3FF!important;
+    font-size:13px;
+    font-weight:1000;
+    letter-spacing:4px;
+    margin-top:12px;
+}
+.v303-title{
+    border-left:1px solid rgba(255,255,255,.45);
+    padding-left:24px;
+}
+.v303-title-main{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:30px;
+    line-height:1.05;
+    font-weight:1000;
+    letter-spacing:.4px;
+}
+.v303-title-main span{
+    color:#F5B301!important;
+    -webkit-text-fill-color:#F5B301!important;
+}
+.v303-title-sub{
+    color:#EAF3FF!important;
+    -webkit-text-fill-color:#EAF3FF!important;
+    font-size:14px;
+    font-weight:900;
+    margin-top:10px;
+}
+.v303-info{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:13px;
+    font-weight:900;
+    line-height:1.55;
+}
+.v303-info *{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+}
+.v303-sesamo{
+    border-left:1px solid rgba(255,255,255,.45);
+    padding-left:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+}
+.v303-sesamo-mark{
+    background:#F58220;
+    color:#071124!important;
+    -webkit-text-fill-color:#071124!important;
+    font-size:34px;
+    font-weight:1000;
+    padding:7px 12px;
+}
+.v303-sesamo-name{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-size:28px;
+    font-weight:1000;
+    line-height:1;
+}
+.v303-sesamo-sub{
+    color:#EAF3FF!important;
+    -webkit-text-fill-color:#EAF3FF!important;
+    font-size:10px;
+    font-weight:1000;
+    letter-spacing:.8px;
+    margin-top:4px;
+}
+.v303-product{
+    background:#FFFFFF;
+    border:1px solid #C9DCF7;
+    border-radius:16px;
+    padding:22px 26px;
+    margin:0 0 22px 0;
+    display:grid;
+    grid-template-columns:65% 35%;
+    align-items:center;
+    box-shadow:0 8px 22px rgba(0,87,217,.08);
+}
+.v303-product-title{
+    color:#0B2A4A!important;
+    -webkit-text-fill-color:#0B2A4A!important;
+    font-size:31px;
+    font-weight:1000;
+}
+.v303-product-sub{
+    color:#334155!important;
+    -webkit-text-fill-color:#334155!important;
+    font-size:16px;
+    font-weight:800;
+    margin-top:9px;
+    line-height:1.45;
+}
+.v303-product-logo{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:15px;
+}
+.v303-product-mark{
+    background:#F58220;
+    color:#071124!important;
+    -webkit-text-fill-color:#071124!important;
+    font-size:39px;
+    font-weight:1000;
+    padding:7px 14px;
+}
+.v303-product-name{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-size:39px;
+    font-weight:1000;
+    line-height:1;
+}
+.v303-product-tech{
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-size:13px;
+    font-weight:1000;
+    letter-spacing:1px;
+    margin-top:5px;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"]{
+    background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;
+    border-right:5px solid #F5B301!important;
+}
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] div{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+}
+section[data-testid="stSidebar"] input,
+section[data-testid="stSidebar"] textarea,
+section[data-testid="stSidebar"] [data-baseweb="input"] *,
+section[data-testid="stSidebar"] [data-baseweb="select"] *{
+    background:#FFFFFF!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-weight:900!important;
+}
+
+/* Pulsanti login e generali */
+.stButton button,
+.stDownloadButton button,
+section[data-testid="stSidebar"] .stButton button{
+    background:#FFFFFF!important;
+    color:#0057D9!important;
+    -webkit-text-fill-color:#0057D9!important;
+    border:2px solid #0057D9!important;
+    border-radius:13px!important;
+    min-height:48px!important;
+    font-size:15px!important;
+    font-weight:1000!important;
+    opacity:1!important;
+    box-shadow:0 4px 12px rgba(0,87,217,.10)!important;
+}
+.stButton button *,
+.stDownloadButton button *,
+section[data-testid="stSidebar"] .stButton button *{
+    color:inherit!important;
+    -webkit-text-fill-color:inherit!important;
+    font-weight:1000!important;
+    opacity:1!important;
+}
+.stButton button:hover,
+.stDownloadButton button:hover,
+section[data-testid="stSidebar"] .stButton button:hover{
+    background:#F5B301!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border-color:#F5B301!important;
+}
+.stButton button:hover *,
+.stDownloadButton button:hover *,
+section[data-testid="stSidebar"] .stButton button:hover *{
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+}
+
+/* Menu admin centrale */
+div[data-testid="stHorizontalBlock"] .stButton button{
+    background:#0057D9!important;
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    border:2px solid #0057D9!important;
+    min-height:56px!important;
+    border-radius:14px!important;
+}
+div[data-testid="stHorizontalBlock"] .stButton button *,
+div[data-testid="stHorizontalBlock"] .stButton button p,
+div[data-testid="stHorizontalBlock"] .stButton button span,
+div[data-testid="stHorizontalBlock"] .stButton button div{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    font-weight:1000!important;
+}
+
+/* Titoli admin */
+.v87-section-title,
+.v85-toggle-title,
+.v100-title-bar,
+.v102-title-bar{
+    background:#0057D9!important;
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+    border-radius:16px!important;
+}
+.v87-section-title *,
+.v85-toggle-title *,
+.v100-title-bar *,
+.v102-title-bar *{
+    color:#FFFFFF!important;
+    -webkit-text-fill-color:#FFFFFF!important;
+}
+
+@media(max-width:1100px){
+    .v303-header{
+        grid-template-columns:1fr;
+        text-align:center;
+    }
+    .v303-title,
+    .v303-sesamo{
+        border-left:0;
+        padding-left:0;
+    }
+    .v303-product{
+        grid-template-columns:1fr;
+        gap:18px;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="v303-header">
+    <div>
+        <div class="v303-brand">SA-TEC</div>
+        <div class="v303-brand-sub">PORTE AUTOMATICHE</div>
+    </div>
+    <div class="v303-title">
+        <div class="v303-title-main">
+            CONFIGURATORE<br>
+            <span>PORTE AUTOMATICHE</span>
+        </div>
+        <div class="v303-title-sub">TECNOLOGIA, SICUREZZA E SOLUZIONI SU MISURA</div>
+    </div>
+    <div class="v303-info">
+        📍 SA-TEC S.R.L.s<br>
+        Via L. Settembrini 84<br>
+        88046 Lamezia Terme (CZ)<br>
+        ☎ 0968-036797<br>
+        ✉ sacco.tecnologie@gmail.com
+    </div>
+    <div class="v303-sesamo">
+        <div class="v303-sesamo-mark">▌</div>
+        <div>
+            <div class="v303-sesamo-name">SESAMO</div>
+            <div class="v303-sesamo-sub">THE DOOR TECHNOLOGY</div>
+        </div>
+    </div>
+</div>
+
+<div class="v303-product">
+    <div>
+        <div class="v303-product-title">SESAMO POWERCORE PW100</div>
+        <div class="v303-product-sub">
+            Automazione lineare per porte scorrevoli automatiche,<br>
+            affidabile, sicura e compatibile con la normativa EN16005.
+        </div>
+    </div>
+    <div class="v303-product-logo">
+        <div class="v303-product-mark">▌</div>
+        <div>
+            <div class="v303-product-name">SESAMO</div>
+            <div class="v303-product-tech">THE DOOR TECHNOLOGY</div>
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -6782,7 +7098,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V301 - Fix HTML Testata")
+st.caption("Versione V303 - Finale Testata e Pulsanti")
 
 st.markdown(f"""
 <div class="footer">
