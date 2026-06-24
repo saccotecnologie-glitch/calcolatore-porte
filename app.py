@@ -4836,6 +4836,133 @@ td{
 
 
 
+
+# =========================
+# V104 - FIX CONTRASTO ADMIN DEFINITIVO
+# =========================
+st.markdown("""
+<style>
+
+/* SEPARATORE AREA ADMIN */
+.v104-admin-separator{
+    background:#ffffff!important;
+    border:3px solid #06499b!important;
+    border-radius:22px!important;
+    padding:14px 20px!important;
+    margin:24px 0 14px 0!important;
+    box-shadow:0 8px 24px rgba(6,73,155,.16)!important;
+}
+.v104-admin-separator span{
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+    font-size:24px!important;
+    font-weight:1000!important;
+}
+
+/* HEADER ADMIN - vince su tutti i CSS vecchi */
+.v102-admin-hero,
+.v104-admin-hero{
+    background:linear-gradient(135deg,#061b35 0%,#06499b 55%,#0b5cff 100%)!important;
+    border-radius:28px!important;
+    padding:34px 38px!important;
+    margin:8px 0 16px 0!important;
+    box-shadow:0 18px 40px rgba(6,73,155,.32)!important;
+    display:flex!important;
+    justify-content:space-between!important;
+    align-items:center!important;
+    min-height:175px!important;
+    border:2px solid rgba(255,255,255,.24)!important;
+}
+
+/* Titolo bianco forzato */
+.v102-admin-hero h1,
+.v102-admin-hero h1 *,
+.v104-admin-title,
+.v104-admin-title *{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-size:56px!important;
+    font-weight:1000!important;
+    letter-spacing:.5px!important;
+    margin:0!important;
+    line-height:1!important;
+    text-shadow:0 4px 12px rgba(0,0,0,.45)!important;
+}
+
+/* Sottotitolo bianco forzato */
+.v102-admin-hero p,
+.v102-admin-hero p *,
+.v104-admin-subtitle,
+.v104-admin-subtitle *{
+    color:#eaf3ff!important;
+    -webkit-text-fill-color:#eaf3ff!important;
+    font-size:21px!important;
+    font-weight:900!important;
+    margin:12px 0 0 0!important;
+    line-height:1.35!important;
+    text-shadow:0 3px 10px rgba(0,0,0,.35)!important;
+}
+
+/* Badge giallo */
+.v102-admin-badge,
+.v104-admin-badge{
+    background:linear-gradient(135deg,#ffd84d,#f5b301)!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    border-radius:24px!important;
+    padding:24px 34px!important;
+    font-size:28px!important;
+    font-weight:1000!important;
+    text-align:center!important;
+    min-width:300px!important;
+    box-shadow:0 12px 30px rgba(245,179,1,.42)!important;
+    border:4px solid #fff0a8!important;
+    line-height:1.25!important;
+}
+
+/* Menu admin più evidente */
+div[data-testid="stHorizontalBlock"] .stButton button{
+    background:linear-gradient(135deg,#06499b,#0b5cff)!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    border-radius:18px!important;
+    min-height:66px!important;
+    font-size:18px!important;
+    font-weight:1000!important;
+    border:0!important;
+    box-shadow:0 10px 22px rgba(6,73,155,.25)!important;
+}
+div[data-testid="stHorizontalBlock"] .stButton button:hover{
+    background:linear-gradient(135deg,#f5b301,#d68a00)!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+/* Evita che i vecchi h1/h2 neri vincano dentro header admin */
+.block-container .v102-admin-hero h1,
+.block-container .v102-admin-hero p,
+.block-container .v104-admin-hero h1,
+.block-container .v104-admin-hero p{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+@media(max-width:900px){
+    .v102-admin-hero,
+    .v104-admin-hero{
+        flex-direction:column!important;
+        align-items:stretch!important;
+    }
+    .v102-admin-badge,
+    .v104-admin-badge{
+        min-width:100%!important;
+    }
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
 # =========================
 # ADMIN V102 - GESTIONALE SUBITO VISIBILE
 # =========================
@@ -4886,12 +5013,20 @@ if profilo == "SA-TEC":
     preventivi = carica_preventivi()
 
     st.markdown("""
-    <div class="v102-admin-hero">
+    <div class="v104-admin-separator">
+        <span>🛡️ AREA AMMINISTRATIVA SA-TEC</span>
+    </div>
+
+    <div class="v102-admin-hero v104-admin-hero" style="background:linear-gradient(135deg,#061b35 0%,#06499b 55%,#0b5cff 100%)!important;border-radius:28px!important;padding:34px 38px!important;margin:8px 0 16px 0!important;box-shadow:0 18px 40px rgba(6,73,155,.32)!important;display:flex!important;justify-content:space-between!important;align-items:center!important;min-height:175px!important;border:2px solid rgba(255,255,255,.24)!important;">
         <div>
-            <h1>SA-TEC ADMIN</h1>
-            <p>Gestionale commerciale porte automatiche</p>
+            <div class="v104-admin-title" style="color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;font-size:56px!important;font-weight:1000!important;letter-spacing:.5px!important;margin:0!important;line-height:1!important;text-shadow:0 4px 12px rgba(0,0,0,.45)!important;">
+                SA-TEC ADMIN
+            </div>
+            <div class="v104-admin-subtitle" style="color:#eaf3ff!important;-webkit-text-fill-color:#eaf3ff!important;font-size:21px!important;font-weight:900!important;margin:12px 0 0 0!important;line-height:1.35!important;text-shadow:0 3px 10px rgba(0,0,0,.35)!important;">
+                Gestionale commerciale porte automatiche · Preventivi · Clienti · Rivenditori
+            </div>
         </div>
-        <div class="v102-admin-badge">
+        <div class="v102-admin-badge v104-admin-badge" style="background:linear-gradient(135deg,#ffd84d,#f5b301)!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border-radius:24px!important;padding:24px 34px!important;font-size:28px!important;font-weight:1000!important;text-align:center!important;min-width:300px!important;box-shadow:0 12px 30px rgba(245,179,1,.42)!important;border:4px solid #fff0a8!important;line-height:1.25!important;">
             🛡️ AREA<br>AMMINISTRATIVA
         </div>
     </div>
@@ -5881,7 +6016,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V102 - Admin Reale Visibile")
+st.caption("Versione V104 - Contrasto Admin Definitivo")
 
 st.markdown(f"""
 <div class="footer">
