@@ -2085,11 +2085,16 @@ def login_box():
 # =========================
 # V402 - DISEGNO PORTA RIPRISTINATO
 # =========================
+
 def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
+    """
+    V501 - Disegno tecnico professionale SA-TEC / SESAMO
+    Vista frontale con traversa, ante vetro, quote, carrelli, cinghia, motore e badge EN16005.
+    """
     try:
         luce = int(float(luce_mm))
     except Exception:
-        luce = 1200
+        luce = 1600
 
     try:
         altezza = int(float(altezza_mm))
@@ -2104,98 +2109,190 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     ante_txt = str(ante or "")
     due_ante = "2" in ante_txt
 
+    titolo = "Schema tecnico porta scorrevole a 2 ante" if due_ante else "Schema tecnico porta scorrevole a 1 anta"
+    descrizione = "Automazione lineare Sesamo Powercore PW100 - vista frontale indicativa"
+
     if due_ante:
         ante_svg = """
-        <rect x="110" y="120" width="190" height="260" rx="6" fill="#EAF3FF" stroke="#0057D9" stroke-width="4"/>
-        <rect x="300" y="120" width="190" height="260" rx="6" fill="#EAF3FF" stroke="#0057D9" stroke-width="4"/>
-        <line x1="300" y1="120" x2="300" y2="380" stroke="#003C96" stroke-width="5"/>
-        <path d="M265 250 L225 250" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
-        <path d="M335 250 L375 250" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
+        <g id="doors">
+            <rect x="210" y="170" width="185" height="285" rx="6" fill="url(#glass)" stroke="#0074E8" stroke-width="4"/>
+            <rect x="405" y="170" width="185" height="285" rx="6" fill="url(#glass)" stroke="#0074E8" stroke-width="4"/>
+            <line x1="400" y1="170" x2="400" y2="455" stroke="#003C96" stroke-width="5"/>
+            <path d="M365 310 L300 310" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
+            <path d="M435 310 L500 310" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
+            <polygon points="300,310 318,300 318,320" fill="#F5B301"/>
+            <polygon points="500,310 482,300 482,320" fill="#F5B301"/>
+        </g>
         """
-        descr = "Porta automatica scorrevole a 2 ante"
+        ante_label = "2 ante scorrevoli"
     else:
         ante_svg = """
-        <rect x="160" y="120" width="280" height="260" rx="6" fill="#EAF3FF" stroke="#0057D9" stroke-width="4"/>
-        <path d="M300 250 L375 250" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
+        <g id="doors">
+            <rect x="265" y="170" width="270" height="285" rx="6" fill="url(#glass)" stroke="#0074E8" stroke-width="4"/>
+            <path d="M400 310 L505 310" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
+            <polygon points="505,310 487,300 487,320" fill="#F5B301"/>
+        </g>
         """
-        descr = "Porta automatica scorrevole a 1 anta"
+        ante_label = "1 anta scorrevole"
 
     return f"""
-    <!doctype html>
-    <html>
-    <head>
-    <meta charset="utf-8">
-    <style>
-        body {{
-            margin:0;
-            font-family:Arial, Helvetica, sans-serif;
-            background:#FFFFFF;
-        }}
-        .box {{
-            border:2px solid #C9DCF7;
-            border-radius:18px;
-            padding:18px;
-            background:linear-gradient(180deg,#FFFFFF,#F4F8FF);
-            box-shadow:0 8px 22px rgba(0,87,217,.08);
-        }}
-        .title {{
-            color:#003C96;
-            font-size:22px;
-            font-weight:900;
-            margin-bottom:8px;
-        }}
-        .sub {{
-            color:#111827;
-            font-size:15px;
-            font-weight:800;
-            line-height:1.5;
-            margin-bottom:14px;
-        }}
-        .measure {{
-            display:grid;
-            grid-template-columns:repeat(3,1fr);
-            gap:10px;
-            margin-top:12px;
-        }}
-        .card {{
-            background:#FFFFFF;
-            border:1px solid #C9DCF7;
-            border-radius:12px;
-            padding:10px;
-            color:#111827;
-            font-weight:800;
-            text-align:center;
-        }}
-        .card b {{
-            color:#0057D9;
-            font-size:18px;
-        }}
-    </style>
-    </head>
-    <body>
-        <div class="box">
-            <div class="title">{descr}</div>
-            <div class="sub">Schema indicativo della configurazione scelta.</div>
-            <svg width="100%" height="360" viewBox="0 0 600 430">
-                <rect x="70" y="80" width="460" height="35" rx="8" fill="#003C96"/>
-                <text x="300" y="104" text-anchor="middle" font-size="17" font-weight="900" fill="#FFFFFF">TRAVERSA AUTOMAZIONE</text>
-                <rect x="95" y="115" width="410" height="280" rx="8" fill="none" stroke="#111827" stroke-width="3"/>
-                {ante_svg}
-                <line x1="95" y1="405" x2="505" y2="405" stroke="#111827" stroke-width="3"/>
-                <text x="300" y="425" text-anchor="middle" font-size="15" font-weight="900" fill="#111827">Luce passaggio {luce} mm</text>
-            </svg>
-            <div class="measure">
-                <div class="card">Luce<br><b>{luce} mm</b></div>
-                <div class="card">Altezza<br><b>{altezza} mm</b></div>
-                <div class="card">Traversa<br><b>{traversa:.2f} m</b></div>
-            </div>
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    body {{
+        margin:0;
+        font-family:Arial, Helvetica, sans-serif;
+        background:#ffffff;
+    }}
+    .sheet {{
+        border:2px solid #C9DCF7;
+        border-radius:22px;
+        background:linear-gradient(180deg,#FFFFFF 0%,#F4F8FF 100%);
+        box-shadow:0 12px 28px rgba(0,87,217,.10);
+        overflow:hidden;
+    }}
+    .head {{
+        background:linear-gradient(90deg,#0057D9,#003C96);
+        color:#FFFFFF;
+        padding:18px 22px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:18px;
+    }}
+    .head-title {{
+        font-size:25px;
+        font-weight:1000;
+        letter-spacing:.2px;
+        color:#FFFFFF;
+    }}
+    .head-sub {{
+        font-size:13px;
+        font-weight:800;
+        margin-top:4px;
+        color:#EAF3FF;
+    }}
+    .badge {{
+        background:#F5B301;
+        color:#111827;
+        font-weight:1000;
+        padding:9px 16px;
+        border-radius:999px;
+        font-size:14px;
+        white-space:nowrap;
+    }}
+    .body {{
+        padding:16px 20px 20px 20px;
+    }}
+    .legend {{
+        display:grid;
+        grid-template-columns:repeat(4,1fr);
+        gap:10px;
+        margin-top:12px;
+    }}
+    .card {{
+        background:#FFFFFF;
+        border:1px solid #C9DCF7;
+        border-radius:14px;
+        padding:11px;
+        text-align:center;
+        color:#111827;
+        font-weight:900;
+        box-shadow:0 5px 14px rgba(0,87,217,.06);
+    }}
+    .card span {{
+        display:block;
+        color:#0057D9;
+        font-size:19px;
+        margin-top:4px;
+        font-weight:1000;
+    }}
+</style>
+</head>
+<body>
+<div class="sheet">
+    <div class="head">
+        <div>
+            <div class="head-title">{titolo}</div>
+            <div class="head-sub">{descrizione}</div>
         </div>
-    </body>
-    </html>
-    """
+        <div class="badge">EN 16005</div>
+    </div>
 
+    <div class="body">
+        <svg width="100%" height="390" viewBox="0 0 800 430">
+            <defs>
+                <linearGradient id="glass" x1="0" x2="1" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.92"/>
+                    <stop offset="48%" stop-color="#D9EEFF" stop-opacity="0.70"/>
+                    <stop offset="100%" stop-color="#B9DFFF" stop-opacity="0.82"/>
+                </linearGradient>
+                <linearGradient id="rail" x1="0" x2="1">
+                    <stop offset="0%" stop-color="#003C96"/>
+                    <stop offset="60%" stop-color="#0057D9"/>
+                    <stop offset="100%" stop-color="#003C96"/>
+                </linearGradient>
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="7" stdDeviation="6" flood-color="#003C96" flood-opacity=".18"/>
+                </filter>
+            </defs>
 
+            <!-- quote verticali -->
+            <line x1="675" y1="170" x2="675" y2="455" stroke="#111827" stroke-width="2"/>
+            <line x1="660" y1="170" x2="690" y2="170" stroke="#111827" stroke-width="2"/>
+            <line x1="660" y1="455" x2="690" y2="455" stroke="#111827" stroke-width="2"/>
+            <text x="710" y="320" transform="rotate(90 710,320)" font-size="14" font-weight="900" fill="#111827">Altezza {altezza} mm</text>
 
+            <!-- telaio -->
+            <rect x="185" y="140" width="430" height="330" rx="10" fill="none" stroke="#111827" stroke-width="3"/>
+
+            <!-- traversa -->
+            <rect x="150" y="105" width="500" height="50" rx="10" fill="url(#rail)" filter="url(#shadow)"/>
+            <text x="400" y="136" text-anchor="middle" font-size="18" font-weight="1000" fill="#FFFFFF">TRAVERSA AUTOMAZIONE</text>
+
+            <!-- dettaglio interno traversa -->
+            <line x1="190" y1="160" x2="610" y2="160" stroke="#F5B301" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="230" cy="160" r="10" fill="#F5B301" stroke="#003C96" stroke-width="3"/>
+            <circle cx="570" cy="160" r="10" fill="#F5B301" stroke="#003C96" stroke-width="3"/>
+            <rect x="575" y="115" width="42" height="30" rx="6" fill="#F58220"/>
+            <text x="596" y="135" text-anchor="middle" font-size="10" font-weight="1000" fill="#111827">MOT</text>
+
+            <!-- carrelli -->
+            <rect x="255" y="154" width="46" height="14" rx="5" fill="#111827"/>
+            <rect x="500" y="154" width="46" height="14" rx="5" fill="#111827"/>
+            <line x1="278" y1="168" x2="278" y2="190" stroke="#111827" stroke-width="3"/>
+            <line x1="523" y1="168" x2="523" y2="190" stroke="#111827" stroke-width="3"/>
+
+            {ante_svg}
+
+            <!-- pavimento -->
+            <line x1="175" y1="480" x2="625" y2="480" stroke="#111827" stroke-width="3"/>
+            <line x1="190" y1="490" x2="610" y2="490" stroke="#C9DCF7" stroke-width="2"/>
+
+            <!-- quota orizzontale luce -->
+            <line x1="185" y1="402" x2="615" y2="402" stroke="#111827" stroke-width="2"/>
+            <line x1="185" y1="392" x2="185" y2="412" stroke="#111827" stroke-width="2"/>
+            <line x1="615" y1="392" x2="615" y2="412" stroke="#111827" stroke-width="2"/>
+            <text x="400" y="422" text-anchor="middle" font-size="15" font-weight="1000" fill="#111827">Luce passaggio {luce} mm</text>
+
+            <!-- etichette -->
+            <text x="400" y="75" text-anchor="middle" font-size="15" font-weight="1000" fill="#003C96">Lunghezza traversa calcolata: {traversa:.2f} m</text>
+            <text x="400" y="28" text-anchor="middle" font-size="18" font-weight="1000" fill="#003C96">SA-TEC · SESAMO POWERCORE PW100</text>
+        </svg>
+
+        <div class="legend">
+            <div class="card">Configurazione<span>{ante_label}</span></div>
+            <div class="card">Luce<span>{luce} mm</span></div>
+            <div class="card">Altezza<span>{altezza} mm</span></div>
+            <div class="card">Traversa<span>{traversa:.2f} m</span></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+"""
 
 
 # =========================
@@ -4515,7 +4612,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V500 Ufficiale SA-TEC")
+st.caption("Versione V501 - Disegno tecnico professionale")
 
 st.markdown(f"""
 <div class="footer">
