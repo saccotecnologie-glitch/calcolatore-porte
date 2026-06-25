@@ -1959,10 +1959,6 @@ def v400_header():
     """, unsafe_allow_html=True)
 
 
-v400_style()
-v400_header()
-
-
 # =========================
 # V401 - LOGIN BOX RIPRISTINATA PRIMA DELLA CHIAMATA
 # =========================
@@ -3519,6 +3515,200 @@ drawFront();
 </html>
 """
 
+
+
+
+# =========================
+# V600 - HEADER DEFINITIVO SA-TEC
+# =========================
+def v600_style():
+    st.markdown("""
+    <style>
+    .stApp {
+        background:linear-gradient(180deg,#F3F8FF 0%,#FFFFFF 70%)!important;
+    }
+    .block-container {
+        padding-top:0.8rem!important;
+    }
+    .v600-main-header {
+        background:linear-gradient(90deg,#002B67 0%,#0057D9 65%,#003C96 100%);
+        border-radius:24px;
+        padding:22px 26px;
+        margin:8px 0 20px 0;
+        box-shadow:0 14px 34px rgba(0,43,103,.25);
+        display:grid;
+        grid-template-columns:230px minmax(0,1fr) 330px;
+        gap:26px;
+        align-items:center;
+        border:1px solid rgba(255,255,255,.28);
+    }
+    .v600-logo-card {
+        background:#FFFFFF;
+        border:4px solid rgba(255,255,255,.92);
+        border-radius:22px;
+        min-height:132px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:14px;
+        box-shadow:0 10px 26px rgba(0,0,0,.16);
+        overflow:hidden;
+    }
+    .v600-logo-img {
+        max-width:190px;
+        max-height:105px;
+        object-fit:contain;
+        display:block;
+    }
+    .v600-logo-fallback {
+        color:#0057D9;
+        font-size:42px;
+        font-weight:1000;
+    }
+    .v600-title-area {
+        border-left:1px solid rgba(255,255,255,.45);
+        padding-left:26px;
+    }
+    .v600-title-main {
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+        font-size:42px;
+        line-height:1.02;
+        font-weight:1000;
+        letter-spacing:.4px;
+    }
+    .v600-title-main span {
+        color:#F5B301!important;
+        -webkit-text-fill-color:#F5B301!important;
+    }
+    .v600-title-sub {
+        color:#EAF3FF!important;
+        -webkit-text-fill-color:#EAF3FF!important;
+        font-size:17px;
+        font-weight:900;
+        margin-top:12px;
+    }
+    .v600-info-card {
+        background:rgba(255,255,255,.10);
+        border:1px solid rgba(255,255,255,.35);
+        border-radius:18px;
+        padding:16px 18px;
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+        font-size:14px;
+        line-height:1.55;
+        font-weight:900;
+    }
+    .v600-info-card * {
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+    }
+    section[data-testid="stSidebar"] {
+        background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;
+        border-right:5px solid #F5B301!important;
+    }
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] div {
+        color:#FFFFFF!important;
+        -webkit-text-fill-color:#FFFFFF!important;
+    }
+    section[data-testid="stSidebar"] input,
+    section[data-testid="stSidebar"] textarea,
+    section[data-testid="stSidebar"] [data-baseweb="input"],
+    section[data-testid="stSidebar"] [data-baseweb="input"] *,
+    section[data-testid="stSidebar"] [data-baseweb="select"],
+    section[data-testid="stSidebar"] [data-baseweb="select"] * {
+        background:#FFFFFF!important;
+        color:#071124!important;
+        -webkit-text-fill-color:#071124!important;
+        font-weight:900!important;
+    }
+    .stButton button,
+    .stDownloadButton button {
+        background:#FFFFFF!important;
+        color:#0057D9!important;
+        -webkit-text-fill-color:#0057D9!important;
+        border:2px solid #0057D9!important;
+        border-radius:14px!important;
+        min-height:48px!important;
+        font-size:15px!important;
+        font-weight:1000!important;
+        box-shadow:0 6px 15px rgba(0,87,217,.12)!important;
+    }
+    .stButton button:hover,
+    .stDownloadButton button:hover {
+        background:#F5B301!important;
+        color:#111111!important;
+        -webkit-text-fill-color:#111111!important;
+        border-color:#F5B301!important;
+    }
+    [data-testid="stCheckbox"] label {
+        background:#FFFFFF!important;
+        border:2px solid #C9DCF7!important;
+        border-radius:14px!important;
+        padding:10px 12px!important;
+        box-shadow:0 4px 12px rgba(0,87,217,.06)!important;
+        transition:all .18s ease!important;
+        color:#071124!important;
+        -webkit-text-fill-color:#071124!important;
+        font-weight:900!important;
+    }
+    [data-testid="stCheckbox"] label:hover {
+        border-color:#0057D9!important;
+        background:#F4F8FF!important;
+    }
+    [data-testid="stCheckbox"] label:has(input:checked) {
+        background:#EAF3FF!important;
+        border-color:#0057D9!important;
+        box-shadow:0 0 0 3px rgba(0,87,217,.16),0 8px 18px rgba(0,87,217,.12)!important;
+    }
+    @media(max-width:1100px) {
+        .v600-main-header {
+            grid-template-columns:1fr;
+            text-align:center;
+        }
+        .v600-title-area {
+            border-left:0;
+            padding-left:0;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+def v600_header():
+    st.markdown("""
+    <div class="v600-main-header">
+        <div class="v600-logo-card">
+            <img src="data:image/png;base64,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" class="v600-logo-img">
+        </div>
+        <div class="v600-title-area">
+            <div class="v600-title-main">
+                CONFIGURATORE<br>
+                <span>PORTE AUTOMATICHE</span>
+            </div>
+            <div class="v600-title-sub">
+                Tecnologia, sicurezza e soluzioni su misura per ingressi automatici
+            </div>
+        </div>
+        <div class="v600-info-card">
+            <b>SA-TEC S.R.L.s</b><br>
+            Via L. Settembrini 84<br>
+            88046 Lamezia Terme (CZ)<br>
+            ☎ 0968-036797<br>
+            ✉ sacco.tecnologie@gmail.com<br>
+            PEC sa-tec@pec.it
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+v600_style()
+v600_header()
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
@@ -5526,7 +5716,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V505 - Solo automazione")
+st.caption("Versione V600 - Definitiva SA-TEC")
 
 st.markdown(f"""
 <div class="footer">
