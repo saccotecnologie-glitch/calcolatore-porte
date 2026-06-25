@@ -2196,6 +2196,319 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
 
 
 
+
+
+# =========================
+# V500 UFFICIALE - FUNZIONI STABILI RIPRISTINATE
+# =========================
+# Questo blocco ripristina le funzioni mancanti senza toccare Supabase,
+# preventivi, CRM e configuratore esistenti.
+
+logo_satec64 = img_to_base64([
+    "logo_satec.jpg", "logo_satec.png", "LOGO_SATEC.png",
+    "/mnt/data/logo_satec.jpg", "/mnt/data/logo_satec.png", "/mnt/data/LOGO_SATEC.png"
+])
+
+logo_sesamo64 = img_to_base64([
+    "SESAMO LOGO.png", "sesamo_logo.png", "logo_sesamo.png", "sesamo.png",
+    "/mnt/data/SESAMO LOGO.png", "/mnt/data/sesamo_logo.png", "/mnt/data/logo_sesamo.png", "/mnt/data/sesamo.png"
+])
+
+sesamo_logo_html = (
+    f'<img src="data:image/png;base64,{logo_sesamo64}" style="max-height:82px;max-width:280px;object-fit:contain;">'
+    if logo_sesamo64 else
+    '<div style="font-size:32px;font-weight:1000;color:#111827;-webkit-text-fill-color:#111827;">SESAMO</div><div style="font-size:12px;font-weight:900;color:#111827;-webkit-text-fill-color:#111827;">THE DOOR TECHNOLOGY</div>'
+)
+
+
+def carica_preventivi():
+    righe = []
+    path = Path(PREVENTIVI_CSV)
+    if path.exists():
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                righe.extend(list(csv.DictReader(f)))
+        except Exception as e:
+            st.sidebar.warning(f"Preventivi CSV non caricati: {e}")
+    if not righe:
+        try:
+            righe.extend(carica_preventivi_supabase() or [])
+        except Exception:
+            pass
+    return righe
+
+
+def salva_preventivo(dati):
+    path = Path(PREVENTIVI_CSV)
+    campi_base = [
+        "codice_preventivo", "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
+        "cliente_telefono", "cliente_email", "configurazione", "luce_mm", "altezza_mm", "traversa_m",
+        "elettroblocco", "allaccio", "radar_sicurezza_laterale", "ricarico_percento",
+        "ricarico_base_percento", "ricarico_extra_percento", "imponibile", "iva", "totale_iva",
+        "costo_satec", "utile_lordo", "margine_percento", "stato"
+    ]
+    campi = list(campi_base)
+    for k in dati.keys():
+        if k not in campi:
+            campi.append(k)
+    file_exists = path.exists()
+    try:
+        with open(path, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=campi)
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow({k: dati.get(k, "") for k in campi})
+        return True
+    except Exception as e:
+        st.error(f"Errore salvataggio preventivo CSV: {e}")
+        return False
+
+
+def salva_cliente_csv(nome, azienda, telefono, email, codice_preventivo="", imponibile=0, owner_utente="", owner_profilo=""):
+    path = Path(CLIENTI_CSV)
+    campi = ["nome", "azienda", "telefono", "email", "primo_preventivo", "ultimo_preventivo", "data_primo_preventivo", "data_ultimo_preventivo", "numero_preventivi", "totale_preventivi", "owner_utente", "owner_profilo"]
+    nome = str(nome or "").strip(); azienda = str(azienda or "").strip(); telefono = str(telefono or "").strip(); email = str(email or "").strip().lower()
+    if not any([nome, azienda, telefono, email]):
+        return False
+    oggi = datetime.now().strftime("%d/%m/%Y %H:%M")
+    try:
+        clienti = []
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as f:
+                clienti = list(csv.DictReader(f))
+        trovato = None
+        for c in clienti:
+            if email and str(c.get("email", "")).strip().lower() == email:
+                trovato = c; break
+            if telefono and str(c.get("telefono", "")).strip() == telefono:
+                trovato = c; break
+        try:
+            imp = float(str(imponibile or 0).replace(",", "."))
+        except Exception:
+            imp = 0.0
+        if trovato:
+            try:
+                prec = int(float(trovato.get("numero_preventivi", "0") or 0))
+            except Exception:
+                prec = 0
+            try:
+                oldtot = float(str(trovato.get("totale_preventivi", "0") or 0).replace(",", "."))
+            except Exception:
+                oldtot = 0.0
+            trovato.update({"nome": nome or trovato.get("nome", ""), "azienda": azienda or trovato.get("azienda", ""), "telefono": telefono or trovato.get("telefono", ""), "email": email or trovato.get("email", ""), "ultimo_preventivo": codice_preventivo, "data_ultimo_preventivo": oggi, "numero_preventivi": str(prec + 1), "totale_preventivi": f"{oldtot + imp:.2f}", "owner_utente": owner_utente or trovato.get("owner_utente", ""), "owner_profilo": owner_profilo or trovato.get("owner_profilo", "")})
+        else:
+            clienti.append({"nome": nome, "azienda": azienda, "telefono": telefono, "email": email, "primo_preventivo": codice_preventivo, "ultimo_preventivo": codice_preventivo, "data_primo_preventivo": oggi, "data_ultimo_preventivo": oggi, "numero_preventivi": "1", "totale_preventivi": f"{imp:.2f}", "owner_utente": owner_utente, "owner_profilo": owner_profilo})
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=campi); writer.writeheader()
+            for c in clienti:
+                writer.writerow({k: c.get(k, "") for k in campi})
+        return True
+    except Exception as e:
+        st.sidebar.warning(f"Cliente non salvato in CSV: {e}")
+        return False
+
+
+def carica_clienti():
+    righe = []
+    path = Path(CLIENTI_CSV)
+    if path.exists():
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                righe.extend(list(csv.DictReader(f)))
+        except Exception as e:
+            st.sidebar.warning(f"Clienti CSV non caricati: {e}")
+    if not righe:
+        try:
+            righe.extend(carica_clienti_supabase() or [])
+        except Exception:
+            pass
+    return righe
+
+
+def clienti_visibili_per_profilo(clienti, profilo, utente_codice):
+    if profilo == "SA-TEC":
+        return clienti
+    out = []
+    for c in clienti:
+        owner = str(c.get("owner_utente", "")).strip().upper()
+        if not owner or owner == str(utente_codice or "").strip().upper():
+            out.append(c)
+    return out
+
+
+def _cliente_search_text(c):
+    return " ".join(str(c.get(k, "")) for k in ["nome", "azienda", "telefono", "email", "primo_preventivo", "ultimo_preventivo", "owner_utente"]).lower()
+
+
+def filtra_clienti_dashboard(clienti, query):
+    q = str(query or "").strip().lower()
+    if not q:
+        return clienti
+    return [c for c in clienti if q in _cliente_search_text(c)]
+
+
+def righe_clienti_dashboard(clienti):
+    out = []
+    for c in clienti:
+        tot = ""
+        if str(c.get("totale_preventivi", "")).strip():
+            tot = euro(_num(c.get("totale_preventivi", 0)))
+        out.append({"Nome": c.get("nome", ""), "Azienda": c.get("azienda", ""), "Telefono": c.get("telefono", ""), "Email": c.get("email", ""), "Ultimo preventivo": c.get("ultimo_preventivo", c.get("primo_preventivo", "")), "N. preventivi": c.get("numero_preventivi", ""), "Totale": tot, "Owner": c.get("owner_utente", "")})
+    return out
+
+
+def label_cliente_elimina(c):
+    return f"{c.get('nome','')} | {c.get('azienda','')} | {c.get('telefono','')} | {c.get('email','')}".strip(" |")
+
+
+def identificativo_cliente_elimina(c):
+    return c.get("email") or c.get("telefono") or c.get("nome") or c.get("azienda") or ""
+
+
+def elimina_cliente_admin(ident):
+    ident = str(ident or "").strip().lower()
+    if not ident:
+        return False, "Identificativo cliente mancante"
+    path = Path(CLIENTI_CSV)
+    if not path.exists():
+        return False, "Archivio clienti CSV non trovato"
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        if not righe:
+            return False, "Archivio clienti vuoto"
+        fieldnames = list(righe[0].keys())
+        nuove = []
+        eliminato = False
+        for c in righe:
+            valori = [str(c.get(k, "")).strip().lower() for k in ["email", "telefono", "nome", "azienda"]]
+            if ident in valori:
+                eliminato = True
+            else:
+                nuove.append(c)
+        if not eliminato:
+            return False, "Cliente non trovato"
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames); writer.writeheader(); writer.writerows(nuove)
+        return True, "Cliente eliminato"
+    except Exception as e:
+        return False, str(e)
+
+
+def _num(v, default=0.0):
+    try:
+        s = str(v if v is not None else "").replace("€", "").replace(" ", "").strip()
+        if not s: return default
+        if "," in s and "." in s and s.rfind(",") > s.rfind("."):
+            s = s.replace(".", "").replace(",", ".")
+        elif "," in s and "." not in s:
+            s = s.replace(",", ".")
+        return float(s)
+    except Exception:
+        return default
+
+
+def statistiche_stati_preventivi(preventivi):
+    d = {s: 0 for s in STATI_PREVENTIVO}
+    for p in preventivi:
+        stato = str(p.get("stato", "Bozza") or "Bozza")
+        d[stato] = d.get(stato, 0) + 1
+    return d
+
+
+def crm_valore_float(p):
+    return _num(p.get("imponibile", p.get("totale_iva", 0)))
+
+
+def crm_utile_float(p):
+    utile = _num(p.get("utile_lordo", 0))
+    if utile: return utile
+    return max(_num(p.get("imponibile", 0)) - _num(p.get("costo_satec", 0)), 0)
+
+
+def v100_render_admin(preventivi):
+    st.markdown('<div class="v100-title-bar">📋 GESTIONE PREVENTIVI</div>', unsafe_allow_html=True)
+    if not preventivi:
+        st.info("Nessun preventivo salvato ancora."); return
+    cerca = st.text_input("Cerca preventivo", key="cerca_prev_v500", placeholder="Codice, cliente, azienda, configurazione")
+    q = str(cerca or "").lower().strip(); righe = []
+    for p in preventivi:
+        testo = " ".join(str(p.get(k, "")) for k in p.keys()).lower()
+        if q and q not in testo: continue
+        righe.append(p)
+    st.write(f"Preventivi trovati: **{len(righe)}**")
+    vista = []
+    for p in righe[:200]:
+        vista.append({"Codice": p.get("codice_preventivo", ""), "Data": p.get("data_ora", ""), "Utente": p.get("utente", ""), "Cliente": p.get("cliente_nome", "") or p.get("cliente_azienda", ""), "Configurazione": p.get("configurazione", ""), "Totale IVA incl.": euro(_num(p.get("totale_iva", 0))), "Stato": p.get("stato", "")})
+    st.markdown(tabella_html_sicura(vista), unsafe_allow_html=True)
+    codici = [str(p.get("codice_preventivo", "")) for p in righe if p.get("codice_preventivo")]
+    if codici:
+        st.markdown("### Azioni preventivo")
+        c1, c2, c3 = st.columns([2, 1, 1])
+        with c1: codice_sel = st.selectbox("Preventivo", codici, key="prev_sel_v500")
+        with c2: nuovo_stato = st.selectbox("Stato", STATI_PREVENTIVO, key="prev_stato_v500")
+        with c3:
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("AGGIORNA STATO", key="prev_agg_v500", use_container_width=True):
+                if aggiorna_stato_preventivo_admin_robusto(codice_sel, nuovo_stato):
+                    st.success("Stato aggiornato"); st.rerun()
+                else:
+                    st.error("Stato non aggiornato")
+        dettaglio = next((p for p in righe if str(p.get("codice_preventivo", "")) == str(codice_sel)), None)
+        if dettaglio:
+            with st.expander("Dettaglio preventivo", expanded=False): render_dettaglio_preventivo_admin(dettaglio)
+
+
+def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scontato=True):
+    listino = float(LISTINI.get(codice, 0) or 0)
+    try: qta = float(quantita or 0)
+    except Exception: qta = 0.0
+    if scontato:
+        costo_unitario = costo_satec_reale(listino)
+        prezzo_unitario = costo_unitario * (1 + (float(RICARICO_ATTIVO or 0) / 100))
+    else:
+        costo_unitario = listino; prezzo_unitario = listino
+    articoli.append({"codice": codice, "descrizione": descrizione, "descrizione_lunga": descrizione_lunga, "quantita": qta, "listino_unitario": listino, "costo_unitario_satec": costo_unitario, "prezzo_unitario": prezzo_unitario, "totale": prezzo_unitario * qta, "costo_totale_satec": costo_unitario * qta})
+
+
+def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
+    try: luce = int(float(luce_mm))
+    except Exception: luce = 1600
+    try: altezza = int(float(altezza_mm))
+    except Exception: altezza = 2200
+    try: traversa = float(lunghezza_traversa)
+    except Exception: traversa = 0.0
+    due = "2" in str(ante)
+    if due:
+        ante_svg = """
+        <rect x="116" y="120" width="184" height="250" rx="8" fill="#F8FBFF" stroke="#0057D9" stroke-width="5"/>
+        <rect x="300" y="120" width="184" height="250" rx="8" fill="#F8FBFF" stroke="#0057D9" stroke-width="5"/>
+        <line x1="300" y1="120" x2="300" y2="370" stroke="#003C96" stroke-width="5"/>
+        <path d="M270 245 L230 245" stroke="#F5B301" stroke-width="9" stroke-linecap="round"/>
+        <path d="M330 245 L370 245" stroke="#F5B301" stroke-width="9" stroke-linecap="round"/>
+        """
+        titolo = "Schema porta scorrevole a 2 ante"
+    else:
+        ante_svg = """
+        <rect x="155" y="120" width="290" height="250" rx="8" fill="#F8FBFF" stroke="#0057D9" stroke-width="5"/>
+        <path d="M295 245 L370 245" stroke="#F5B301" stroke-width="9" stroke-linecap="round"/>
+        """
+        titolo = "Schema porta scorrevole a 1 anta"
+    return f"""
+    <!doctype html><html><head><meta charset="utf-8"><style>
+    body{{margin:0;font-family:Arial,Helvetica,sans-serif;background:transparent;}}
+    .wrap{{background:#fff;border:1px solid #C9DCF7;border-radius:18px;padding:18px;box-shadow:0 8px 22px rgba(0,87,217,.08);}}
+    .head{{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#0057D9,#003C96);color:white;border-radius:14px;padding:14px 18px;margin-bottom:14px;}}
+    .title{{font-size:21px;font-weight:900;color:white;}}
+    .badge{{background:#F5B301;color:#111827;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:900;}}
+    .measures{{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}}
+    .m{{border:1px solid #C9DCF7;border-radius:12px;text-align:center;padding:10px;font-weight:800;color:#111827;background:#F4F8FF;}}
+    .m b{{display:block;color:#0057D9;font-size:18px;margin-top:4px;}}
+    </style></head><body><div class="wrap"><div class="head"><div class="title">{titolo}</div><div class="badge">EN16005</div></div>
+      <svg width="100%" height="335" viewBox="0 0 600 405"><rect x="72" y="72" width="456" height="40" rx="9" fill="#003C96"/><text x="300" y="98" text-anchor="middle" font-size="17" font-weight="900" fill="#FFFFFF">TRAVERSA AUTOMAZIONE</text><rect x="92" y="112" width="416" height="270" rx="10" fill="none" stroke="#111827" stroke-width="3"/>{ante_svg}<line x1="92" y1="392" x2="508" y2="392" stroke="#111827" stroke-width="3"/></svg>
+      <div class="measures"><div class="m">Luce<b>{luce} mm</b></div><div class="m">Altezza<b>{altezza} mm</b></div><div class="m">Traversa<b>{traversa:.2f} m</b></div></div></div></body></html>
+    """
+
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
 # V400: riapplica stile dopo login
@@ -4202,7 +4515,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V402 - Fix Login e Disegno Porta")
+st.caption("Versione V500 Ufficiale SA-TEC")
 
 st.markdown(f"""
 <div class="footer">
