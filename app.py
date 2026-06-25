@@ -2086,10 +2086,11 @@ def login_box():
 # V402 - DISEGNO PORTA RIPRISTINATO
 # =========================
 
+
 def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     """
-    V501 - Disegno tecnico professionale SA-TEC / SESAMO
-    Vista frontale con traversa, ante vetro, quote, carrelli, cinghia, motore e badge EN16005.
+    V502 - Canvas tecnico professionale SA-TEC.
+    Disegno più realistico: traversa alluminio, vetri, carrelli, cinghia, motore, quote.
     """
     try:
         luce = int(float(luce_mm))
@@ -2106,34 +2107,8 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
     except Exception:
         traversa = 0.0
 
-    ante_txt = str(ante or "")
-    due_ante = "2" in ante_txt
-
-    titolo = "Schema tecnico porta scorrevole a 2 ante" if due_ante else "Schema tecnico porta scorrevole a 1 anta"
-    descrizione = "Automazione lineare Sesamo Powercore PW100 - vista frontale indicativa"
-
-    if due_ante:
-        ante_svg = """
-        <g id="doors">
-            <rect x="210" y="170" width="185" height="285" rx="6" fill="url(#glass)" stroke="#0074E8" stroke-width="4"/>
-            <rect x="405" y="170" width="185" height="285" rx="6" fill="url(#glass)" stroke="#0074E8" stroke-width="4"/>
-            <line x1="400" y1="170" x2="400" y2="455" stroke="#003C96" stroke-width="5"/>
-            <path d="M365 310 L300 310" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
-            <path d="M435 310 L500 310" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
-            <polygon points="300,310 318,300 318,320" fill="#F5B301"/>
-            <polygon points="500,310 482,300 482,320" fill="#F5B301"/>
-        </g>
-        """
-        ante_label = "2 ante scorrevoli"
-    else:
-        ante_svg = """
-        <g id="doors">
-            <rect x="265" y="170" width="270" height="285" rx="6" fill="url(#glass)" stroke="#0074E8" stroke-width="4"/>
-            <path d="M400 310 L505 310" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
-            <polygon points="505,310 487,300 487,320" fill="#F5B301"/>
-        </g>
-        """
-        ante_label = "1 anta scorrevole"
+    due_ante = "2" in str(ante or "")
+    ante_label = "2 ANTE SCORREVOLI" if due_ante else "1 ANTA SCORREVOLE"
 
     return f"""
 <!doctype html>
@@ -2141,52 +2116,62 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
 <head>
 <meta charset="utf-8">
 <style>
-    body {{
+    html, body {{
         margin:0;
+        padding:0;
         font-family:Arial, Helvetica, sans-serif;
         background:#ffffff;
     }}
-    .sheet {{
+    .wrap {{
         border:2px solid #C9DCF7;
         border-radius:22px;
-        background:linear-gradient(180deg,#FFFFFF 0%,#F4F8FF 100%);
-        box-shadow:0 12px 28px rgba(0,87,217,.10);
+        background:linear-gradient(180deg,#FFFFFF 0%,#F5F9FF 100%);
+        box-shadow:0 12px 30px rgba(0,87,217,.10);
         overflow:hidden;
     }}
-    .head {{
-        background:linear-gradient(90deg,#0057D9,#003C96);
-        color:#FFFFFF;
-        padding:18px 22px;
+    .top {{
+        background:linear-gradient(90deg,#003C96,#0057D9);
+        color:white;
+        padding:15px 20px;
         display:flex;
-        align-items:center;
         justify-content:space-between;
-        gap:18px;
+        align-items:center;
     }}
-    .head-title {{
-        font-size:25px;
+    .title {{
+        font-size:24px;
         font-weight:1000;
-        letter-spacing:.2px;
-        color:#FFFFFF;
+        letter-spacing:.3px;
     }}
-    .head-sub {{
+    .sub {{
         font-size:13px;
         font-weight:800;
-        margin-top:4px;
         color:#EAF3FF;
+        margin-top:3px;
     }}
-    .badge {{
-        background:#F5B301;
-        color:#111827;
+    .brand {{
+        text-align:right;
         font-weight:1000;
-        padding:9px 16px;
-        border-radius:999px;
-        font-size:14px;
-        white-space:nowrap;
+        font-size:18px;
     }}
-    .body {{
-        padding:16px 20px 20px 20px;
+    .brand span {{
+        display:inline-block;
+        background:#F58220;
+        color:#111827;
+        padding:7px 10px;
+        margin-right:8px;
     }}
-    .legend {{
+    .canvas-area {{
+        padding:12px 16px 14px 16px;
+    }}
+    canvas {{
+        width:100%;
+        height:390px;
+        display:block;
+        background:linear-gradient(180deg,#FFFFFF,#F7FBFF);
+        border:1px solid #D7E8FF;
+        border-radius:16px;
+    }}
+    .cards {{
         display:grid;
         grid-template-columns:repeat(4,1fr);
         gap:10px;
@@ -2196,100 +2181,253 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
         background:#FFFFFF;
         border:1px solid #C9DCF7;
         border-radius:14px;
-        padding:11px;
+        padding:10px;
         text-align:center;
-        color:#111827;
         font-weight:900;
-        box-shadow:0 5px 14px rgba(0,87,217,.06);
+        color:#111827;
+        box-shadow:0 4px 12px rgba(0,87,217,.06);
     }}
-    .card span {{
+    .card b {{
         display:block;
         color:#0057D9;
-        font-size:19px;
+        font-size:18px;
         margin-top:4px;
-        font-weight:1000;
     }}
 </style>
 </head>
 <body>
-<div class="sheet">
-    <div class="head">
+<div class="wrap">
+    <div class="top">
         <div>
-            <div class="head-title">{titolo}</div>
-            <div class="head-sub">{descrizione}</div>
+            <div class="title">Tavola tecnica porta automatica</div>
+            <div class="sub">SA-TEC · SESAMO POWERCORE PW100 · {ante_label}</div>
         </div>
-        <div class="badge">EN 16005</div>
+        <div class="brand"><span>▌</span>SESAMO<br><small>EN 16005</small></div>
     </div>
 
-    <div class="body">
-        <svg width="100%" height="390" viewBox="0 0 800 430">
-            <defs>
-                <linearGradient id="glass" x1="0" x2="1" y1="0" y2="1">
-                    <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.92"/>
-                    <stop offset="48%" stop-color="#D9EEFF" stop-opacity="0.70"/>
-                    <stop offset="100%" stop-color="#B9DFFF" stop-opacity="0.82"/>
-                </linearGradient>
-                <linearGradient id="rail" x1="0" x2="1">
-                    <stop offset="0%" stop-color="#003C96"/>
-                    <stop offset="60%" stop-color="#0057D9"/>
-                    <stop offset="100%" stop-color="#003C96"/>
-                </linearGradient>
-                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="7" stdDeviation="6" flood-color="#003C96" flood-opacity=".18"/>
-                </filter>
-            </defs>
-
-            <!-- quote verticali -->
-            <line x1="675" y1="170" x2="675" y2="455" stroke="#111827" stroke-width="2"/>
-            <line x1="660" y1="170" x2="690" y2="170" stroke="#111827" stroke-width="2"/>
-            <line x1="660" y1="455" x2="690" y2="455" stroke="#111827" stroke-width="2"/>
-            <text x="710" y="320" transform="rotate(90 710,320)" font-size="14" font-weight="900" fill="#111827">Altezza {altezza} mm</text>
-
-            <!-- telaio -->
-            <rect x="185" y="140" width="430" height="330" rx="10" fill="none" stroke="#111827" stroke-width="3"/>
-
-            <!-- traversa -->
-            <rect x="150" y="105" width="500" height="50" rx="10" fill="url(#rail)" filter="url(#shadow)"/>
-            <text x="400" y="136" text-anchor="middle" font-size="18" font-weight="1000" fill="#FFFFFF">TRAVERSA AUTOMAZIONE</text>
-
-            <!-- dettaglio interno traversa -->
-            <line x1="190" y1="160" x2="610" y2="160" stroke="#F5B301" stroke-width="4" stroke-linecap="round"/>
-            <circle cx="230" cy="160" r="10" fill="#F5B301" stroke="#003C96" stroke-width="3"/>
-            <circle cx="570" cy="160" r="10" fill="#F5B301" stroke="#003C96" stroke-width="3"/>
-            <rect x="575" y="115" width="42" height="30" rx="6" fill="#F58220"/>
-            <text x="596" y="135" text-anchor="middle" font-size="10" font-weight="1000" fill="#111827">MOT</text>
-
-            <!-- carrelli -->
-            <rect x="255" y="154" width="46" height="14" rx="5" fill="#111827"/>
-            <rect x="500" y="154" width="46" height="14" rx="5" fill="#111827"/>
-            <line x1="278" y1="168" x2="278" y2="190" stroke="#111827" stroke-width="3"/>
-            <line x1="523" y1="168" x2="523" y2="190" stroke="#111827" stroke-width="3"/>
-
-            {ante_svg}
-
-            <!-- pavimento -->
-            <line x1="175" y1="480" x2="625" y2="480" stroke="#111827" stroke-width="3"/>
-            <line x1="190" y1="490" x2="610" y2="490" stroke="#C9DCF7" stroke-width="2"/>
-
-            <!-- quota orizzontale luce -->
-            <line x1="185" y1="402" x2="615" y2="402" stroke="#111827" stroke-width="2"/>
-            <line x1="185" y1="392" x2="185" y2="412" stroke="#111827" stroke-width="2"/>
-            <line x1="615" y1="392" x2="615" y2="412" stroke="#111827" stroke-width="2"/>
-            <text x="400" y="422" text-anchor="middle" font-size="15" font-weight="1000" fill="#111827">Luce passaggio {luce} mm</text>
-
-            <!-- etichette -->
-            <text x="400" y="75" text-anchor="middle" font-size="15" font-weight="1000" fill="#003C96">Lunghezza traversa calcolata: {traversa:.2f} m</text>
-            <text x="400" y="28" text-anchor="middle" font-size="18" font-weight="1000" fill="#003C96">SA-TEC · SESAMO POWERCORE PW100</text>
-        </svg>
-
-        <div class="legend">
-            <div class="card">Configurazione<span>{ante_label}</span></div>
-            <div class="card">Luce<span>{luce} mm</span></div>
-            <div class="card">Altezza<span>{altezza} mm</span></div>
-            <div class="card">Traversa<span>{traversa:.2f} m</span></div>
+    <div class="canvas-area">
+        <canvas id="doorCanvas" width="1100" height="520"></canvas>
+        <div class="cards">
+            <div class="card">Configurazione<b>{ante_label}</b></div>
+            <div class="card">Luce passaggio<b>{luce} mm</b></div>
+            <div class="card">Altezza<b>{altezza} mm</b></div>
+            <div class="card">Traversa<b>{traversa:.2f} m</b></div>
         </div>
     </div>
 </div>
+
+<script>
+const canvas = document.getElementById("doorCanvas");
+const ctx = canvas.getContext("2d");
+
+const luce = {luce};
+const altezza = {altezza};
+const traversa = {traversa:.2f};
+const dueAnte = {str(due_ante).lower()};
+
+function roundRect(x,y,w,h,r,fill,stroke) {{
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+    if(fill) ctx.fill();
+    if(stroke) ctx.stroke();
+}}
+
+function line(x1,y1,x2,y2,color,w) {{
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.stroke();
+}}
+
+function text(t,x,y,size,color,align="center",weight="900") {{
+    ctx.font = weight + " " + size + "px Arial";
+    ctx.fillStyle = color;
+    ctx.textAlign = align;
+    ctx.fillText(t,x,y);
+}}
+
+function arrow(x1,y1,x2,y2,color) {{
+    line(x1,y1,x2,y2,color,7);
+    const ang = Math.atan2(y2-y1,x2-x1);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-18*Math.cos(ang-Math.PI/6), y2-18*Math.sin(ang-Math.PI/6));
+    ctx.lineTo(x2-18*Math.cos(ang+Math.PI/6), y2-18*Math.sin(ang+Math.PI/6));
+    ctx.closePath();
+    ctx.fill();
+}}
+
+function drawGlass(x,y,w,h) {{
+    const g = ctx.createLinearGradient(x,y,x+w,y+h);
+    g.addColorStop(0,"rgba(255,255,255,.95)");
+    g.addColorStop(.45,"rgba(185,223,255,.55)");
+    g.addColorStop(1,"rgba(120,190,255,.75)");
+    ctx.fillStyle = g;
+    ctx.strokeStyle = "#0074E8";
+    ctx.lineWidth = 4;
+    roundRect(x,y,w,h,8,true,true);
+
+    ctx.strokeStyle = "rgba(255,255,255,.70)";
+    ctx.lineWidth = 3;
+    line(x+24,y+18,x+w-45,y+h-35,"rgba(255,255,255,.70)",3);
+    line(x+52,y+18,x+w-20,y+h-75,"rgba(255,255,255,.45)",2);
+}}
+
+function draw() {{
+    ctx.clearRect(0,0,1100,520);
+
+    // fondo griglia tecnico
+    ctx.strokeStyle = "rgba(0,87,217,.05)";
+    ctx.lineWidth = 1;
+    for(let x=40;x<1060;x+=40) line(x,30,x,495,"rgba(0,87,217,.05)",1);
+    for(let y=40;y<500;y+=40) line(35,y,1065,y,"rgba(0,87,217,.05)",1);
+
+    // titolo tavola
+    text("SA-TEC · CONFIGURAZIONE TECNICA INGRESSO AUTOMATICO",550,30,18,"#003C96");
+    text("Lunghezza traversa calcolata: " + traversa.toFixed(2) + " m",550,55,14,"#111827");
+
+    // coordinate principali
+    const frameX = 250, frameY = 150, frameW = 600, frameH = 285;
+    const railX = 190, railY = 95, railW = 720, railH = 58;
+
+    // ombra traversa
+    ctx.shadowColor = "rgba(0,60,150,.25)";
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 8;
+
+    // traversa alluminio
+    let rg = ctx.createLinearGradient(railX,railY,railX,railY+railH);
+    rg.addColorStop(0,"#164FAD");
+    rg.addColorStop(.25,"#0057D9");
+    rg.addColorStop(.55,"#003C96");
+    rg.addColorStop(1,"#0B214A");
+    ctx.fillStyle = rg;
+    ctx.strokeStyle = "#071124";
+    ctx.lineWidth = 2;
+    roundRect(railX,railY,railW,railH,12,true,true);
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    text("TRAVERSA AUTOMAZIONE",550,130,19,"#FFFFFF");
+
+    // coperchio/profilo inferiore
+    line(railX+30,railY+railH+9,railX+railW-30,railY+railH+9,"#F5B301",5);
+
+    // motore e scheda
+    ctx.fillStyle = "#F58220";
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+    roundRect(815,105,62,38,7,true,true);
+    text("MOT",846,130,14,"#111827");
+
+    ctx.fillStyle = "#EAF3FF";
+    ctx.strokeStyle = "#003C96";
+    roundRect(735,108,58,32,6,true,true);
+    text("CTRL",764,130,11,"#003C96");
+
+    // pulegge cinghia
+    ctx.fillStyle="#F5B301";
+    ctx.strokeStyle="#003C96";
+    ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(245,162,13,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(855,162,13,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    line(245,162,855,162,"#111827",3);
+
+    // telaio vano
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 4;
+    roundRect(frameX,frameY,frameW,frameH,10,false,true);
+
+    // guida pavimento
+    line(frameX-20,frameY+frameH+18,frameX+frameW+20,frameY+frameH+18,"#111827",3);
+    line(frameX+10,frameY+frameH+28,frameX+frameW-10,frameY+frameH+28,"#9CBCE8",2);
+
+    // carrelli
+    function trolley(x) {{
+        ctx.fillStyle="#111827";
+        roundRect(x,150,62,17,5,true,false);
+        line(x+16,167,x+16,190,"#111827",3);
+        line(x+46,167,x+46,190,"#111827",3);
+        ctx.fillStyle="#F5B301";
+        ctx.beginPath(); ctx.arc(x+16,149,6,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x+46,149,6,0,Math.PI*2); ctx.fill();
+    }}
+
+    if(dueAnte) {{
+        trolley(340); trolley(700);
+        drawGlass(290,185,260,245);
+        drawGlass(550,185,260,245);
+        line(550,185,550,430,"#003C96",5);
+        arrow(512,310,420,310,"#F5B301");
+        arrow(588,310,680,310,"#F5B301");
+    }} else {{
+        trolley(430); trolley(620);
+        drawGlass(385,185,330,245);
+        arrow(535,310,675,310,"#F5B301");
+    }}
+
+    // quote luce orizzontale
+    line(frameX,470,frameX+frameW,470,"#111827",2);
+    line(frameX,460,frameX,480,"#111827",2);
+    line(frameX+frameW,460,frameX+frameW,480,"#111827",2);
+    text("LUCE PASSAGGIO " + luce + " mm",550,505,15,"#111827");
+
+    // quota altezza
+    line(920,frameY,920,frameY+frameH,"#111827",2);
+    line(905,frameY,935,frameY,"#111827",2);
+    line(905,frameY+frameH,935,frameY+frameH,"#111827",2);
+    ctx.save();
+    ctx.translate(955,frameY+frameH/2+70);
+    ctx.rotate(-Math.PI/2);
+    text("ALTEZZA " + altezza + " mm",0,0,15,"#111827");
+    ctx.restore();
+
+    // dettaglio profili laterali
+    ctx.fillStyle="#DDE7F4";
+    ctx.fillRect(frameX-16,frameY,10,frameH);
+    ctx.fillRect(frameX+frameW+6,frameY,10,frameH);
+    ctx.fillStyle="#003C96";
+    ctx.fillRect(frameX-16,frameY,4,frameH);
+    ctx.fillRect(frameX+frameW+12,frameY,4,frameH);
+
+    // legenda tecnica
+    ctx.fillStyle="rgba(255,255,255,.92)";
+    ctx.strokeStyle="#C9DCF7";
+    ctx.lineWidth=2;
+    roundRect(45,115,120,168,12,true,true);
+    text("DETTAGLI",105,143,14,"#003C96");
+    text("• Cinghia",60,172,13,"#111827","left","800");
+    text("• Carrelli",60,198,13,"#111827","left","800");
+    text("• Motore",60,224,13,"#111827","left","800");
+    text("• Vetro",60,250,13,"#111827","left","800");
+
+    // badge normativa
+    ctx.fillStyle="#F5B301";
+    roundRect(940,95,120,40,20,true,false);
+    text("EN 16005",1000,121,15,"#111827");
+
+    // mini logo
+    ctx.fillStyle="#F58220";
+    roundRect(945,375,45,55,3,true,false);
+    text("▌",967,414,36,"#111827");
+    text("SESAMO",1018,402,22,"#111827","center","1000");
+    text("THE DOOR TECHNOLOGY",1018,424,10,"#111827","center","900");
+}}
+
+draw();
+</script>
 </body>
 </html>
 """
@@ -3885,7 +4023,7 @@ with col_main:
         altezza_mm = st.number_input("ALTEZZA PASSAGGIO IN MM", min_value=1800, max_value=3000, value=2200, step=50)
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
-    components.html(disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa), height=555)
+    components.html(disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa), height=590)
 
     st.markdown(f"""
     <div class="measure-total">
@@ -4612,7 +4750,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V501 - Disegno tecnico professionale")
+st.caption("Versione V502 - Canvas tecnico professionale")
 
 st.markdown(f"""
 <div class="footer">
