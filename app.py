@@ -2744,6 +2744,105 @@ def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
       <div class="measures"><div class="m">Luce<b>{luce} mm</b></div><div class="m">Altezza<b>{altezza} mm</b></div><div class="m">Traversa<b>{traversa:.2f} m</b></div></div></div></body></html>
     """
 
+
+
+# =========================
+# V503 - GRAFICA TECNICA DEFINITIVA SA-TEC
+# =========================
+def disegno_porta_v503(ante, luce_mm, altezza_mm, lunghezza_traversa):
+    try:
+        luce = int(float(luce_mm))
+    except Exception:
+        luce = 1600
+    try:
+        altezza = int(float(altezza_mm))
+    except Exception:
+        altezza = 2200
+    try:
+        traversa = float(lunghezza_traversa)
+    except Exception:
+        traversa = 0.0
+
+    due_ante = "2" in str(ante or "")
+    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
+    titolo_schema = "502 - SCHEMA TECNICO PORTA SCORREVOLE A 2 ANTE" if due_ante else "501 - SCHEMA TECNICO PORTA SCORREVOLE A 1 ANTA"
+    totale_demo = "€ 2.356,80" if due_ante else "€ 1.981,11"
+    due_ante_js = "true" if due_ante else "false"
+    traversa_mm = int(traversa * 1000)
+
+    return f"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+*{{box-sizing:border-box}}
+body{{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f8ff;color:#061b44}}
+.app{{width:100%;background:#f4f8ff;border-radius:22px;border:1px solid #d8e7fb;overflow:hidden;box-shadow:0 14px 36px rgba(0,42,110,.14)}}
+.top{{height:72px;background:#fff;border-bottom:1px solid #d8e7fb;display:flex;align-items:center;justify-content:space-between;padding:0 20px}}
+.t1{{font-size:24px;font-weight:1000;color:#061b44;line-height:1}} .t2{{font-size:15px;font-weight:800;color:#4d82d9;margin-top:5px}}
+.brand{{display:flex;gap:22px;align-items:center;font-weight:1000;color:#061b44}} .badge{{background:#0057d9;color:white;border-radius:8px;padding:8px 13px;font-size:13px}} .ses{{font-size:28px;letter-spacing:.4px}}
+.steps{{margin:14px 16px 0 16px;background:#fff;border:1px solid #e4ecf8;border-radius:15px;padding:13px;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}}
+.step{{display:flex;justify-content:center;align-items:center;gap:8px;font-size:13px;font-weight:1000;color:#061b44;border-right:1px solid #d8e7fb}}.step:last-child{{border:0}}.dot{{width:28px;height:28px;border-radius:50%;background:#eaf3ff;display:flex;align-items:center;justify-content:center}}.active .dot{{background:#0057d9;color:#fff}}.active{{color:#0057d9}}
+.grid{{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;padding:14px 16px 18px}}
+.card{{background:#fff;border:1px solid #d8e7fb;border-radius:16px;box-shadow:0 10px 26px rgba(0,42,110,.08);overflow:hidden}}
+.head{{padding:17px 18px 8px;color:#0047b8;font-size:18px;font-weight:1000}}
+.drow{{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:14px;padding:0 14px 12px}}
+.dbox{{background:#fff;border:1px solid #edf3fc;border-radius:14px;padding:8px;min-height:360px}} canvas{{width:100%;display:block}}
+#frontCanvas{{height:350px}} #sectionCanvas{{height:310px}}
+.sez{{border-left:1px solid #d8e7fb;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center}}.lab{{align-self:flex-start;background:#0057d9;color:#fff;border-radius:6px;padding:8px 11px;font-size:12px;font-weight:1000;margin-bottom:8px}}
+.metrics{{border-top:1px solid #d8e7fb;background:#fbfdff;display:grid;grid-template-columns:repeat(6,1fr)}}.met{{min-height:78px;padding:12px 7px;border-right:1px solid #d8e7fb;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center}}.met:last-child{{border:0}}.mi{{font-size:25px;color:#0057d9;font-weight:1000}}.mt{{font-size:11px;font-weight:900;color:#061b44;text-transform:uppercase}}.mv{{font-size:16px;font-weight:1000;color:#0057d9;margin-top:2px}}.mn{{font-size:10px;font-weight:800;color:#465b78}}
+.bens{{border-top:1px solid #d8e7fb;padding:13px 15px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}}.ben{{font-size:11px;font-weight:800;color:#061b44;display:flex;gap:7px}}.ben b{{color:#0047b8;font-size:12px}}.bi{{font-size:18px;color:#0057d9;font-weight:1000}}
+.side{{display:flex;flex-direction:column;gap:13px}}.sh{{background:#0057d9;color:white;padding:13px 15px;font-size:15px;font-weight:1000}}.row{{display:grid;grid-template-columns:28px 1fr auto;gap:7px;align-items:center;padding:9px 12px;border-bottom:1px solid #e7eef8;font-size:12px;font-weight:800;color:#061b44}}.rv{{font-weight:1000;color:#071124;text-align:right;white-space:nowrap}}.ri{{color:#0057d9;text-align:center}}
+.price{{background:#fff;border:1px solid #d8e7fb;border-radius:14px;padding:24px 16px;text-align:center;box-shadow:0 10px 26px rgba(0,42,110,.08)}}.pt{{font-weight:1000;font-size:16px}}.pv{{font-weight:1000;font-size:34px;margin:10px 0 4px}}.pn{{font-size:12px;font-weight:800;color:#465b78}}
+.btn{{border-radius:10px;padding:14px;text-align:center;font-weight:1000;font-size:15px;color:white;box-shadow:0 8px 18px rgba(0,42,110,.12)}}.blue{{background:#003c96}}.orange{{background:#f58220}}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="top">
+  <div><div class="t1">CONFIGURATORE PORTE AUTOMATICHE SCORREVOLI</div><div class="t2">Progetta la tua porta automatica in pochi passaggi</div></div>
+  <div class="brand"><div><span class="badge">EN16005</span> <span style="font-size:12px">Conforme alla norma europea</span></div><div class="ses">sesamo</div></div>
+ </div>
+ <div class="steps"><div class="step"><div class="dot">✓</div>TIPOLOGIA</div><div class="step active"><div class="dot">2</div>DIMENSIONI</div><div class="step"><div class="dot">3</div>ACCESSORI</div><div class="step"><div class="dot">4</div>FINITURE</div><div class="step"><div class="dot">5</div>RIEPILOGO</div></div>
+ <div class="grid">
+  <div class="card">
+   <div class="head">{titolo_schema}</div>
+   <div class="drow"><div class="dbox"><canvas id="frontCanvas" width="920" height="440"></canvas></div><div class="sez"><div class="lab">SEZIONE TRAVERSA</div><canvas id="sectionCanvas" width="210" height="310"></canvas></div></div>
+   <div class="metrics">
+    <div class="met"><div class="mi">↔</div><div><div class="mt">Tipologia</div><div class="mv">{ante_numero}</div><div class="mn">Scorrevole</div></div></div>
+    <div class="met"><div class="mi">↕</div><div><div class="mt">Luce netta</div><div class="mv">{luce} mm</div><div class="mn">Passaggio utile</div></div></div>
+    <div class="met"><div class="mi">⤢</div><div><div class="mt">Altezza luce</div><div class="mv">{altezza} mm</div><div class="mn">Personalizzata</div></div></div>
+    <div class="met"><div class="mi">⟷</div><div><div class="mt">Traversa</div><div class="mv">{traversa_mm} mm</div><div class="mn">Lunghezza totale</div></div></div>
+    <div class="met"><div class="mi">▣</div><div><div class="mt">Portata</div><div class="mv">120 kg</div><div class="mn">Per anta</div></div></div>
+    <div class="met"><div class="mi">◴</div><div><div class="mt">Velocità</div><div class="mv">0,6 m/s</div><div class="mn">Regolabile</div></div></div>
+   </div>
+   <div class="bens"><div class="ben"><div class="bi">▣</div><div><b>Conformità EN16005</b><br>Sicurezza garantita</div></div><div class="ben"><div class="bi">◇</div><div><b>Qualità Sesamo</b><br>Componenti originali</div></div><div class="ben"><div class="bi">♙</div><div><b>Assistenza prioritaria</b><br>Intervento entro 48 ore</div></div><div class="ben"><div class="bi">⬟</div><div><b>Garanzia 24 mesi</b><br>Su tutti i componenti</div></div><div class="ben"><div class="bi">⚙</div><div><b>SA-TEC</b><br>Progettazione e posa</div></div></div>
+  </div>
+  <div class="side">
+   <div class="card"><div class="sh">RIEPILOGO CONFIGURAZIONE</div>
+    <div class="row"><div class="ri">↔</div><div>Tipologia</div><div class="rv">{ante_numero}</div></div><div class="row"><div class="ri">↕</div><div>Luce netta passaggio</div><div class="rv">{luce} mm</div></div><div class="row"><div class="ri">⤢</div><div>Altezza luce</div><div class="rv">{altezza} mm</div></div><div class="row"><div class="ri">⟷</div><div>Lunghezza traversa</div><div class="rv">{traversa_mm} mm</div></div><div class="row"><div class="ri">▣</div><div>Portata</div><div class="rv">120 kg</div></div><div class="row"><div class="ri">◴</div><div>Velocità</div><div class="rv">0,6 m/s</div></div><div class="row"><div class="ri">🔒</div><div>Sblocco</div><div class="rv">Interno a chiave</div></div><div class="row"><div class="ri">☷</div><div>Radar</div><div class="rv">2 sensori</div></div><div class="row"><div class="ri">✓</div><div>Normativa</div><div class="rv">EN16005</div></div>
+   </div>
+   <div class="price"><div class="pt">TOTALE PREVENTIVO</div><div class="pv">{totale_demo}</div><div class="pn">IVA ESCLUSA</div></div>
+   <div class="btn blue">▣ SALVA PREVENTIVO</div><div class="btn orange">▤ ESPORTA PDF</div>
+  </div>
+ </div>
+</div>
+<script>
+const dueAnte={due_ante_js}, luce={luce}, altezza={altezza}, traversaMm={traversa_mm};
+function rr(c,x,y,w,h,r,f,s){{c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();if(f)c.fill();if(s)c.stroke();}}
+function line(c,x1,y1,x2,y2,col,w){{c.strokeStyle=col;c.lineWidth=w;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();}}
+function txt(c,t,x,y,s,col,a="center",w="900"){{c.font=w+" "+s+"px Arial";c.fillStyle=col;c.textAlign=a;c.fillText(t,x,y);}}
+function arrow(c,x1,y1,x2,y2,col){{line(c,x1,y1,x2,y2,col,7);let a=Math.atan2(y2-y1,x2-x1);c.fillStyle=col;c.beginPath();c.moveTo(x2,y2);c.lineTo(x2-16*Math.cos(a-Math.PI/6),y2-16*Math.sin(a-Math.PI/6));c.lineTo(x2-16*Math.cos(a+Math.PI/6),y2-16*Math.sin(a+Math.PI/6));c.closePath();c.fill();}}
+function glass(c,x,y,w,h){{let g=c.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,"rgba(255,255,255,.96)");g.addColorStop(.45,"rgba(205,238,255,.66)");g.addColorStop(1,"rgba(150,215,255,.75)");c.fillStyle=g;c.strokeStyle="#1d8bff";c.lineWidth=3;rr(c,x,y,w,h,4,1,1);line(c,x+25,y+12,x+w-35,y+h-38,"rgba(255,255,255,.8)",2);line(c,x+60,y+12,x+w-10,y+h-85,"rgba(255,255,255,.55)",2);}}
+function front(){{let c=document.getElementById("frontCanvas").getContext("2d");c.clearRect(0,0,920,440);for(let x=20;x<900;x+=35)line(c,x,20,x,420,"rgba(0,87,217,.035)",1);for(let y=20;y<420;y+=35)line(c,20,y,900,y,"rgba(0,87,217,.035)",1);let fx=135,fy=112,fw=610,fh=235,rx=92,ry=54,rw=700,rh=50;c.strokeStyle="#222";c.lineWidth=3;rr(c,fx,fy,fw,fh,5,0,1);let rg=c.createLinearGradient(rx,ry,rx,ry+rh);rg.addColorStop(0,"#eee");rg.addColorStop(.25,"#aaa");rg.addColorStop(.55,"#f6f6f6");rg.addColorStop(1,"#777");c.fillStyle=rg;c.strokeStyle="#222";c.lineWidth=2;rr(c,rx,ry,rw,rh,3,1,1);line(c,rx+20,ry+17,rx+rw-20,ry+17,"#252525",3);line(c,rx+20,ry+32,rx+rw-20,ry+32,"#555",2);txt(c,"sesamo",rx+55,ry+20,12,"#0057d9");txt(c,"SA-TEC",rx+55,ry+38,12,"#0057d9");function pul(x){{c.fillStyle="#111";c.beginPath();c.arc(x,ry+25,10,0,Math.PI*2);c.fill();c.fillStyle="#666";c.beginPath();c.arc(x,ry+25,4,0,Math.PI*2);c.fill();}}pul(250);pul(290);pul(515);pul(555);c.fillStyle="#111";rr(c,646,ry+8,62,34,4,1,0);c.fillStyle="#333";rr(c,710,ry+13,40,24,4,1,0);txt(c,"MOT",731,ry+30,10,"#fff");function tro(x){{c.fillStyle="#1a1a1a";rr(c,x,ry+40,44,11,3,1,0);line(c,x+10,ry+51,x+10,fy+13,"#222",2);line(c,x+34,ry+51,x+34,fy+13,"#222",2);}}if(dueAnte){{tro(285);tro(535);glass(c,195,125,245,210);glass(c,440,125,245,210);line(c,440,125,440,335,"#003c96",4);arrow(c,420,235,355,235,"#148c2e");arrow(c,460,235,525,235,"#148c2e");}}else{{tro(365);tro(565);glass(c,315,125,300,210);arrow(c,450,235,560,235,"#148c2e");}}txt(c,"APERTURA",465,265,13,"#148c2e");txt(c,"AUTOMATICA",465,282,13,"#148c2e");c.fillStyle="#d8d8d8";c.fillRect(fx-12,fy,12,fh);c.fillRect(fx+fw,fy,12,fh);c.fillRect(fx-35,fy+fh,fw+70,10);line(c,fx-45,fy+fh+14,fx+fw+45,fy+fh+14,"#9a9a9a",3);line(c,70,fy,70,fy+fh,"#003c96",2);line(c,60,fy,80,fy,"#003c96",2);line(c,60,fy+fh,80,fy+fh,"#003c96",2);txt(c,"ALTEZZA LUCE",62,230,11,"#003c96","right");txt(c,altezza+" mm",62,250,12,"#003c96","right","1000");line(c,835,fy-48,835,fy+fh,"#003c96",2);line(c,824,fy-48,846,fy-48,"#003c96",2);line(c,824,fy+fh,846,fy+fh,"#003c96",2);txt(c,"ALTEZZA TOTALE",850,230,11,"#003c96","left");txt(c,(altezza+100)+" mm",850,250,12,"#003c96","left","1000");line(c,fx+120,375,fx+fw-120,375,"#003c96",2);line(c,fx+120,366,fx+120,384,"#003c96",2);line(c,fx+fw-120,366,fx+fw-120,384,"#003c96",2);txt(c,"LUCE NETTA DI PASSAGGIO",440,370,11,"#003c96");txt(c,luce+" mm",440,393,13,"#003c96","center","1000");line(c,fx,415,fx+fw,415,"#003c96",2);line(c,fx,406,fx,424,"#003c96",2);line(c,fx+fw,406,fx+fw,424,"#003c96",2);txt(c,"LUNGHEZZA TRAVERSA",440,410,11,"#003c96");txt(c,traversaMm+" mm",440,433,13,"#003c96","center","1000");}}
+function section(){{let c=document.getElementById("sectionCanvas").getContext("2d");c.clearRect(0,0,210,310);txt(c,"140 mm",105,25,13,"#003c96");line(c,55,34,155,34,"#003c96",2);line(c,55,26,55,42,"#003c96",2);line(c,155,26,155,42,"#003c96",2);c.strokeStyle="#777";c.lineWidth=2;c.fillStyle="#f4f4f4";rr(c,65,58,80,95,8,1,1);c.fillStyle="#dadada";rr(c,75,68,60,75,5,1,1);c.fillStyle="#111";rr(c,86,78,38,55,6,1,0);c.fillStyle="#333";c.beginPath();c.arc(105,105,16,0,Math.PI*2);c.fill();c.fillStyle="#777";c.beginPath();c.arc(105,105,7,0,Math.PI*2);c.fill();let g=c.createLinearGradient(98,153,118,270);g.addColorStop(0,"rgba(205,238,255,.8)");g.addColorStop(1,"rgba(130,205,255,.65)");c.fillStyle=g;c.strokeStyle="#1d8bff";c.lineWidth=2;c.fillRect(99,153,12,105);c.strokeRect(99,153,12,105);txt(c,"160 mm",32,112,12,"#003c96");line(c,42,58,42,153,"#003c96",2);line(c,33,58,51,58,"#003c96",2);line(c,33,153,51,153,"#003c96",2);txt(c,"185 mm",174,120,12,"#003c96");line(c,165,58,165,173,"#003c96",2);line(c,156,58,174,58,"#003c96",2);line(c,156,173,174,173,"#003c96",2);txt(c,"10 mm",155,216,12,"#003c96","left");txt(c,"40 mm",105,282,12,"#003c96");line(c,85,268,125,268,"#003c96",2);line(c,85,260,85,276,"#003c96",2);line(c,125,260,125,276,"#003c96",2);}}
+front(); section();
+</script>
+</body>
+</html>
+"""
+
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
 # V400: riapplica stile dopo login
@@ -4023,7 +4122,7 @@ with col_main:
         altezza_mm = st.number_input("ALTEZZA PASSAGGIO IN MM", min_value=1800, max_value=3000, value=2200, step=50)
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
-    components.html(disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa), height=590)
+    components.html(disegno_porta_v503(ante, luce_mm, altezza_mm, lunghezza_traversa), height=760)
 
     st.markdown(f"""
     <div class="measure-total">
@@ -4750,7 +4849,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V502 - Canvas tecnico professionale")
+st.caption("Versione V503 - Codice definitivo grafica tecnica")
 
 st.markdown(f"""
 <div class="footer">
