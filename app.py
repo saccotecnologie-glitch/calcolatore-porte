@@ -2843,6 +2843,391 @@ front(); section();
 </html>
 """
 
+
+
+# =========================
+# V504 - RENDER TECNICO DEFINITIVO SA-TEC
+# Anta più larga + sezione traversa rettangolare 115 x 155 mm, fissaggio 80 mm
+# =========================
+def disegno_porta_v504(ante, luce_mm, altezza_mm, lunghezza_traversa):
+    try:
+        luce = int(float(luce_mm))
+    except Exception:
+        luce = 1600
+
+    try:
+        altezza = int(float(altezza_mm))
+    except Exception:
+        altezza = 2200
+
+    try:
+        traversa = float(lunghezza_traversa)
+    except Exception:
+        traversa = 0.0
+
+    due_ante = "2" in str(ante or "")
+    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
+    titolo_schema = "SCHEMA TECNICO PORTA SCORREVOLE A 2 ANTE" if due_ante else "SCHEMA TECNICO PORTA SCORREVOLE A 1 ANTA"
+    due_ante_js = "true" if due_ante else "false"
+
+    return f"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+*{{box-sizing:border-box}}
+html,body{{
+    margin:0;
+    padding:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:#fff;
+    color:#071124;
+}}
+.v504-box{{
+    width:100%;
+    background:#fff;
+    border:1px solid #D8E7FB;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 10px 26px rgba(0,42,110,.08);
+}}
+.v504-head{{
+    padding:14px 18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}}
+.v504-title{{
+    color:#0047B8;
+    font-size:22px;
+    font-weight:1000;
+}}
+.v504-badge{{
+    background:#0057D9;
+    color:#fff;
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:1000;
+}}
+.v504-main{{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 280px;
+    gap:18px;
+    padding:0 18px 14px 18px;
+}}
+.v504-panel{{
+    background:#fff;
+    border:1px solid #EDF3FC;
+    border-radius:14px;
+    min-height:430px;
+    padding:6px;
+}}
+.v504-section{{
+    background:#fff;
+    border-left:1px solid #D8E7FB;
+    min-height:430px;
+    padding:6px;
+}}
+.v504-label{{
+    display:inline-block;
+    background:#0057D9;
+    color:#fff;
+    font-size:13px;
+    font-weight:1000;
+    padding:8px 12px;
+    border-radius:6px;
+    margin:0 0 8px 0;
+}}
+canvas{{
+    width:100%;
+    display:block;
+}}
+#frontCanvasV504{{
+    height:410px;
+}}
+#sectionCanvasV504{{
+    height:380px;
+}}
+.v504-metrics{{
+    border-top:1px solid #D8E7FB;
+    background:#FBFDFF;
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+}}
+.v504-metric{{
+    padding:12px 8px;
+    border-right:1px solid #D8E7FB;
+    min-height:72px;
+    text-align:center;
+    color:#06245C;
+    font-weight:900;
+}}
+.v504-metric:last-child{{border-right:0}}
+.v504-metric b{{
+    display:block;
+    color:#0057D9;
+    font-size:17px;
+    margin-top:4px;
+}}
+.v504-metric small{{
+    display:block;
+    color:#465B78;
+    font-size:10px;
+    margin-top:3px;
+}}
+</style>
+</head>
+<body>
+<div class="v504-box">
+    <div class="v504-head">
+        <div class="v504-title">{titolo_schema}</div>
+        <div class="v504-badge">EN16005</div>
+    </div>
+
+    <div class="v504-main">
+        <div class="v504-panel">
+            <div class="v504-label">VISTA FRONTALE</div>
+            <canvas id="frontCanvasV504" width="980" height="430"></canvas>
+        </div>
+        <div class="v504-section">
+            <div class="v504-label">SEZIONE TRAVERSA</div>
+            <canvas id="sectionCanvasV504" width="300" height="390"></canvas>
+        </div>
+    </div>
+
+    <div class="v504-metrics">
+        <div class="v504-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
+        <div class="v504-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
+        <div class="v504-metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div>
+        <div class="v504-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
+        <div class="v504-metric">Sezione<b>115 × 155</b><small>mm</small></div>
+        <div class="v504-metric">Fissaggio<b>80 mm</b><small>Interasse</small></div>
+    </div>
+</div>
+
+<script>
+const dueAnte = {due_ante_js};
+const luce = {luce};
+const altezza = {altezza};
+const traversaMm = {int(traversa*1000)};
+
+function rr(ctx,x,y,w,h,r,fill,stroke){{
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+    if(fill) ctx.fill();
+    if(stroke) ctx.stroke();
+}}
+function line(ctx,x1,y1,x2,y2,c,w){{
+    ctx.strokeStyle=c; ctx.lineWidth=w; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+}}
+function txt(ctx,t,x,y,s,c,a="center",w="900"){{
+    ctx.font=w+" "+s+"px Arial"; ctx.fillStyle=c; ctx.textAlign=a; ctx.fillText(t,x,y);
+}}
+function arrow(ctx,x1,y1,x2,y2,c){{
+    line(ctx,x1,y1,x2,y2,c,7);
+    const a=Math.atan2(y2-y1,x2-x1);
+    ctx.fillStyle=c;
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-16*Math.cos(a-Math.PI/6),y2-16*Math.sin(a-Math.PI/6));
+    ctx.lineTo(x2-16*Math.cos(a+Math.PI/6),y2-16*Math.sin(a+Math.PI/6));
+    ctx.closePath(); ctx.fill();
+}}
+function glass(ctx,x,y,w,h){{
+    const g=ctx.createLinearGradient(x,y,x+w,y+h);
+    g.addColorStop(0,"rgba(255,255,255,.96)");
+    g.addColorStop(.45,"rgba(205,238,255,.62)");
+    g.addColorStop(1,"rgba(145,215,255,.74)");
+    ctx.fillStyle=g; ctx.strokeStyle="#1D8BFF"; ctx.lineWidth=3;
+    rr(ctx,x,y,w,h,4,true,true);
+    line(ctx,x+30,y+12,x+w-38,y+h-36,"rgba(255,255,255,.82)",2);
+    line(ctx,x+75,y+12,x+w-12,y+h-90,"rgba(255,255,255,.55)",2);
+}}
+function drawFront(){{
+    const c=document.getElementById("frontCanvasV504");
+    const ctx=c.getContext("2d");
+    ctx.clearRect(0,0,c.width,c.height);
+
+    const fx=110, fy=112, fw=735, fh=235;
+    const railX=70, railY=55, railW=810, railH=50;
+
+    // traversa lunga e rettangolare
+    const rg=ctx.createLinearGradient(railX,railY,railX,railY+railH);
+    rg.addColorStop(0,"#eeeeee");
+    rg.addColorStop(.28,"#b9b9b9");
+    rg.addColorStop(.58,"#f7f7f7");
+    rg.addColorStop(1,"#8c8c8c");
+    ctx.fillStyle=rg; ctx.strokeStyle="#222"; ctx.lineWidth=2;
+    rr(ctx,railX,railY,railW,railH,3,true,true);
+
+    line(ctx,railX+22,railY+17,railX+railW-22,railY+17,"#222",3);
+    line(ctx,railX+22,railY+33,railX+railW-22,railY+33,"#555",2);
+    txt(ctx,"sesamo",railX+70,railY+20,12,"#0057D9","center","900");
+    txt(ctx,"SA-TEC",railX+70,railY+39,13,"#0057D9","center","1000");
+
+    // motore
+    ctx.fillStyle="#111"; rr(ctx,railX+railW-135,railY+8,70,34,4,true,false);
+    ctx.fillStyle="#333"; rr(ctx,railX+railW-66,railY+13,36,24,4,true,false);
+    txt(ctx,"MOT",railX+railW-48,railY+30,10,"#FFF");
+
+    // pulegge / carrelli
+    function pulley(x){{
+        ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(x,railY+25,10,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle="#777"; ctx.beginPath(); ctx.arc(x,railY+25,4,0,Math.PI*2); ctx.fill();
+    }}
+    [250,290,500,540,680].forEach(pulley);
+
+    function trolley(x){{
+        ctx.fillStyle="#222"; rr(ctx,x,railY+42,48,11,3,true,false);
+        line(ctx,x+10,railY+53,x+10,fy+14,"#222",2);
+        line(ctx,x+38,railY+53,x+38,fy+14,"#222",2);
+    }}
+
+    // telaio e ante più larghe
+    ctx.strokeStyle="#222"; ctx.lineWidth=3; rr(ctx,fx,fy,fw,fh,5,false,true);
+
+    if(dueAnte){{
+        trolley(300); trolley(610);
+        glass(ctx,170,125,335,210);
+        glass(ctx,505,125,335,210);
+        line(ctx,505,125,505,335,"#003C96",4);
+        arrow(ctx,485,235,410,235,"#148C2E");
+        arrow(ctx,525,235,600,235,"#148C2E");
+        txt(ctx,"APERTURA",505,266,13,"#148C2E");
+        txt(ctx,"AUTOMATICA",505,283,13,"#148C2E");
+    }} else {{
+        trolley(390); trolley(650);
+        glass(ctx,285,125,410,210);
+        arrow(ctx,470,235,625,235,"#148C2E");
+        txt(ctx,"APERTURA",505,266,13,"#148C2E");
+        txt(ctx,"AUTOMATICA",505,283,13,"#148C2E");
+    }}
+
+    // montanti e pavimento
+    ctx.fillStyle="#D8D8D8";
+    ctx.fillRect(fx-12,fy,12,fh);
+    ctx.fillRect(fx+fw,fy,12,fh);
+    ctx.fillRect(fx-40,fy+fh,fw+80,10);
+    line(ctx,fx-50,fy+fh+14,fx+fw+50,fy+fh+14,"#9A9A9A",3);
+
+    // quote verticali
+    line(ctx,55,fy,55,fy+fh,"#003C96",2);
+    line(ctx,45,fy,65,fy,"#003C96",2);
+    line(ctx,45,fy+fh,65,fy+fh,"#003C96",2);
+    txt(ctx,"ALTEZZA LUCE",47,225,11,"#003C96","right");
+    txt(ctx,altezza+" mm",47,245,12,"#003C96","right","1000");
+
+    line(ctx,920,fy-48,920,fy+fh,"#003C96",2);
+    line(ctx,909,fy-48,931,fy-48,"#003C96",2);
+    line(ctx,909,fy+fh,931,fy+fh,"#003C96",2);
+    txt(ctx,"ALTEZZA TOTALE",935,225,11,"#003C96","left");
+    txt(ctx,(altezza+100)+" mm",935,245,12,"#003C96","left","1000");
+
+    // quote orizzontali
+    line(ctx,fx+160,378,fx+fw-160,378,"#003C96",2);
+    line(ctx,fx+160,368,fx+160,388,"#003C96",2);
+    line(ctx,fx+fw-160,368,fx+fw-160,388,"#003C96",2);
+    txt(ctx,"LUCE NETTA DI PASSAGGIO",505,372,11,"#003C96");
+    txt(ctx,luce+" mm",505,398,13,"#003C96","center","1000");
+
+    line(ctx,fx,416,fx+fw,416,"#003C96",2);
+    line(ctx,fx,406,fx,426,"#003C96",2);
+    line(ctx,fx+fw,406,fx+fw,426,"#003C96",2);
+    txt(ctx,"LUNGHEZZA TRAVERSA",505,410,11,"#003C96");
+    txt(ctx,traversaMm+" mm",505,432,13,"#003C96","center","1000");
+}}
+function drawSection(){{
+    const c=document.getElementById("sectionCanvasV504");
+    const ctx=c.getContext("2d");
+    ctx.clearRect(0,0,c.width,c.height);
+
+    // quote 115 x 155 + fissaggio 80
+    txt(ctx,"115 mm",150,33,16,"#003C96","center","1000");
+    line(ctx,88,45,212,45,"#003C96",2);
+    line(ctx,88,34,88,56,"#003C96",2);
+    line(ctx,212,34,212,56,"#003C96",2);
+
+    // corpo traversa rettangolare
+    const x=92, y=70, w=116, h=155;
+    ctx.fillStyle="#F7F7F7";
+    ctx.strokeStyle="#111";
+    ctx.lineWidth=2.5;
+    rr(ctx,x,y,w,h,8,true,true);
+
+    // profilo interno tipo estruso
+    ctx.strokeStyle="#444";
+    ctx.lineWidth=2;
+    rr(ctx,x+10,y+10,w-20,h-20,5,false,true);
+    line(ctx,x+10,y+45,x+w-10,y+45,"#666",2);
+    line(ctx,x+10,y+108,x+w-10,y+108,"#666",2);
+    line(ctx,x+26,y+10,x+26,y+h-10,"#666",1.6);
+    line(ctx,x+w-26,y+10,x+w-26,y+h-10,"#666",1.6);
+
+    // fissaggio 80 mm
+    ctx.fillStyle="#DADADA";
+    ctx.strokeStyle="#111";
+    rr(ctx,x+18,y+18,80,18,3,true,true);
+    txt(ctx,"fiss. 80",x+58,y+31,9,"#111","center","900");
+
+    // carrello / ruota
+    ctx.fillStyle="#111";
+    rr(ctx,x+36,y+58,48,42,6,true,false);
+    ctx.fillStyle="#333";
+    ctx.beginPath(); ctx.arc(x+60,y+79,18,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#8A8A8A";
+    ctx.beginPath(); ctx.arc(x+60,y+79,7,0,Math.PI*2); ctx.fill();
+
+    // supporto anta
+    ctx.fillStyle="#111";
+    rr(ctx,x+48,y+105,24,42,4,true,false);
+    ctx.fillStyle="#1D8BFF";
+    ctx.globalAlpha=.22;
+    ctx.fillRect(x+50,y+150,20,110);
+    ctx.globalAlpha=1;
+    ctx.strokeStyle="#1D8BFF";
+    ctx.strokeRect(x+50,y+150,20,110);
+
+    // quota altezza 155
+    line(ctx,235,y,235,y+h,"#003C96",2);
+    line(ctx,224,y,246,y,"#003C96",2);
+    line(ctx,224,y+h,246,y+h,"#003C96",2);
+    txt(ctx,"155 mm",254,y+83,16,"#003C96","left","1000");
+
+    // quota lato sinistra 155
+    line(ctx,65,y,65,y+h,"#003C96",2);
+    line(ctx,54,y,76,y,"#003C96",2);
+    line(ctx,54,y+h,76,y+h,"#003C96",2);
+    ctx.save();
+    ctx.translate(36,y+88);
+    ctx.rotate(-Math.PI/2);
+    txt(ctx,"155 mm",0,0,15,"#003C96","center","1000");
+    ctx.restore();
+
+    // quota vetro 40
+    txt(ctx,"40 mm",150,352,16,"#003C96","center","1000");
+    line(ctx,130,332,170,332,"#003C96",2);
+    line(ctx,130,322,130,342,"#003C96",2);
+    line(ctx,170,322,170,342,"#003C96",2);
+}}
+drawFront();
+drawSection();
+</script>
+</body>
+</html>
+"""
+
+
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
 # V400: riapplica stile dopo login
@@ -4122,7 +4507,7 @@ with col_main:
         altezza_mm = st.number_input("ALTEZZA PASSAGGIO IN MM", min_value=1800, max_value=3000, value=2200, step=50)
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
-    components.html(disegno_porta_v503(ante, luce_mm, altezza_mm, lunghezza_traversa), height=760)
+    components.html(disegno_porta_v504(ante, luce_mm, altezza_mm, lunghezza_traversa), height=720)
 
     st.markdown(f"""
     <div class="measure-total">
@@ -4849,7 +5234,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V503 - Codice definitivo grafica tecnica")
+st.caption("Versione V504 - Anta larga e sezione traversa 115x155 fissaggio 80")
 
 st.markdown(f"""
 <div class="footer">
