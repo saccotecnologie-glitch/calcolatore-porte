@@ -4186,8 +4186,155 @@ drawDoor();
 
 
 
-v700_style()
-v700_header()
+
+
+# =========================
+# V800 - HEADER E RENDER CATALOGO SESAMO / SA-TEC
+# =========================
+def v800_style():
+    st.markdown("""
+    <style>
+    .stApp{background:linear-gradient(180deg,#F3F8FF 0%,#FFFFFF 72%)!important;}
+    .block-container{padding-top:.6rem!important;max-width:1550px!important;}
+    .v800-header{background:#FFFFFF;border:1px solid #C9DCF7;border-radius:20px;overflow:hidden;box-shadow:0 10px 26px rgba(0,43,103,.10);margin:6px 0 12px 0;}
+    .v800-header-top{display:grid;grid-template-columns:190px minmax(0,1fr) 330px;align-items:center;min-height:128px;background:#FFFFFF;}
+    .v800-logo-box{height:128px;border-right:1px solid #D8E7FB;display:flex;align-items:center;justify-content:center;background:#FFFFFF;padding:10px;}
+    .v800-logo-img{max-width:145px;max-height:105px;object-fit:contain;}
+    .v800-logo-fallback{color:#0057D9;font-size:34px;font-weight:1000;}
+    .v800-title-box{padding:18px 26px;}
+    .v800-title{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:42px;line-height:1;font-weight:1000;letter-spacing:.3px;}
+    .v800-subtitle{color:#475569!important;-webkit-text-fill-color:#475569!important;font-size:17px;font-weight:900;margin-top:10px;letter-spacing:.4px;text-transform:uppercase;}
+    .v800-company{border-left:1px solid #D8E7FB;padding:16px 22px;color:#061A40!important;-webkit-text-fill-color:#061A40!important;font-size:14px;line-height:1.55;font-weight:900;}
+    .v800-company b{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:15px;}
+    .v800-nav{background:linear-gradient(90deg,#003C96,#0057D9);min-height:48px;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;color:#FFFFFF!important;}
+    .v800-nav div{text-align:center;font-size:14px;font-weight:1000;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-right:1px solid rgba(255,255,255,.22);}
+    .v800-nav div:last-child{border-right:0;}
+    section[data-testid="stSidebar"]{background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;border-right:5px solid #F5B301!important;}
+    section[data-testid="stSidebar"] h1,section[data-testid="stSidebar"] h2,section[data-testid="stSidebar"] h3,section[data-testid="stSidebar"] p,section[data-testid="stSidebar"] span,section[data-testid="stSidebar"] label,section[data-testid="stSidebar"] div{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;}
+    section[data-testid="stSidebar"] input,section[data-testid="stSidebar"] textarea,section[data-testid="stSidebar"] [data-baseweb="input"],section[data-testid="stSidebar"] [data-baseweb="input"] *,section[data-testid="stSidebar"] [data-baseweb="select"],section[data-testid="stSidebar"] [data-baseweb="select"] *{background:#FFFFFF!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
+    .stButton button,.stDownloadButton button{background:#FFFFFF!important;color:#0057D9!important;-webkit-text-fill-color:#0057D9!important;border:2px solid #0057D9!important;border-radius:14px!important;min-height:48px!important;font-size:15px!important;font-weight:1000!important;box-shadow:0 6px 15px rgba(0,87,217,.12)!important;}
+    .stButton button:hover,.stDownloadButton button:hover{background:#F5B301!important;color:#111111!important;-webkit-text-fill-color:#111111!important;border-color:#F5B301!important;}
+    [data-testid="stCheckbox"] label{background:#FFFFFF!important;border:2px solid #C9DCF7!important;border-radius:14px!important;padding:10px 12px!important;box-shadow:0 4px 12px rgba(0,87,217,.06)!important;transition:all .18s ease!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
+    [data-testid="stCheckbox"] label:hover{border-color:#0057D9!important;background:#F4F8FF!important;}
+    [data-testid="stCheckbox"] label:has(input:checked){background:#EAF3FF!important;border-color:#0057D9!important;box-shadow:0 0 0 3px rgba(0,87,217,.16),0 8px 18px rgba(0,87,217,.12)!important;}
+    </style>
+    """, unsafe_allow_html=True)
+
+def v800_header():
+    st.markdown("""
+    <div class="v800-header">
+        <div class="v800-header-top">
+            <div class="v800-logo-box"><img src="data:image/png;base64,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" class="v800-logo-img"></div>
+            <div class="v800-title-box">
+                <div class="v800-title">SA-TEC - CONFIGURATORE PORTE AUTOMATICHE</div>
+                <div class="v800-subtitle">Tecnologia, sicurezza e soluzioni su misura</div>
+            </div>
+            <div class="v800-company">
+                <b>SA-TEC S.R.L.s</b><br>
+                📍 Via L. Settembrini 84<br>
+                88046 Lamezia Terme (CZ)<br>
+                ☎ 0968-036797<br>
+                ✉ sacco.tecnologie@gmail.com
+            </div>
+        </div>
+        <div class="v800-nav">
+            <div>⌂ HOME</div><div>⚙ CONFIGURATORE</div><div>▤ CATALOGO</div><div>▥ CODICI</div><div>☏ ASSISTENZA</div><div>⚙ IMPOSTAZIONI</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def disegno_porta_v800(ante, luce_mm, altezza_mm, lunghezza_traversa):
+    try:
+        luce = int(float(luce_mm))
+    except Exception:
+        luce = 1600
+    try:
+        altezza = int(float(altezza_mm))
+    except Exception:
+        altezza = 2200
+    try:
+        traversa = float(lunghezza_traversa)
+    except Exception:
+        traversa = 0.0
+
+    due_ante = "2" in str(ante or "")
+    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
+    titolo_schema = "SCORREVOLE AUTOMATICA A 2 ANTE" if due_ante else "SCORREVOLE AUTOMATICA A 1 ANTA"
+    due_ante_js = "true" if due_ante else "false"
+
+    return f"""
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+*{{box-sizing:border-box}}html,body{{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#fff;color:#061A40}}
+.v800-wrap{{width:100%;background:#fff;border:1px solid #D8E7FB;border-radius:18px;overflow:hidden;box-shadow:0 10px 26px rgba(0,42,110,.08)}}
+.v800-head{{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px 8px 22px}}
+.v800-title-local{{color:#0047B8;font-size:24px;font-weight:1000;line-height:1.12}}
+.v800-sub-local{{color:#64748B;font-size:13px;font-weight:900;margin-top:6px;text-transform:uppercase;letter-spacing:.4px}}
+.v800-brand{{text-align:right;color:#0047B8;font-size:30px;font-weight:1000;line-height:1}}
+.v800-brand small{{display:block;color:#475569;font-size:11px;letter-spacing:1.2px;margin-top:4px}}
+.v800-canvas-box{{padding:4px 18px 0 18px}}
+#doorCanvasV800{{width:100%;height:545px;display:block;background:#fff;border:1px solid #EDF3FC;border-radius:14px}}
+.v800-metrics{{border-top:1px solid #D8E7FB;background:#FBFDFF;display:grid;grid-template-columns:repeat(6,1fr)}}
+.v800-metric{{padding:13px 8px;border-right:1px solid #D8E7FB;min-height:78px;text-align:center;color:#06245C;font-weight:900}}
+.v800-metric:last-child{{border-right:0}}.v800-metric b{{display:block;color:#0057D9;font-size:18px;margin-top:4px}}.v800-metric small{{display:block;color:#465B78;font-size:10px;margin-top:3px}}
+</style></head>
+<body>
+<div class="v800-wrap">
+  <div class="v800-head">
+    <div><div class="v800-title-local">V800 - SCHEMA TECNICO PORTA {titolo_schema}</div><div class="v800-sub-local">SESAMO POWERCORE PW100 · SA-TEC · Disegno tecnico proporzionato</div></div>
+    <div class="v800-brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div>
+  </div>
+  <div class="v800-canvas-box"><canvas id="doorCanvasV800" width="1360" height="545"></canvas></div>
+  <div class="v800-metrics">
+    <div class="v800-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
+    <div class="v800-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
+    <div class="v800-metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div>
+    <div class="v800-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
+    <div class="v800-metric">Portata<b>120 kg</b><small>Per anta</small></div>
+    <div class="v800-metric">Velocità<b>0,6 m/s</b><small>Regolabile</small></div>
+  </div>
+</div>
+<script>
+const dueAnte={due_ante_js}; const luce={luce}; const altezza={altezza}; const traversaMm={int(traversa*1000)};
+function rr(ctx,x,y,w,h,r,fill,stroke){{ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();if(fill)ctx.fill();if(stroke)ctx.stroke();}}
+function line(ctx,x1,y1,x2,y2,c,w){{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}}
+function txt(ctx,t,x,y,s,c,a="center",w="900"){{ctx.font=w+" "+s+"px Arial";ctx.fillStyle=c;ctx.textAlign=a;ctx.fillText(t,x,y);}}
+function arrow(ctx,x1,y1,x2,y2,c){{line(ctx,x1,y1,x2,y2,c,8);const a=Math.atan2(y2-y1,x2-x1);ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-19*Math.cos(a-Math.PI/6),y2-19*Math.sin(a-Math.PI/6));ctx.lineTo(x2-19*Math.cos(a+Math.PI/6),y2-19*Math.sin(a+Math.PI/6));ctx.closePath();ctx.fill();}}
+function glass(ctx,x,y,w,h){{const g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,"rgba(255,255,255,.98)");g.addColorStop(.35,"rgba(220,244,255,.72)");g.addColorStop(1,"rgba(145,215,255,.78)");ctx.fillStyle=g;ctx.strokeStyle="#0C82F5";ctx.lineWidth=3;rr(ctx,x,y,w,h,2,true,true);line(ctx,x+34,y+16,x+w-42,y+h-42,"rgba(255,255,255,.86)",3);line(ctx,x+90,y+16,x+w-16,y+h-112,"rgba(255,255,255,.58)",2);}}
+function bolt(ctx,x,y){{ctx.fillStyle="#292929";ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();ctx.fillStyle="#A0A0A0";ctx.beginPath();ctx.arc(x,y,1.7,0,Math.PI*2);ctx.fill();}}
+function drawDoor(){{
+ const c=document.getElementById("doorCanvasV800"),ctx=c.getContext("2d");ctx.clearRect(0,0,1360,545);
+ const railX=130,railY=58,railW=1100,railH=70,fx=185,fy=160,fw=990,fh=245;
+ for(let x=50;x<1310;x+=50)line(ctx,x,35,x,520,"rgba(0,87,217,.018)",1);
+ for(let y=40;y<525;y+=50)line(ctx,45,y,1315,y,"rgba(0,87,217,.018)",1);
+ ctx.shadowColor="rgba(0,0,0,.20)";ctx.shadowBlur=13;ctx.shadowOffsetY=6;
+ const rg=ctx.createLinearGradient(railX,railY,railX,railY+railH);rg.addColorStop(0,"#FAFAFA");rg.addColorStop(.11,"#D8D8D8");rg.addColorStop(.28,"#A2A2A2");rg.addColorStop(.48,"#F6F6F6");rg.addColorStop(.70,"#BDBDBD");rg.addColorStop(1,"#727272");
+ ctx.fillStyle=rg;ctx.strokeStyle="#202020";ctx.lineWidth=2.4;rr(ctx,railX,railY,railW,railH,3,true,true);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+ line(ctx,railX+28,railY+20,railX+railW-28,railY+20,"#242424",3);line(ctx,railX+28,railY+44,railX+railW-28,railY+44,"#505050",2);line(ctx,railX+28,railY+59,railX+railW-28,railY+59,"#222",1.4);
+ txt(ctx,"SESAMO",railX+88,railY+28,19,"#0057D9","center","1000");txt(ctx,"SA-TEC",railX+88,railY+55,15,"#0057D9","center","1000");
+ ctx.fillStyle="#111";rr(ctx,railX+railW-210,railY+12,128,44,5,true,false);const mg=ctx.createLinearGradient(railX+railW-202,railY+14,railX+railW-95,railY+55);mg.addColorStop(0,"#3A3A3A");mg.addColorStop(.55,"#0F0F0F");mg.addColorStop(1,"#020202");ctx.fillStyle=mg;rr(ctx,railX+railW-202,railY+15,108,38,5,true,false);ctx.fillStyle="#4A4A4A";rr(ctx,railX+railW-90,railY+20,45,27,4,true,false);txt(ctx,"MOT",railX+railW-68,railY+38,11,"#FFF");
+ function pulley(x){{ctx.fillStyle="#111";ctx.beginPath();ctx.arc(x,railY+35,11,0,Math.PI*2);ctx.fill();ctx.fillStyle="#777";ctx.beginPath();ctx.arc(x,railY+35,4.5,0,Math.PI*2);ctx.fill();}}[335,392,580,637,820,877,1010].forEach(pulley);line(ctx,335,railY+35,1010,railY+35,"#181818",2.2);
+ function bracket(x){{ctx.fillStyle="#E9E9E9";ctx.strokeStyle="#333";ctx.lineWidth=1.5;rr(ctx,x,railY+41,40,24,3,true,true);bolt(ctx,x+10,railY+49);bolt(ctx,x+30,railY+49);line(ctx,x+20,railY+65,x+20,fy+13,"#333",2.4);}}[290,475,660,845,1030].forEach(bracket);
+ function trolley(x){{ctx.fillStyle="#1F1F1F";rr(ctx,x,railY+63,62,14,3,true,false);line(ctx,x+14,railY+77,x+14,fy+13,"#202020",2.5);line(ctx,x+48,railY+77,x+48,fy+13,"#202020",2.5);}}
+ ctx.strokeStyle="#222";ctx.lineWidth=2.8;rr(ctx,fx,fy,fw,fh,4,false,true);
+ if(dueAnte){{trolley(430);trolley(765);glass(ctx,255,176,455,210);glass(ctx,710,176,455,210);line(ctx,710,176,710,386,"#003C96",3.5);arrow(ctx,690,270,585,270,"#148C2E");arrow(ctx,730,270,835,270,"#148C2E");}}else{{trolley(545);trolley(835);glass(ctx,435,176,540,210);arrow(ctx,690,270,875,270,"#148C2E");}}
+ txt(ctx,"APERTURA",710,307,15,"#148C2E");txt(ctx,"AUTOMATICA",710,329,15,"#148C2E");
+ ctx.fillStyle="#D6D6D6";ctx.fillRect(fx-10,fy,10,fh);ctx.fillRect(fx+fw,fy,10,fh);ctx.fillStyle="#CFCFCF";ctx.fillRect(fx-55,fy+fh,fw+110,10);line(ctx,fx-70,fy+fh+16,fx+fw+70,fy+fh+16,"#9A9A9A",2.8);
+ line(ctx,92,fy,92,fy+fh,"#003C96",2);line(ctx,80,fy,104,fy,"#003C96",2);line(ctx,80,fy+fh,104,fy+fh,"#003C96",2);txt(ctx,"ALTEZZA LUCE",84,260,13,"#003C96","right");txt(ctx,altezza+" mm",84,286,15,"#003C96","right","1000");
+ line(ctx,1260,fy-65,1260,fy+fh,"#003C96",2);line(ctx,1248,fy-65,1272,fy-65,"#003C96",2);line(ctx,1248,fy+fh,1272,fy+fh,"#003C96",2);txt(ctx,"ALTEZZA TOTALE",1278,260,13,"#003C96","left");txt(ctx,(altezza+100)+" mm",1278,286,15,"#003C96","left","1000");
+ line(ctx,fx+280,440,fx+fw-280,440,"#003C96",2);line(ctx,fx+280,429,fx+280,451,"#003C96",2);line(ctx,fx+fw-280,429,fx+fw-280,451,"#003C96",2);txt(ctx,"LUCE NETTA DI PASSAGGIO",680,434,13,"#003C96");txt(ctx,luce+" mm",680,464,16,"#003C96","center","1000");
+ line(ctx,fx,502,fx+fw,502,"#003C96",2);line(ctx,fx,491,fx,513,"#003C96",2);line(ctx,fx+fw,491,fx+fw,513,"#003C96",2);txt(ctx,"LUNGHEZZA TRAVERSA",680,497,13,"#003C96");txt(ctx,traversaMm+" mm",680,527,16,"#003C96","center","1000");
+}}
+drawDoor();
+</script>
+</body></html>
+"""
+
+
+
+v800_style()
+v800_header()
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
@@ -5469,7 +5616,7 @@ with col_main:
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
 
-    components.html(disegno_porta_v701(ante, luce_mm, altezza_mm, lunghezza_traversa), height=700)
+    # Render vecchio rimosso in V800
 
     st.markdown(f"""
     <div class="measure-total">
@@ -6196,7 +6343,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V701 - Solo automazione proporzionata")
+st.caption("Versione V800 - Renderer catalogo SESAMO")
 
 st.markdown(f"""
 <div class="footer">
