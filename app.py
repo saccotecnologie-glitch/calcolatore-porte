@@ -1962,6 +1962,125 @@ def v400_header():
 v400_style()
 v400_header()
 
+
+# =========================
+# V401 - LOGIN BOX RIPRISTINATA PRIMA DELLA CHIAMATA
+# =========================
+def login_box():
+    utenti = carica_tutti_utenti()
+
+    if "logged_profilo" not in st.session_state:
+        st.session_state.logged_profilo = "CLIENTE"
+        st.session_state.logged_nome = "Cliente finale"
+        st.session_state.logged_utente = "CLIENTE"
+        st.session_state.logged_dati = {
+            "nome": "",
+            "azienda": "",
+            "telefono": "",
+            "email": "",
+            "ricarico": "60"
+        }
+
+    st.sidebar.markdown("## Accesso")
+    st.sidebar.info("Cliente finale: può usare il configuratore senza login.")
+
+    username = st.sidebar.text_input("Utente", value="", key="login_user")
+    password = st.sidebar.text_input("Password", value="", type="password", key="login_pwd")
+
+    col_login_1, col_login_2 = st.sidebar.columns(2)
+
+    with col_login_1:
+        accedi = st.button("ACCEDI", key="btn_accedi")
+
+    with col_login_2:
+        esci = st.button("ESCI", key="btn_esci")
+
+    if esci:
+        st.session_state.logged_profilo = "CLIENTE"
+        st.session_state.logged_nome = "Cliente finale"
+        st.session_state.logged_utente = "CLIENTE"
+        st.session_state.logged_dati = {
+            "nome": "",
+            "azienda": "",
+            "telefono": "",
+            "email": "",
+            "ricarico": "60"
+        }
+        st.sidebar.success("Accesso cliente finale")
+
+    if accedi:
+        u = username.strip().upper()
+        pwd_inserita = password.strip()
+
+        if u == "ADMIN" and pwd_inserita == "SATEC-ADMIN":
+            st.session_state.logged_profilo = "SA-TEC"
+            st.session_state.logged_nome = "SA-TEC Amministratore"
+            st.session_state.logged_utente = "ADMIN"
+            st.session_state.logged_dati = UTENTI_BASE["ADMIN"]
+            st.sidebar.success("Accesso: SA-TEC Amministratore")
+
+        elif u in utenti and str(utenti[u].get("password", "")).strip() == pwd_inserita:
+            profilo_login = str(utenti[u].get("profilo", "CLIENTE")).strip().upper()
+            if profilo_login not in PROFILI:
+                profilo_login = "CLIENTE"
+
+            st.session_state.logged_profilo = profilo_login
+            st.session_state.logged_nome = utenti[u].get("nome", "") or u
+            st.session_state.logged_utente = u
+            st.session_state.logged_dati = utenti[u]
+            st.sidebar.success(f"Accesso: {st.session_state.logged_nome}")
+
+        else:
+            st.sidebar.error("Utente o password non corretti.")
+            st.sidebar.caption("Admin corretto: ADMIN / SATEC-ADMIN")
+
+    profilo = st.session_state.logged_profilo
+    nome_utente = st.session_state.logged_nome
+    utente_codice = st.session_state.logged_utente
+    dati_utente = st.session_state.logged_dati
+
+    st.sidebar.markdown("---")
+    st.sidebar.write(f"Profilo attivo: **{PROFILI.get(profilo, profilo)}**")
+
+    with st.sidebar.expander("Registrazione cliente"):
+        st.caption("Crea automaticamente una password cliente.")
+        reg_nome = st.text_input("Nome", key="reg_nome")
+        reg_azienda = st.text_input("Azienda", key="reg_azienda")
+        reg_tel = st.text_input("Telefono", key="reg_tel")
+        reg_email = st.text_input("Email", key="reg_email")
+
+        if st.button("GENERA ACCESSO CLIENTE"):
+            utenti_now = carica_tutti_utenti()
+            nuovo_user = genera_codice_progressivo("CLIENTE", utenti_now)
+            nuova_pwd = genera_password()
+            try:
+                salva_utente_csv(
+                    nuovo_user,
+                    nuova_pwd,
+                    "CLIENTE",
+                    reg_nome,
+                    reg_azienda,
+                    reg_tel,
+                    reg_email,
+                    "60"
+                )
+                st.success("Accesso cliente creato.")
+                st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
+            except Exception as e:
+                st.error(f"Errore creazione utente: {e}")
+
+    try:
+        ricarico_effettivo = float(str(dati_utente.get("ricarico", "")).replace(",", "."))
+    except Exception:
+        ricarico_effettivo = ricarico_default(profilo)
+
+    if profilo == "SA-TEC":
+        ricarico_effettivo = 0.0
+
+    return profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo
+
+
+
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
 # V400: riapplica stile dopo login
