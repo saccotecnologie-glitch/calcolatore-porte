@@ -3707,8 +3707,144 @@ def v600_header():
     """, unsafe_allow_html=True)
 
 
-v600_style()
-v600_header()
+
+
+# =========================
+# V700 - HEADER E RENDER DEFINITIVO SA-TEC
+# =========================
+def v700_style():
+    st.markdown("""
+    <style>
+    .stApp{background:linear-gradient(180deg,#F3F8FF 0%,#FFFFFF 72%)!important;}
+    .block-container{padding-top:.6rem!important;max-width:1550px!important;}
+    .v700-header{background:#FFFFFF;border:1px solid #C9DCF7;border-radius:20px;overflow:hidden;box-shadow:0 10px 26px rgba(0,43,103,.10);margin:6px 0 12px 0;}
+    .v700-header-top{display:grid;grid-template-columns:190px minmax(0,1fr) 330px;align-items:center;min-height:128px;background:#FFFFFF;}
+    .v700-logo-box{height:128px;border-right:1px solid #D8E7FB;display:flex;align-items:center;justify-content:center;background:#FFFFFF;padding:10px;}
+    .v700-logo-img{max-width:145px;max-height:105px;object-fit:contain;}
+    .v700-logo-fallback{color:#0057D9;font-size:34px;font-weight:1000;}
+    .v700-title-box{padding:18px 26px;}
+    .v700-title{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:42px;line-height:1;font-weight:1000;letter-spacing:.3px;}
+    .v700-subtitle{color:#475569!important;-webkit-text-fill-color:#475569!important;font-size:17px;font-weight:900;margin-top:10px;letter-spacing:.4px;text-transform:uppercase;}
+    .v700-company{border-left:1px solid #D8E7FB;padding:16px 22px;color:#061A40!important;-webkit-text-fill-color:#061A40!important;font-size:14px;line-height:1.55;font-weight:900;}
+    .v700-company b{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:15px;}
+    .v700-nav{background:linear-gradient(90deg,#003C96,#0057D9);min-height:48px;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;color:#FFFFFF!important;}
+    .v700-nav div{text-align:center;font-size:14px;font-weight:1000;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-right:1px solid rgba(255,255,255,.22);}
+    .v700-nav div:last-child{border-right:0;}
+    section[data-testid="stSidebar"]{background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;border-right:5px solid #F5B301!important;}
+    section[data-testid="stSidebar"] h1,section[data-testid="stSidebar"] h2,section[data-testid="stSidebar"] h3,section[data-testid="stSidebar"] p,section[data-testid="stSidebar"] span,section[data-testid="stSidebar"] label,section[data-testid="stSidebar"] div{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;}
+    section[data-testid="stSidebar"] input,section[data-testid="stSidebar"] textarea,section[data-testid="stSidebar"] [data-baseweb="input"],section[data-testid="stSidebar"] [data-baseweb="input"] *,section[data-testid="stSidebar"] [data-baseweb="select"],section[data-testid="stSidebar"] [data-baseweb="select"] *{background:#FFFFFF!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
+    .stButton button,.stDownloadButton button{background:#FFFFFF!important;color:#0057D9!important;-webkit-text-fill-color:#0057D9!important;border:2px solid #0057D9!important;border-radius:14px!important;min-height:48px!important;font-size:15px!important;font-weight:1000!important;box-shadow:0 6px 15px rgba(0,87,217,.12)!important;}
+    .stButton button:hover,.stDownloadButton button:hover{background:#F5B301!important;color:#111111!important;-webkit-text-fill-color:#111111!important;border-color:#F5B301!important;}
+    [data-testid="stCheckbox"] label{background:#FFFFFF!important;border:2px solid #C9DCF7!important;border-radius:14px!important;padding:10px 12px!important;box-shadow:0 4px 12px rgba(0,87,217,.06)!important;transition:all .18s ease!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
+    [data-testid="stCheckbox"] label:hover{border-color:#0057D9!important;background:#F4F8FF!important;}
+    [data-testid="stCheckbox"] label:has(input:checked){background:#EAF3FF!important;border-color:#0057D9!important;box-shadow:0 0 0 3px rgba(0,87,217,.16),0 8px 18px rgba(0,87,217,.12)!important;}
+    @media(max-width:1100px){.v700-header-top{grid-template-columns:1fr;text-align:center;}.v700-company,.v700-logo-box{border-left:0;border-right:0;border-top:1px solid #D8E7FB;}.v700-nav{grid-template-columns:repeat(2,1fr);}}
+    </style>
+    """, unsafe_allow_html=True)
+
+def v700_header():
+    st.markdown("""
+    <div class="v700-header">
+        <div class="v700-header-top">
+            <div class="v700-logo-box"><img src="data:image/png;base64,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" class="v700-logo-img"></div>
+            <div class="v700-title-box">
+                <div class="v700-title">SA-TEC - CONFIGURATORE PORTE AUTOMATICHE</div>
+                <div class="v700-subtitle">Tecnologia, sicurezza e soluzioni su misura</div>
+            </div>
+            <div class="v700-company">
+                <b>SA-TEC S.R.L.s</b><br>
+                📍 Via L. Settembrini 84<br>
+                88046 Lamezia Terme (CZ)<br>
+                ☎ 0968-036797<br>
+                ✉ sacco.tecnologie@gmail.com
+            </div>
+        </div>
+        <div class="v700-nav">
+            <div>⌂ HOME</div><div>⚙ CONFIGURATORE</div><div>▤ CATALOGO</div><div>▥ CODICI</div><div>☏ ASSISTENZA</div><div>⚙ IMPOSTAZIONI</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def disegno_porta_v700(ante, luce_mm, altezza_mm, lunghezza_traversa, elettro=False, radar=False, allaccio=False):
+    try:
+        luce = int(float(luce_mm))
+    except Exception:
+        luce = 1600
+    try:
+        altezza = int(float(altezza_mm))
+    except Exception:
+        altezza = 2200
+    try:
+        traversa = float(lunghezza_traversa)
+    except Exception:
+        traversa = 0.0
+
+    due_ante = "2" in str(ante or "")
+    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
+    titolo_schema = "SCHEMA TECNICO PORTA SCORREVOLE A 2 ANTE" if due_ante else "SCHEMA TECNICO PORTA SCORREVOLE A 1 ANTA"
+    due_ante_js = "true" if due_ante else "false"
+
+    return f"""
+<!doctype html>
+<html>
+<head><meta charset="utf-8">
+<style>
+*{{box-sizing:border-box}}html,body{{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#fff;color:#061A40}}
+.v700-wrap{{width:100%;background:#fff;border:1px solid #D8E7FB;border-radius:18px;overflow:hidden;box-shadow:0 10px 26px rgba(0,42,110,.08)}}
+.v700-body{{display:grid;grid-template-columns:minmax(0,1fr) 365px;gap:16px;padding:16px}}
+.v700-left,.v700-right{{background:#fff;border:1px solid #D8E7FB;border-radius:14px;overflow:hidden}}
+.v700-left-head{{padding:14px 18px 8px 18px}}.v700-title2{{color:#0047B8;font-size:21px;font-weight:1000}}
+.v700-tag{{display:inline-block;margin-top:10px;background:#0057D9;color:#fff;font-size:13px;font-weight:1000;border-radius:7px;padding:8px 12px}}
+#doorCanvasV700{{width:100%;height:500px;display:block}}
+.v700-access-head{{background:#0057D9;color:white;padding:13px 15px;font-size:16px;font-weight:1000}}
+.v700-acc-card{{margin:10px;border:2px solid #D8E7FB;border-radius:12px;padding:10px;min-height:128px;display:grid;grid-template-columns:105px 1fr 28px;gap:10px;align-items:center;background:#fff}}
+.v700-acc-card.active{{border-color:#0057D9;background:#EAF3FF;box-shadow:0 0 0 3px rgba(0,87,217,.13)}}
+.v700-acc-img{{width:96px;height:96px}}.v700-acc-title{{color:#0047B8;font-size:15px;font-weight:1000;margin-bottom:7px}}
+.v700-acc-text{{color:#071124;font-size:12px;line-height:1.45;font-weight:800}}
+.v700-check{{width:24px;height:24px;border-radius:6px;border:2px solid #0057D9;display:flex;align-items:center;justify-content:center;color:#0057D9;font-weight:1000}}
+.v700-acc-card.active .v700-check{{background:#0057D9;color:white}}
+.v700-metrics{{border-top:1px solid #D8E7FB;background:#FBFDFF;display:grid;grid-template-columns:repeat(6,1fr)}}
+.v700-metric{{padding:12px 8px;border-right:1px solid #D8E7FB;min-height:76px;text-align:center;color:#06245C;font-weight:900}}
+.v700-metric:last-child{{border-right:0}}.v700-metric b{{display:block;color:#0057D9;font-size:17px;margin-top:4px}}.v700-metric small{{display:block;color:#465B78;font-size:10px;margin-top:3px}}
+</style></head>
+<body>
+<div class="v700-wrap">
+  <div class="v700-body">
+    <div class="v700-left">
+      <div class="v700-left-head"><div class="v700-title2">V700 - {titolo_schema}</div><div class="v700-tag">AUTOMAZIONE</div></div>
+      <canvas id="doorCanvasV700" width="1000" height="500"></canvas>
+    </div>
+    <div class="v700-right">
+      <div class="v700-access-head">ACCESSORI E SERVIZI</div>
+      <div class="v700-acc-card {'active' if elettro else ''}"><canvas class="v700-acc-img" id="elettroIcon" width="96" height="96"></canvas><div><div class="v700-acc-title">ELETTROBLOCCO</div><div class="v700-acc-text">Accessorio per blocco anta in chiusura. Si inserisce automaticamente nel preventivo.</div></div><div class="v700-check">{'✓' if elettro else ''}</div></div>
+      <div class="v700-acc-card {'active' if radar else ''}"><canvas class="v700-acc-img" id="radarIcon" width="96" height="96"></canvas><div><div class="v700-acc-title">RADAR SICUREZZA LATERALE</div><div class="v700-acc-text">Previene schiacciamento e impatto. Conforme EN16005.</div></div><div class="v700-check">{'✓' if radar else ''}</div></div>
+      <div class="v700-acc-card {'active' if allaccio else ''}"><canvas class="v700-acc-img" id="serviceIcon" width="96" height="96"></canvas><div><div class="v700-acc-title">ALLACCIO E COLLAUDO SA-TEC</div><div class="v700-acc-text">Cacciavite, collaudo e certificazione. Logo EN16005 incluso.</div></div><div class="v700-check">{'✓' if allaccio else ''}</div></div>
+    </div>
+  </div>
+  <div class="v700-metrics">
+    <div class="v700-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div><div class="v700-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div><div class="v700-metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div><div class="v700-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div><div class="v700-metric">Portata<b>120 kg</b><small>Per anta</small></div><div class="v700-metric">Velocità<b>0,6 m/s</b><small>Regolabile</small></div>
+  </div>
+</div>
+<script>
+const dueAnte={due_ante_js}; const luce={luce}; const altezza={altezza}; const traversaMm={int(traversa*1000)};
+function rr(ctx,x,y,w,h,r,fill,stroke){{ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();if(fill)ctx.fill();if(stroke)ctx.stroke();}}
+function line(ctx,x1,y1,x2,y2,c,w){{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}}
+function txt(ctx,t,x,y,s,c,a="center",w="900"){{ctx.font=w+" "+s+"px Arial";ctx.fillStyle=c;ctx.textAlign=a;ctx.fillText(t,x,y);}}
+function arrow(ctx,x1,y1,x2,y2,c){{line(ctx,x1,y1,x2,y2,c,7);let a=Math.atan2(y2-y1,x2-x1);ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-16*Math.cos(a-Math.PI/6),y2-16*Math.sin(a-Math.PI/6));ctx.lineTo(x2-16*Math.cos(a+Math.PI/6),y2-16*Math.sin(a+Math.PI/6));ctx.closePath();ctx.fill();}}
+function glass(ctx,x,y,w,h){{let g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,"rgba(255,255,255,.96)");g.addColorStop(.45,"rgba(205,238,255,.62)");g.addColorStop(1,"rgba(145,215,255,.74)");ctx.fillStyle=g;ctx.strokeStyle="#1D8BFF";ctx.lineWidth=3;rr(ctx,x,y,w,h,4,true,true);line(ctx,x+30,y+12,x+w-38,y+h-36,"rgba(255,255,255,.82)",2);line(ctx,x+75,y+12,x+w-12,y+h-90,"rgba(255,255,255,.55)",2);}}
+function drawDoor(){{const c=document.getElementById("doorCanvasV700"),ctx=c.getContext("2d");ctx.clearRect(0,0,1000,500);const fx=105,fy=135,fw=790,fh=245,railX=75,railY=62,railW=850,railH=58;let rg=ctx.createLinearGradient(railX,railY,railX,railY+railH);rg.addColorStop(0,"#eeeeee");rg.addColorStop(.28,"#b9b9b9");rg.addColorStop(.58,"#f7f7f7");rg.addColorStop(1,"#8c8c8c");ctx.fillStyle=rg;ctx.strokeStyle="#222";ctx.lineWidth=2;rr(ctx,railX,railY,railW,railH,3,true,true);line(ctx,railX+22,railY+19,railX+railW-22,railY+19,"#222",3);line(ctx,railX+22,railY+38,railX+railW-22,railY+38,"#555",2);txt(ctx,"sesamo",railX+70,railY+24,12,"#0057D9","center","900");txt(ctx,"SA-TEC",railX+70,railY+44,14,"#0057D9","center","1000");ctx.fillStyle="#111";rr(ctx,railX+railW-150,railY+10,88,38,4,true,false);ctx.fillStyle="#333";rr(ctx,railX+railW-62,railY+16,38,25,4,true,false);txt(ctx,"MOT",railX+railW-43,railY+33,10,"#FFF");function pulley(x){{ctx.fillStyle="#111";ctx.beginPath();ctx.arc(x,railY+29,10,0,Math.PI*2);ctx.fill();ctx.fillStyle="#777";ctx.beginPath();ctx.arc(x,railY+29,4,0,Math.PI*2);ctx.fill();}}[250,300,470,520,680,730].forEach(pulley);function trolley(x){{ctx.fillStyle="#222";rr(ctx,x,railY+49,52,12,3,true,false);line(ctx,x+11,railY+61,x+11,fy+12,"#222",2);line(ctx,x+41,railY+61,x+41,fy+12,"#222",2);}}ctx.strokeStyle="#222";ctx.lineWidth=3;rr(ctx,fx,fy,fw,fh,5,false,true);if(dueAnte){{trolley(310);trolley(625);glass(ctx,165,150,365,218);glass(ctx,530,150,365,218);line(ctx,530,150,530,368,"#003C96",4);arrow(ctx,510,255,430,255,"#148C2E");arrow(ctx,550,255,630,255,"#148C2E");}}else{{trolley(400);trolley(650);glass(ctx,290,150,450,218);arrow(ctx,500,255,660,255,"#148C2E");}}txt(ctx,"APERTURA",520,292,14,"#148C2E");txt(ctx,"AUTOMATICA",520,312,14,"#148C2E");ctx.fillStyle="#D8D8D8";ctx.fillRect(fx-12,fy,12,fh);ctx.fillRect(fx+fw,fy,12,fh);ctx.fillRect(fx-45,fy+fh,fw+90,10);line(ctx,fx-55,fy+fh+14,fx+fw+55,fy+fh+14,"#9A9A9A",3);line(ctx,42,fy,42,fy+fh,"#003C96",2);line(ctx,32,fy,52,fy,"#003C96",2);line(ctx,32,fy+fh,52,fy+fh,"#003C96",2);txt(ctx,"ALTEZZA LUCE",38,255,12,"#003C96","right");txt(ctx,altezza+" mm",38,278,13,"#003C96","right","1000");line(ctx,945,fy-55,945,fy+fh,"#003C96",2);line(ctx,934,fy-55,956,fy-55,"#003C96",2);line(ctx,934,fy+fh,956,fy+fh,"#003C96",2);txt(ctx,"ALTEZZA TOTALE",960,255,12,"#003C96","left");txt(ctx,(altezza+100)+" mm",960,278,13,"#003C96","left","1000");line(ctx,fx+205,415,fx+fw-205,415,"#003C96",2);line(ctx,fx+205,405,fx+205,425,"#003C96",2);line(ctx,fx+fw-205,405,fx+fw-205,425,"#003C96",2);txt(ctx,"LUCE NETTA DI PASSAGGIO",500,409,12,"#003C96");txt(ctx,luce+" mm",500,438,14,"#003C96","center","1000");line(ctx,fx,468,fx+fw,468,"#003C96",2);line(ctx,fx,458,fx,478,"#003C96",2);line(ctx,fx+fw,458,fx+fw,478,"#003C96",2);txt(ctx,"LUNGHEZZA TRAVERSA",500,462,12,"#003C96");txt(ctx,traversaMm+" mm",500,491,14,"#003C96","center","1000");}}
+function drawElettro(){{let c=document.getElementById("elettroIcon"),ctx=c.getContext("2d");ctx.clearRect(0,0,96,96);ctx.fillStyle="#111";rr(ctx,10,25,22,52,4,true,false);ctx.fillStyle="#b7b7b7";ctx.strokeStyle="#555";ctx.lineWidth=2;rr(ctx,38,30,38,32,4,true,true);ctx.fillStyle="#333";ctx.fillRect(50,42,12,8);ctx.fillStyle="#777";[20,62,80].forEach((x,i)=>{{ctx.beginPath();ctx.arc(x,14+i*8,4,0,Math.PI*2);ctx.fill();}});ctx.strokeStyle="#111";line(ctx,60,64,90,78,"#111",3);}}
+function drawRadar(){{let c=document.getElementById("radarIcon"),ctx=c.getContext("2d");ctx.clearRect(0,0,96,96);let g=ctx.createLinearGradient(18,30,78,68);g.addColorStop(0,"#111");g.addColorStop(.6,"#333");g.addColorStop(1,"#050505");ctx.fillStyle=g;ctx.strokeStyle="#111";ctx.lineWidth=2;rr(ctx,12,30,72,32,8,true,true);ctx.fillStyle="#cc0000";ctx.beginPath();ctx.arc(35,50,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(48,50,3,0,Math.PI*2);ctx.fill();}}
+function drawService(){{let c=document.getElementById("serviceIcon"),ctx=c.getContext("2d");ctx.clearRect(0,0,96,96);ctx.strokeStyle="#222";ctx.lineWidth=4;line(ctx,12,72,60,34,"#222",4);ctx.fillStyle="#0A5FD9";rr(ctx,52,28,34,15,8,true,false);ctx.fillStyle="#111";rr(ctx,62,22,15,26,7,true,false);txt(ctx,"EN",48,82,16,"#0057D9","center","1000");txt(ctx,"16005",52,94,12,"#0057D9","center","1000");}}
+drawDoor();drawElettro();drawRadar();drawService();
+</script>
+</body></html>
+"""
+
+
+
+v700_style()
+v700_header()
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
@@ -4989,7 +5125,29 @@ with col_main:
         altezza_mm = st.number_input("ALTEZZA PASSAGGIO IN MM", min_value=1800, max_value=3000, value=2200, step=50)
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
-    components.html(disegno_porta_v505(ante, luce_mm, altezza_mm, lunghezza_traversa), height=640)
+    # V700 - stati accessori per render
+    try:
+        _v700_elettro = bool(elettroblocco)
+    except Exception:
+        try:
+            _v700_elettro = bool(aggiungi_elettroblocco)
+        except Exception:
+            _v700_elettro = False
+    try:
+        _v700_radar = bool(radar_sicurezza_laterale)
+    except Exception:
+        try:
+            _v700_radar = bool(aggiungi_radar_sicurezza_laterale)
+        except Exception:
+            _v700_radar = False
+    try:
+        _v700_allaccio = bool(allaccio)
+    except Exception:
+        try:
+            _v700_allaccio = bool(aggiungi_allaccio)
+        except Exception:
+            _v700_allaccio = False
+    components.html(disegno_porta_v700(ante, luce_mm, altezza_mm, lunghezza_traversa, _v700_elettro, _v700_radar, _v700_allaccio), height=720)
 
     st.markdown(f"""
     <div class="measure-total">
@@ -5716,7 +5874,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V600 - Definitiva SA-TEC")
+st.caption("Versione V700 - Grafica definitiva SA-TEC")
 
 st.markdown(f"""
 <div class="footer">
