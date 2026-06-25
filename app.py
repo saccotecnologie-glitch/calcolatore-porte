@@ -4333,8 +4333,258 @@ drawDoor();
 
 
 
-v800_style()
-v800_header()
+
+
+# =========================
+# V802 - SVG STATICO DEFINITIVO SESAMO / SA-TEC
+# No Canvas. No Javascript. Immagine diversa garantita.
+# =========================
+def v802_style():
+    st.markdown("""
+    <style>
+    .stApp{background:linear-gradient(180deg,#F3F8FF 0%,#FFFFFF 72%)!important;}
+    .block-container{padding-top:.6rem!important;max-width:1550px!important;}
+    .v802-header{background:#FFFFFF;border:1px solid #C9DCF7;border-radius:20px;overflow:hidden;box-shadow:0 10px 26px rgba(0,43,103,.10);margin:6px 0 12px 0;}
+    .v802-header-top{display:grid;grid-template-columns:190px minmax(0,1fr) 330px;align-items:center;min-height:128px;background:#FFFFFF;}
+    .v802-logo-box{height:128px;border-right:1px solid #D8E7FB;display:flex;align-items:center;justify-content:center;background:#FFFFFF;padding:10px;}
+    .v802-logo-img{max-width:145px;max-height:105px;object-fit:contain;}
+    .v802-logo-fallback{color:#0057D9;font-size:34px;font-weight:1000;}
+    .v802-title-box{padding:18px 26px;}
+    .v802-title{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:42px;line-height:1;font-weight:1000;letter-spacing:.3px;}
+    .v802-subtitle{color:#475569!important;-webkit-text-fill-color:#475569!important;font-size:17px;font-weight:900;margin-top:10px;letter-spacing:.4px;text-transform:uppercase;}
+    .v802-company{border-left:1px solid #D8E7FB;padding:16px 22px;color:#061A40!important;-webkit-text-fill-color:#061A40!important;font-size:14px;line-height:1.55;font-weight:900;}
+    .v802-company b{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:15px;}
+    .v802-nav{background:linear-gradient(90deg,#003C96,#0057D9);min-height:48px;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;color:#FFFFFF!important;}
+    .v802-nav div{text-align:center;font-size:14px;font-weight:1000;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-right:1px solid rgba(255,255,255,.22);}
+    .v802-nav div:last-child{border-right:0;}
+    section[data-testid="stSidebar"]{background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;border-right:5px solid #F5B301!important;}
+    section[data-testid="stSidebar"] h1,section[data-testid="stSidebar"] h2,section[data-testid="stSidebar"] h3,section[data-testid="stSidebar"] p,section[data-testid="stSidebar"] span,section[data-testid="stSidebar"] label,section[data-testid="stSidebar"] div{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;}
+    section[data-testid="stSidebar"] input,section[data-testid="stSidebar"] textarea,section[data-testid="stSidebar"] [data-baseweb="input"],section[data-testid="stSidebar"] [data-baseweb="input"] *,section[data-testid="stSidebar"] [data-baseweb="select"],section[data-testid="stSidebar"] [data-baseweb="select"] *{background:#FFFFFF!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
+    .stButton button,.stDownloadButton button{background:#FFFFFF!important;color:#0057D9!important;-webkit-text-fill-color:#0057D9!important;border:2px solid #0057D9!important;border-radius:14px!important;min-height:48px!important;font-size:15px!important;font-weight:1000!important;box-shadow:0 6px 15px rgba(0,87,217,.12)!important;}
+    .stButton button:hover,.stDownloadButton button:hover{background:#F5B301!important;color:#111111!important;-webkit-text-fill-color:#111111!important;border-color:#F5B301!important;}
+    [data-testid="stCheckbox"] label{background:#FFFFFF!important;border:2px solid #C9DCF7!important;border-radius:14px!important;padding:10px 12px!important;box-shadow:0 4px 12px rgba(0,87,217,.06)!important;transition:all .18s ease!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
+    [data-testid="stCheckbox"] label:hover{border-color:#0057D9!important;background:#F4F8FF!important;}
+    [data-testid="stCheckbox"] label:has(input:checked){background:#EAF3FF!important;border-color:#0057D9!important;box-shadow:0 0 0 3px rgba(0,87,217,.16),0 8px 18px rgba(0,87,217,.12)!important;}
+    </style>
+    """, unsafe_allow_html=True)
+
+def v802_header():
+    st.markdown("""
+    <div class="v802-header">
+        <div class="v802-header-top">
+            <div class="v802-logo-box"><img src="data:image/png;base64,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" class="v802-logo-img"></div>
+            <div class="v802-title-box">
+                <div class="v802-title">SA-TEC - CONFIGURATORE PORTE AUTOMATICHE</div>
+                <div class="v802-subtitle">Tecnologia, sicurezza e soluzioni su misura</div>
+            </div>
+            <div class="v802-company">
+                <b>SA-TEC S.R.L.s</b><br>
+                📍 Via L. Settembrini 84<br>
+                88046 Lamezia Terme (CZ)<br>
+                ☎ 0968-036797<br>
+                ✉ sacco.tecnologie@gmail.com
+            </div>
+        </div>
+        <div class="v802-nav">
+            <div>⌂ HOME</div><div>⚙ CONFIGURATORE</div><div>▤ CATALOGO</div><div>▥ CODICI</div><div>☏ ASSISTENZA</div><div>⚙ IMPOSTAZIONI</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def disegno_porta_v802(ante, luce_mm, altezza_mm, lunghezza_traversa):
+    try:
+        luce = int(float(luce_mm))
+    except Exception:
+        luce = 1600
+    try:
+        altezza = int(float(altezza_mm))
+    except Exception:
+        altezza = 2200
+    try:
+        traversa = float(lunghezza_traversa)
+    except Exception:
+        traversa = 0.0
+
+    due_ante = "2" in str(ante or "")
+    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
+    titolo = "PORTA SCORREVOLE AUTOMATICA A 2 ANTE" if due_ante else "PORTA SCORREVOLE AUTOMATICA A 1 ANTA"
+
+    if due_ante:
+        doors_svg = """
+        <g id="doors">
+            <rect x="260" y="210" width="430" height="220" rx="2" fill="url(#glass)" stroke="#0B82F0" stroke-width="4"/>
+            <rect x="690" y="210" width="430" height="220" rx="2" fill="url(#glass)" stroke="#0B82F0" stroke-width="4"/>
+            <line x1="690" y1="210" x2="690" y2="430" stroke="#003C96" stroke-width="4"/>
+            <path d="M665 315 L560 315" stroke="#148C2E" stroke-width="8" stroke-linecap="round"/>
+            <polygon points="560,315 580,303 580,327" fill="#148C2E"/>
+            <path d="M715 315 L820 315" stroke="#148C2E" stroke-width="8" stroke-linecap="round"/>
+            <polygon points="820,315 800,303 800,327" fill="#148C2E"/>
+        </g>
+        <g id="hangers">
+            <rect x="420" y="148" width="78" height="16" rx="3" fill="#1f1f1f"/>
+            <line x1="440" y1="164" x2="440" y2="210" stroke="#222" stroke-width="4"/>
+            <line x1="478" y1="164" x2="478" y2="210" stroke="#222" stroke-width="4"/>
+            <rect x="795" y="148" width="78" height="16" rx="3" fill="#1f1f1f"/>
+            <line x1="815" y1="164" x2="815" y2="210" stroke="#222" stroke-width="4"/>
+            <line x1="853" y1="164" x2="853" y2="210" stroke="#222" stroke-width="4"/>
+        </g>
+        """
+    else:
+        doors_svg = """
+        <g id="doors">
+            <rect x="420" y="210" width="560" height="220" rx="2" fill="url(#glass)" stroke="#0B82F0" stroke-width="4"/>
+            <path d="M690 315 L875 315" stroke="#148C2E" stroke-width="8" stroke-linecap="round"/>
+            <polygon points="875,315 855,303 855,327" fill="#148C2E"/>
+        </g>
+        <g id="hangers">
+            <rect x="540" y="148" width="78" height="16" rx="3" fill="#1f1f1f"/>
+            <line x1="560" y1="164" x2="560" y2="210" stroke="#222" stroke-width="4"/>
+            <line x1="598" y1="164" x2="598" y2="210" stroke="#222" stroke-width="4"/>
+            <rect x="810" y="148" width="78" height="16" rx="3" fill="#1f1f1f"/>
+            <line x1="830" y1="164" x2="830" y2="210" stroke="#222" stroke-width="4"/>
+            <line x1="868" y1="164" x2="868" y2="210" stroke="#222" stroke-width="4"/>
+        </g>
+        """
+
+    return f"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body{{margin:0;font-family:Arial,Helvetica,sans-serif;background:white;color:#061A40}}
+.sheet{{border:1px solid #D8E7FB;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 10px 26px rgba(0,42,110,.08)}}
+.head{{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px 8px 22px}}
+.title{{color:#0047B8;font-size:24px;font-weight:1000;line-height:1.12}}
+.sub{{color:#64748B;font-size:13px;font-weight:900;margin-top:6px;text-transform:uppercase;letter-spacing:.4px}}
+.brand{{text-align:right;color:#0047B8;font-size:30px;font-weight:1000;line-height:1}}
+.brand small{{display:block;color:#475569;font-size:11px;letter-spacing:1.2px;margin-top:4px}}
+.svgbox{{padding:4px 18px 0 18px}}
+.metrics{{border-top:1px solid #D8E7FB;background:#FBFDFF;display:grid;grid-template-columns:repeat(6,1fr)}}
+.metric{{padding:13px 8px;border-right:1px solid #D8E7FB;min-height:78px;text-align:center;color:#06245C;font-weight:900}}
+.metric:last-child{{border-right:0}}
+.metric b{{display:block;color:#0057D9;font-size:18px;margin-top:4px}}
+.metric small{{display:block;color:#465B78;font-size:10px;margin-top:3px}}
+</style>
+</head>
+<body>
+<div class="sheet">
+    <div class="head">
+        <div>
+            <div class="title">V802 - SCHEMA TECNICO {titolo}</div>
+            <div class="sub">SESAMO POWERCORE PW100 · SA-TEC · SVG statico definitivo</div>
+        </div>
+        <div class="brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div>
+    </div>
+
+    <div class="svgbox">
+        <svg width="100%" height="545" viewBox="0 0 1360 545" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="rail" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#fafafa"/>
+                    <stop offset="12%" stop-color="#d8d8d8"/>
+                    <stop offset="30%" stop-color="#9f9f9f"/>
+                    <stop offset="50%" stop-color="#f6f6f6"/>
+                    <stop offset="73%" stop-color="#bdbdbd"/>
+                    <stop offset="100%" stop-color="#707070"/>
+                </linearGradient>
+                <linearGradient id="motor" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#3a3a3a"/>
+                    <stop offset="55%" stop-color="#101010"/>
+                    <stop offset="100%" stop-color="#020202"/>
+                </linearGradient>
+                <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity=".98"/>
+                    <stop offset="42%" stop-color="#d9f1ff" stop-opacity=".72"/>
+                    <stop offset="100%" stop-color="#91d7ff" stop-opacity=".78"/>
+                </linearGradient>
+                <filter id="shadow" x="-10%" y="-20%" width="120%" height="150%">
+                    <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity=".20"/>
+                </filter>
+            </defs>
+
+            <rect x="130" y="58" width="1100" height="70" rx="3" fill="url(#rail)" stroke="#202020" stroke-width="2.5" filter="url(#shadow)"/>
+            <line x1="158" y1="78" x2="1202" y2="78" stroke="#242424" stroke-width="3"/>
+            <line x1="158" y1="102" x2="1202" y2="102" stroke="#505050" stroke-width="2"/>
+            <line x1="158" y1="117" x2="1202" y2="117" stroke="#222" stroke-width="1.5"/>
+            <text x="218" y="86" fill="#0057D9" font-size="19" font-weight="1000" text-anchor="middle">SESAMO</text>
+            <text x="218" y="113" fill="#0057D9" font-size="15" font-weight="1000" text-anchor="middle">SA-TEC</text>
+
+            <rect x="1020" y="70" width="128" height="44" rx="5" fill="#111"/>
+            <rect x="1028" y="73" width="108" height="38" rx="5" fill="url(#motor)"/>
+            <rect x="1140" y="78" width="45" height="27" rx="4" fill="#4a4a4a"/>
+            <text x="1162" y="96" fill="#fff" font-size="11" font-weight="900" text-anchor="middle">MOT</text>
+
+            <g fill="#111">
+                <circle cx="335" cy="93" r="11"/><circle cx="392" cy="93" r="11"/>
+                <circle cx="580" cy="93" r="11"/><circle cx="637" cy="93" r="11"/>
+                <circle cx="820" cy="93" r="11"/><circle cx="877" cy="93" r="11"/>
+                <circle cx="1010" cy="93" r="11"/>
+            </g>
+            <g fill="#777">
+                <circle cx="335" cy="93" r="4.5"/><circle cx="392" cy="93" r="4.5"/>
+                <circle cx="580" cy="93" r="4.5"/><circle cx="637" cy="93" r="4.5"/>
+                <circle cx="820" cy="93" r="4.5"/><circle cx="877" cy="93" r="4.5"/>
+                <circle cx="1010" cy="93" r="4.5"/>
+            </g>
+            <line x1="335" y1="93" x2="1010" y2="93" stroke="#181818" stroke-width="2.2"/>
+
+            <g>
+                <rect x="185" y="160" width="990" height="245" rx="4" fill="none" stroke="#222" stroke-width="3"/>
+                <rect x="175" y="160" width="10" height="245" fill="#d6d6d6"/>
+                <rect x="1175" y="160" width="10" height="245" fill="#d6d6d6"/>
+                <rect x="130" y="405" width="1100" height="10" fill="#cfcfcf"/>
+                <line x1="115" y1="421" x2="1245" y2="421" stroke="#9a9a9a" stroke-width="3"/>
+            </g>
+
+            {doors_svg}
+
+            <text x="710" y="365" fill="#148C2E" font-size="15" font-weight="1000" text-anchor="middle">APERTURA</text>
+            <text x="710" y="386" fill="#148C2E" font-size="15" font-weight="1000" text-anchor="middle">AUTOMATICA</text>
+
+            <line x1="92" y1="160" x2="92" y2="405" stroke="#003C96" stroke-width="2"/>
+            <line x1="80" y1="160" x2="104" y2="160" stroke="#003C96" stroke-width="2"/>
+            <line x1="80" y1="405" x2="104" y2="405" stroke="#003C96" stroke-width="2"/>
+            <text x="84" y="260" fill="#003C96" font-size="13" font-weight="900" text-anchor="end">ALTEZZA LUCE</text>
+            <text x="84" y="286" fill="#003C96" font-size="15" font-weight="1000" text-anchor="end">{altezza} mm</text>
+
+            <line x1="1260" y1="95" x2="1260" y2="405" stroke="#003C96" stroke-width="2"/>
+            <line x1="1248" y1="95" x2="1272" y2="95" stroke="#003C96" stroke-width="2"/>
+            <line x1="1248" y1="405" x2="1272" y2="405" stroke="#003C96" stroke-width="2"/>
+            <text x="1278" y="260" fill="#003C96" font-size="13" font-weight="900">ALTEZZA TOTALE</text>
+            <text x="1278" y="286" fill="#003C96" font-size="15" font-weight="1000">{altezza + 100} mm</text>
+
+            <line x1="465" y1="440" x2="895" y2="440" stroke="#003C96" stroke-width="2"/>
+            <line x1="465" y1="429" x2="465" y2="451" stroke="#003C96" stroke-width="2"/>
+            <line x1="895" y1="429" x2="895" y2="451" stroke="#003C96" stroke-width="2"/>
+            <text x="680" y="434" fill="#003C96" font-size="13" font-weight="900" text-anchor="middle">LUCE NETTA DI PASSAGGIO</text>
+            <text x="680" y="464" fill="#003C96" font-size="16" font-weight="1000" text-anchor="middle">{luce} mm</text>
+
+            <line x1="185" y1="502" x2="1175" y2="502" stroke="#003C96" stroke-width="2"/>
+            <line x1="185" y1="491" x2="185" y2="513" stroke="#003C96" stroke-width="2"/>
+            <line x1="1175" y1="491" x2="1175" y2="513" stroke="#003C96" stroke-width="2"/>
+            <text x="680" y="497" fill="#003C96" font-size="13" font-weight="900" text-anchor="middle">LUNGHEZZA TRAVERSA</text>
+            <text x="680" y="527" fill="#003C96" font-size="16" font-weight="1000" text-anchor="middle">{int(traversa*1000)} mm</text>
+        </svg>
+    </div>
+
+    <div class="metrics">
+        <div class="metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
+        <div class="metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
+        <div class="metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div>
+        <div class="metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
+        <div class="metric">Portata<b>120 kg</b><small>Per anta</small></div>
+        <div class="metric">Velocità<b>0,6 m/s</b><small>Regolabile</small></div>
+    </div>
+</div>
+</body>
+</html>
+"""
+
+
+
+v802_style()
+v802_header()
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
@@ -5616,7 +5866,7 @@ with col_main:
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
 
-    components.html(disegno_porta_v800(ante, luce_mm, altezza_mm, lunghezza_traversa), height=735)
+    # Render vecchio rimosso in V802
     st.markdown(f"""
     <div class="measure-total">
     <div><b>MISURA TRAVERSA CALCOLATA</b><br>1 anta = doppio luce + 10 cm<br>2 ante = doppio luce + 20 cm</div>
@@ -6342,7 +6592,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V801 - Fix immagine porta automatica")
+st.caption("Versione V802 - SVG statico SESAMO")
 
 st.markdown(f"""
 <div class="footer">
