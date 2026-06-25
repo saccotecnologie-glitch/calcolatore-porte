@@ -2081,6 +2081,121 @@ def login_box():
 
 
 
+
+# =========================
+# V402 - DISEGNO PORTA RIPRISTINATO
+# =========================
+def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
+    try:
+        luce = int(float(luce_mm))
+    except Exception:
+        luce = 1200
+
+    try:
+        altezza = int(float(altezza_mm))
+    except Exception:
+        altezza = 2200
+
+    try:
+        traversa = float(lunghezza_traversa)
+    except Exception:
+        traversa = 0.0
+
+    ante_txt = str(ante or "")
+    due_ante = "2" in ante_txt
+
+    if due_ante:
+        ante_svg = """
+        <rect x="110" y="120" width="190" height="260" rx="6" fill="#EAF3FF" stroke="#0057D9" stroke-width="4"/>
+        <rect x="300" y="120" width="190" height="260" rx="6" fill="#EAF3FF" stroke="#0057D9" stroke-width="4"/>
+        <line x1="300" y1="120" x2="300" y2="380" stroke="#003C96" stroke-width="5"/>
+        <path d="M265 250 L225 250" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
+        <path d="M335 250 L375 250" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
+        """
+        descr = "Porta automatica scorrevole a 2 ante"
+    else:
+        ante_svg = """
+        <rect x="160" y="120" width="280" height="260" rx="6" fill="#EAF3FF" stroke="#0057D9" stroke-width="4"/>
+        <path d="M300 250 L375 250" stroke="#F5B301" stroke-width="8" stroke-linecap="round"/>
+        """
+        descr = "Porta automatica scorrevole a 1 anta"
+
+    return f"""
+    <!doctype html>
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <style>
+        body {{
+            margin:0;
+            font-family:Arial, Helvetica, sans-serif;
+            background:#FFFFFF;
+        }}
+        .box {{
+            border:2px solid #C9DCF7;
+            border-radius:18px;
+            padding:18px;
+            background:linear-gradient(180deg,#FFFFFF,#F4F8FF);
+            box-shadow:0 8px 22px rgba(0,87,217,.08);
+        }}
+        .title {{
+            color:#003C96;
+            font-size:22px;
+            font-weight:900;
+            margin-bottom:8px;
+        }}
+        .sub {{
+            color:#111827;
+            font-size:15px;
+            font-weight:800;
+            line-height:1.5;
+            margin-bottom:14px;
+        }}
+        .measure {{
+            display:grid;
+            grid-template-columns:repeat(3,1fr);
+            gap:10px;
+            margin-top:12px;
+        }}
+        .card {{
+            background:#FFFFFF;
+            border:1px solid #C9DCF7;
+            border-radius:12px;
+            padding:10px;
+            color:#111827;
+            font-weight:800;
+            text-align:center;
+        }}
+        .card b {{
+            color:#0057D9;
+            font-size:18px;
+        }}
+    </style>
+    </head>
+    <body>
+        <div class="box">
+            <div class="title">{descr}</div>
+            <div class="sub">Schema indicativo della configurazione scelta.</div>
+            <svg width="100%" height="360" viewBox="0 0 600 430">
+                <rect x="70" y="80" width="460" height="35" rx="8" fill="#003C96"/>
+                <text x="300" y="104" text-anchor="middle" font-size="17" font-weight="900" fill="#FFFFFF">TRAVERSA AUTOMAZIONE</text>
+                <rect x="95" y="115" width="410" height="280" rx="8" fill="none" stroke="#111827" stroke-width="3"/>
+                {ante_svg}
+                <line x1="95" y1="405" x2="505" y2="405" stroke="#111827" stroke-width="3"/>
+                <text x="300" y="425" text-anchor="middle" font-size="15" font-weight="900" fill="#111827">Luce passaggio {luce} mm</text>
+            </svg>
+            <div class="measure">
+                <div class="card">Luce<br><b>{luce} mm</b></div>
+                <div class="card">Altezza<br><b>{altezza} mm</b></div>
+                <div class="card">Traversa<br><b>{traversa:.2f} m</b></div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+
+
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
 # V400: riapplica stile dopo login
@@ -4087,7 +4202,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V400 CLEAN SA-TEC")
+st.caption("Versione V402 - Fix Login e Disegno Porta")
 
 st.markdown(f"""
 <div class="footer">
