@@ -5616,8 +5616,7 @@ with col_main:
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
 
-    # Render vecchio rimosso in V800
-
+    components.html(disegno_porta_v800(ante, luce_mm, altezza_mm, lunghezza_traversa), height=735)
     st.markdown(f"""
     <div class="measure-total">
     <div><b>MISURA TRAVERSA CALCOLATA</b><br>1 anta = doppio luce + 10 cm<br>2 ante = doppio luce + 20 cm</div>
@@ -6343,7 +6342,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V800 - Renderer catalogo SESAMO")
+st.caption("Versione V801 - Fix immagine porta automatica")
 
 st.markdown(f"""
 <div class="footer">
