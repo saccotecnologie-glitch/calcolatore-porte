@@ -3228,6 +3228,298 @@ drawSection();
 """
 
 
+
+
+# =========================
+# V505 - RENDER DEFINITIVO SOLO AUTOMAZIONE
+# Tolta sezione traversa. Disegno automazione/porta più largo e pulito.
+# =========================
+def disegno_porta_v505(ante, luce_mm, altezza_mm, lunghezza_traversa):
+    try:
+        luce = int(float(luce_mm))
+    except Exception:
+        luce = 1600
+
+    try:
+        altezza = int(float(altezza_mm))
+    except Exception:
+        altezza = 2200
+
+    try:
+        traversa = float(lunghezza_traversa)
+    except Exception:
+        traversa = 0.0
+
+    due_ante = "2" in str(ante or "")
+    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
+    titolo_schema = "SCHEMA TECNICO AUTOMAZIONE SCORREVOLE A 2 ANTE" if due_ante else "SCHEMA TECNICO AUTOMAZIONE SCORREVOLE A 1 ANTA"
+    due_ante_js = "true" if due_ante else "false"
+
+    return f"""
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+*{{box-sizing:border-box}}
+html,body{{
+    margin:0;
+    padding:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:#fff;
+    color:#071124;
+}}
+.v505-box{{
+    width:100%;
+    background:#fff;
+    border:1px solid #D8E7FB;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 10px 26px rgba(0,42,110,.08);
+}}
+.v505-head{{
+    padding:14px 18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}}
+.v505-title{{
+    color:#0047B8;
+    font-size:22px;
+    font-weight:1000;
+}}
+.v505-badge{{
+    background:#0057D9;
+    color:#fff;
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:1000;
+}}
+.v505-panel{{
+    background:#fff;
+    border-top:1px solid #EDF3FC;
+    padding:10px 18px 14px 18px;
+}}
+.v505-label{{
+    display:inline-block;
+    background:#0057D9;
+    color:#fff;
+    font-size:13px;
+    font-weight:1000;
+    padding:8px 12px;
+    border-radius:6px;
+    margin:0 0 8px 0;
+}}
+canvas{{
+    width:100%;
+    display:block;
+}}
+#frontCanvasV505{{
+    height:455px;
+    border:1px solid #EDF3FC;
+    border-radius:14px;
+    background:#fff;
+}}
+.v505-metrics{{
+    border-top:1px solid #D8E7FB;
+    background:#FBFDFF;
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+}}
+.v505-metric{{
+    padding:12px 8px;
+    border-right:1px solid #D8E7FB;
+    min-height:72px;
+    text-align:center;
+    color:#06245C;
+    font-weight:900;
+}}
+.v505-metric:last-child{{border-right:0}}
+.v505-metric b{{
+    display:block;
+    color:#0057D9;
+    font-size:17px;
+    margin-top:4px;
+}}
+.v505-metric small{{
+    display:block;
+    color:#465B78;
+    font-size:10px;
+    margin-top:3px;
+}}
+</style>
+</head>
+<body>
+<div class="v505-box">
+    <div class="v505-head">
+        <div class="v505-title">{titolo_schema}</div>
+        <div class="v505-badge">EN16005</div>
+    </div>
+
+    <div class="v505-panel">
+        <div class="v505-label">VISTA FRONTALE AUTOMAZIONE</div>
+        <canvas id="frontCanvasV505" width="1180" height="455"></canvas>
+    </div>
+
+    <div class="v505-metrics">
+        <div class="v505-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
+        <div class="v505-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
+        <div class="v505-metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div>
+        <div class="v505-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
+        <div class="v505-metric">Normativa<b>EN16005</b><small>Sicurezza</small></div>
+        <div class="v505-metric">Sistema<b>PW100</b><small>Sesamo</small></div>
+    </div>
+</div>
+
+<script>
+const dueAnte = {due_ante_js};
+const luce = {luce};
+const altezza = {altezza};
+const traversaMm = {int(traversa*1000)};
+
+function rr(ctx,x,y,w,h,r,fill,stroke){{
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+    if(fill) ctx.fill();
+    if(stroke) ctx.stroke();
+}}
+function line(ctx,x1,y1,x2,y2,c,w){{
+    ctx.strokeStyle=c; ctx.lineWidth=w; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+}}
+function txt(ctx,t,x,y,s,c,a="center",w="900"){{
+    ctx.font=w+" "+s+"px Arial"; ctx.fillStyle=c; ctx.textAlign=a; ctx.fillText(t,x,y);
+}}
+function arrow(ctx,x1,y1,x2,y2,c){{
+    line(ctx,x1,y1,x2,y2,c,7);
+    const a=Math.atan2(y2-y1,x2-x1);
+    ctx.fillStyle=c;
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-16*Math.cos(a-Math.PI/6),y2-16*Math.sin(a-Math.PI/6));
+    ctx.lineTo(x2-16*Math.cos(a+Math.PI/6),y2-16*Math.sin(a+Math.PI/6));
+    ctx.closePath(); ctx.fill();
+}}
+function glass(ctx,x,y,w,h){{
+    const g=ctx.createLinearGradient(x,y,x+w,y+h);
+    g.addColorStop(0,"rgba(255,255,255,.96)");
+    g.addColorStop(.45,"rgba(205,238,255,.62)");
+    g.addColorStop(1,"rgba(145,215,255,.74)");
+    ctx.fillStyle=g; ctx.strokeStyle="#1D8BFF"; ctx.lineWidth=3;
+    rr(ctx,x,y,w,h,4,true,true);
+    line(ctx,x+30,y+12,x+w-38,y+h-36,"rgba(255,255,255,.82)",2);
+    line(ctx,x+75,y+12,x+w-12,y+h-90,"rgba(255,255,255,.55)",2);
+}}
+function drawFront(){{
+    const c=document.getElementById("frontCanvasV505");
+    const ctx=c.getContext("2d");
+    ctx.clearRect(0,0,c.width,c.height);
+
+    const fx=120, fy=118, fw=905, fh=235;
+    const railX=80, railY=56, railW=985, railH=52;
+
+    // traversa lunga e rettangolare automazione
+    const rg=ctx.createLinearGradient(railX,railY,railX,railY+railH);
+    rg.addColorStop(0,"#eeeeee");
+    rg.addColorStop(.28,"#b9b9b9");
+    rg.addColorStop(.58,"#f7f7f7");
+    rg.addColorStop(1,"#8c8c8c");
+    ctx.fillStyle=rg; ctx.strokeStyle="#222"; ctx.lineWidth=2;
+    rr(ctx,railX,railY,railW,railH,3,true,true);
+
+    // dettagli interni
+    line(ctx,railX+22,railY+17,railX+railW-22,railY+17,"#222",3);
+    line(ctx,railX+22,railY+34,railX+railW-22,railY+34,"#555",2);
+    txt(ctx,"sesamo",railX+72,railY+21,12,"#0057D9","center","900");
+    txt(ctx,"SA-TEC",railX+72,railY+40,13,"#0057D9","center","1000");
+
+    // motore
+    ctx.fillStyle="#111"; rr(ctx,railX+railW-160,railY+8,84,36,4,true,false);
+    ctx.fillStyle="#333"; rr(ctx,railX+railW-76,railY+13,42,26,4,true,false);
+    txt(ctx,"MOT",railX+railW-55,railY+31,10,"#FFF");
+
+    // pulegge e carrelli
+    function pulley(x){{
+        ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(x,railY+26,10,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle="#777"; ctx.beginPath(); ctx.arc(x,railY+26,4,0,Math.PI*2); ctx.fill();
+    }}
+    [275,320,545,590,760,805].forEach(pulley);
+
+    function trolley(x){{
+        ctx.fillStyle="#222"; rr(ctx,x,railY+44,52,11,3,true,false);
+        line(ctx,x+11,railY+55,x+11,fy+14,"#222",2);
+        line(ctx,x+41,railY+55,x+41,fy+14,"#222",2);
+    }}
+
+    // telaio largo e ante larghe
+    ctx.strokeStyle="#222"; ctx.lineWidth=3; rr(ctx,fx,fy,fw,fh,5,false,true);
+
+    if(dueAnte){{
+        trolley(355); trolley(700);
+        glass(ctx,190,132,415,205);
+        glass(ctx,605,132,415,205);
+        line(ctx,605,132,605,337,"#003C96",4);
+        arrow(ctx,585,238,500,238,"#148C2E");
+        arrow(ctx,625,238,710,238,"#148C2E");
+        txt(ctx,"APERTURA",605,270,13,"#148C2E");
+        txt(ctx,"AUTOMATICA",605,287,13,"#148C2E");
+    }} else {{
+        trolley(450); trolley(735);
+        glass(ctx,330,132,520,205);
+        arrow(ctx,565,238,735,238,"#148C2E");
+        txt(ctx,"APERTURA",610,270,13,"#148C2E");
+        txt(ctx,"AUTOMATICA",610,287,13,"#148C2E");
+    }}
+
+    // montanti e pavimento
+    ctx.fillStyle="#D8D8D8";
+    ctx.fillRect(fx-12,fy,12,fh);
+    ctx.fillRect(fx+fw,fy,12,fh);
+    ctx.fillRect(fx-45,fy+fh,fw+90,10);
+    line(ctx,fx-55,fy+fh+14,fx+fw+55,fy+fh+14,"#9A9A9A",3);
+
+    // quote verticali
+    line(ctx,58,fy,58,fy+fh,"#003C96",2);
+    line(ctx,48,fy,68,fy,"#003C96",2);
+    line(ctx,48,fy+fh,68,fy+fh,"#003C96",2);
+    txt(ctx,"ALTEZZA LUCE",50,225,11,"#003C96","right");
+    txt(ctx,altezza+" mm",50,245,12,"#003C96","right","1000");
+
+    line(ctx,1110,fy-50,1110,fy+fh,"#003C96",2);
+    line(ctx,1099,fy-50,1121,fy-50,"#003C96",2);
+    line(ctx,1099,fy+fh,1121,fy+fh,"#003C96",2);
+    txt(ctx,"ALTEZZA TOTALE",1126,225,11,"#003C96","left");
+    txt(ctx,(altezza+100)+" mm",1126,245,12,"#003C96","left","1000");
+
+    // quote orizzontali
+    line(ctx,fx+220,385,fx+fw-220,385,"#003C96",2);
+    line(ctx,fx+220,375,fx+220,395,"#003C96",2);
+    line(ctx,fx+fw-220,375,fx+fw-220,395,"#003C96",2);
+    txt(ctx,"LUCE NETTA DI PASSAGGIO",590,379,11,"#003C96");
+    txt(ctx,luce+" mm",590,406,13,"#003C96","center","1000");
+
+    line(ctx,fx,428,fx+fw,428,"#003C96",2);
+    line(ctx,fx,418,fx,438,"#003C96",2);
+    line(ctx,fx+fw,418,fx+fw,438,"#003C96",2);
+    txt(ctx,"LUNGHEZZA TRAVERSA",590,422,11,"#003C96");
+    txt(ctx,traversaMm+" mm",590,448,13,"#003C96","center","1000");
+}}
+drawFront();
+</script>
+</body>
+</html>
+"""
+
+
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
 # V400: riapplica stile dopo login
@@ -4507,7 +4799,7 @@ with col_main:
         altezza_mm = st.number_input("ALTEZZA PASSAGGIO IN MM", min_value=1800, max_value=3000, value=2200, step=50)
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
-    components.html(disegno_porta_v504(ante, luce_mm, altezza_mm, lunghezza_traversa), height=720)
+    components.html(disegno_porta_v505(ante, luce_mm, altezza_mm, lunghezza_traversa), height=640)
 
     st.markdown(f"""
     <div class="measure-total">
@@ -5234,7 +5526,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V504 - Anta larga e sezione traversa 115x155 fissaggio 80")
+st.caption("Versione V505 - Solo automazione")
 
 st.markdown(f"""
 <div class="footer">
