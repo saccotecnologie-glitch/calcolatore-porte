@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import datetime
 
 # =========================================================
-# CONFIGURATORE PRO - INTERFACCIA MODERNA UI/UX COMPLETE
+# CONFIGURATORE PRO - INTERFACCIA MODERNA UI/UX BLINDATA
 # =========================================================
 
 st.set_page_config(
@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Reset totale dello stile Streamlit per creare un'interfaccia Premium SaaS
+# Reset totale dello stile Streamlit per creare un'interfaccia Premium SaaS Real Tech
 st.markdown("""
 <style>
     /* Sfondo generale e palette tech scura */
@@ -76,13 +76,6 @@ IVA = 0.22
 PREVENTIVI_CSV = "preventivi_satec.csv"
 UTENTI_CSV = "utenti_satec.csv"
 
-# Credenziali Utenti Locali di Partenza
-UTENTI_BASE = {
-    "ADMIN": {"password": "SATEC-ADMIN", "profilo": "SA-TEC", "azienda": "SA-TEC Srl", "ricarico": "0"},
-    "ROSSI01": {"password": "R2026#", "profilo": "RIVENDITORE", "azienda": "Rossi Porte", "ricarico": "30"},
-    "GROS001": {"password": "G2026#", "profilo": "GROSSISTA", "azienda": "Emme Distribuzione", "ricarico": "20"}
-}
-
 # LISTINO COMPONENTI INDUSTRIALI SESAMO AUTOMATIONS
 LISTINI = {
     "SESAMO_LH100": 1340.00, 
@@ -120,13 +113,23 @@ def ricarico_default(profilo):
     return {"SA-TEC": 0.0, "GROSSISTA": 20.0, "RIVENDITORE": 30.0}.get(profilo, 60.0)
 
 def carica_tutti_utenti():
-    utenti = dict(UTENTI_BASE)
+    # Admin iniettato di base hardcoded per evitare blocchi da file esterni
+    utenti = {
+        "ADMIN": {"password": "SATEC-ADMIN", "profilo": "SA-TEC", "azienda": "SA-TEC Srl", "ricarico": "0"}
+    }
+    # Carica gli altri dal CSV se esiste
     if Path(UTENTI_CSV).exists():
         try:
             with open(UTENTI_CSV, "r", encoding="utf-8") as f:
                 for r in csv.DictReader(f):
                     u = r.get("utente", "").strip().upper()
-                    if u: utenti[u] = {"password": r.get("password", ""), "profilo": r.get("profilo", "RIVENDITORE"), "azienda": r.get("azienda", ""), "ricarico": r.get("ricarico", "30")}
+                    if u and u != "ADMIN": # Non permette al CSV di sovrascrivere l'Admin principale
+                        utenti[u] = {
+                            "password": r.get("password", ""),
+                            "profilo": r.get("profilo", "RIVENDITORE"),
+                            "azienda": r.get("azienda", ""),
+                            "ricarico": r.get("ricarico", "30")
+                        }
         except: pass
     return utenti
 
@@ -184,6 +187,7 @@ if not st.session_state.auth:
     if st.sidebar.button("Accedi al Sistema"):
         if u_in in utenti_totali and utenti_totali[u_in]["password"] == p_in:
             st.session_state.auth, st.session_state.user, st.session_state.profilo, st.session_state.dati = True, u_in, utenti_totali[u_in]["profilo"], utenti_totali[u_in]
+            st.sidebar.success("Accesso eseguito!")
             st.rerun()
         else: st.sidebar.error("ID o Password non validi.")
 else:
@@ -224,52 +228,59 @@ if sezione == "📐 Calcolo & Configurazione":
 
         st.markdown("### 📐 Sezione Tecnica Automazione SESAMO PRO")
         
-        # BOX SUPERIORE CENTRALE (Meccanica fissa)
-        st.markdown(f"""
-        <div style="background: #1e293b; padding: 15px; border-radius: 12px 12px 0 0; border: 1px solid #334155; border-bottom: none; text-align: center;">
-            <strong style="color: #38bdf8;">TRAVERSA IN ALLUMINIO ESTRUSO: {traversa_m:.2f} m</strong>
-        </div>
-        """, unsafe_allow_html=True)
+        # NUOVA GRAFICA PROFESSIONALE COMPATTA AD ALTO IMPATTO VISIVO SENZA BUG DI STRUTTURA
+        allineamento_meccanico = "space-around" if ante == "2 ante" else "flex-end"
+        stringa_carrello_b = '<div style="color: #a7f3d0; font-size: 12px; font-weight: bold;">⚙️ Carrello B</div>' if ante == "2 ante" else ''
         
-        # INTERFACCIA BLOCCO CENTRALINA/MOTORE
-        allineamento = "space-around" if ante == "2 ante" else "flex-end"
-        carrello_b = '<span style="color: #a7f3d0; font-size: 11px;">⚙️ Carrello B</span>' if ante == "2 ante" else ''
-        
-        st.markdown(f"""
-        <div style="background: #0f172a; padding: 12px; border: 2px solid #64748b; margin: 0 10px;">
-            <div style="display: flex; justify-content: space-between; font-size: 9px; font-weight: bold;">
-                <span style="background: #ef4444; color: white; padding: 2px 4px; border-radius: 3px;">CENTRALINA DIGITAL</span>
-                <span style="background: #f59e0b; color: #0f172a; padding: 2px 4px; border-radius: 3px;">BATTERIE</span>
-                <span style="background: #38bdf8; color: #0f172a; padding: 2px 4px; border-radius: 3px;">MOTORE IND.</span>
-            </div>
-            <div style="border-top: 2px dashed #475569; margin-top: 8px; padding-top: 4px; display: flex; justify-content: {allineamento};">
-                <span style="color: #a7f3d0; font-size: 11px;">⚙️ Carrello A</span>
-                {carrello_b}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # SEZIONE LAYOUT ANTE DINAMICHE CON COLONNE STREAMLIT (Zero errori di stringa)
+        # Gestione rendering dinamico delle ante via puro CSS Flexbox (Molto elegante e stabile)
+        blocco_ante_html = ""
         if ante == "1 anta":
-            cx_1, cx_2 = st.columns(2)
-            with cx_1:
-                st.markdown('<div style="height: 100px; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">VANO FISSO LATERALE</div>', unsafe_allow_html=True)
-            with cx_2:
-                st.markdown('<div style="height: 100px; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold;"><span style="font-size:10px; color:#64748b;">ANTA MOBILE</span><span style="color:#38bdf8; font-size:18px;">➔</span></div>', unsafe_allow_html=True)
+            blocco_ante_html = """
+            <div style="display: flex; gap: 10px; height: 110px; margin-top: 5px;">
+                <div style="flex: 1; background: rgba(56, 189, 248, 0.05); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px; font-weight: 500;">VANO FISSO</div>
+                <div style="flex: 1; background: #ffffff; border: 2px solid #38bdf8; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+                    <span style="font-size: 11px; color: #475569 !important; font-weight: bold;">ANTA MOBILE</span>
+                    <span style="color: #38bdf8 !important; font-size: 24px; font-weight: bold; margin-top: 2px;">➔</span>
+                </div>
+            </div>
+            """
         else:
-            cx_1, cx_2, cx_3, cx_4 = st.columns([22, 27, 27, 22])
-            with cx_1:
-                st.markdown('<div style="height: 100px; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 10px;">FISSO DX</div>', unsafe_allow_html=True)
-            with cx_2:
-                st.markdown('<div style="height: 100px; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold;"><span style="font-size:9px; color:#64748b;">ANTA 1</span><span style="color:#38bdf8; font-size:18px;">➔</span></div>', unsafe_allow_html=True)
-            with cx_3:
-                st.markdown('<div style="height: 100px; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold;"><span style="font-size:9px; color:#64748b;">ANTA 2</span><span style="color:#38bdf8; font-size:18px;">⬅</span></div>', unsafe_allow_html=True)
-            with cx_4:
-                st.markdown('<div style="height: 100px; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 10px;">FISSO SX</div>', unsafe_allow_html=True)
+            blocco_ante_html = """
+            <div style="display: flex; gap: 8px; height: 110px; margin-top: 5px;">
+                <div style="flex: 22; background: rgba(56, 189, 248, 0.05); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO DX</div>
+                <div style="flex: 27; background: #ffffff; border: 2px solid #38bdf8; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: -2px 4px 8px rgba(0,0,0,0.3);">
+                    <span style="font-size: 10px; color: #475569 !important; font-weight: bold;">ANTA 1</span>
+                    <span style="color: #38bdf8 !important; font-size: 20px; font-weight: bold;">➔</span>
+                </div>
+                <div style="flex: 27; background: #ffffff; border: 2px solid #38bdf8; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 2px 4px 8px rgba(0,0,0,0.3);">
+                    <span style="font-size: 10px; color: #475569 !important; font-weight: bold;">ANTA 2</span>
+                    <span style="color: #38bdf8 !important; font-size: 20px; font-weight: bold;">⬅</span>
+                </div>
+                <div style="flex: 22; background: rgba(56, 189, 248, 0.05); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO SX</div>
+            </div>
+            """
 
         st.markdown(f"""
-        <div style="background: #1e293b; padding: 10px; border-radius: 0 0 12px 12px; border: 1px solid #334155; border-top: none; text-align: center; font-size: 11px; color: #94a3b8;">
-            Luce Libera Passaggio: {luce} mm | Altezza Vano: {altezza} mm
+        <div style="background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; font-family: 'Inter', sans-serif;">
+            <div style="background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #38bdf8; text-align: center; margin-bottom: 12px;">
+                <span style="color: #94a3b8; font-size: 11px; text-transform: uppercase; font-weight: 600; display: block; letter-spacing: 0.5px;">Sviluppo Traversa Estruso</span>
+                <strong style="color: #38bdf8; font-size: 18px;">{traversa_m:.2f} Metri Lineari</strong>
+            </div>
+            <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #475569; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px dashed #334155;">
+                    <span style="background: #ef4444; color: white; padding: 2px 6px; font-size: 9px; font-weight: bold; border-radius: 4px;">SESAMO BRAIN</span>
+                    <span style="background: #f59e0b; color: #0f172a; padding: 2px 6px; font-size: 9px; font-weight: bold; border-radius: 4px;">BACKUP BATTERY</span>
+                    <span style="background: #38bdf8; color: #0f172a; padding: 2px 6px; font-size: 9px; font-weight: bold; border-radius: 4px;">POWER MOTOR</span>
+                </div>
+                <div style="display: flex; justify-content: {allineamento_meccanico}; margin-top: 10px;">
+                    <div style="color: #a7f3d0; font-size: 12px; font-weight: bold;">⚙️ Carrello A</div>
+                    {stringa_carrello_b}
+                </div>
+            </div>
+            {blocco_ante_html}
+            <div style="text-align: center; font-size: 11px; color: #94a3b8; margin-top: 12px; font-weight: 500;">
+                Configurazione: L {luce}mm × H {altezza}mm
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -325,7 +336,7 @@ if sezione == "📐 Calcolo & Configurazione":
             else:
                 nuovo_cod = genera_nuovo_codice()
                 payload = {
-                    "codice_preventivo": nuevo_cod, "data_ora": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                    "codice_preventivo": nuovo_cod, "data_ora": datetime.now().strftime("%d/%m/%Y %H:%M"),
                     "utente": st.session_state.user, "profilo": st.session_state.profilo,
                     "cliente_nome": n_client, "cliente_azienda": a_client, "cliente_telefono": t_client, "cliente_email": m_client,
                     "configurazione": f"{modello} ({ante})", "luce_mm": str(luce), "altezza_mm": str(altezza),
@@ -459,6 +470,6 @@ elif sezione == "🛠️ CRM Gestione" and st.session_state.profilo == "SA-TEC":
                 with open(UTENTI_CSV, "a", newline="", encoding="utf-8") as f:
                     w = csv.DictWriter(f, fieldnames=["utente", "password", "profilo", "azienda", "ricarico"])
                     if not fe: w.writeheader()
-                    w.writerow({"utente": nuovo_id, "password": nuova_pwd, "profilo": r_ruolo, "azienda": r_az, "ricarico": ric_final})
+                    w.writerow({"utente": nuevo_id, "password": nuova_pwd, "profilo": r_ruolo, "azienda": r_az, "ricarico": ric_final})
                 
                 st.success(f"Account Creato!\n* **ID LOGIN:** `{nuovo_id}`\n* **PASSWORD TEMPORANEA:** `{nuova_pwd}`\n* **RICARICO:** {ric_final}%")
