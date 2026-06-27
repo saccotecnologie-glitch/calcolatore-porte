@@ -60,7 +60,7 @@ UTENTI_BASE = {
         "azienda": "SA-TEC",
         "telefono": "",
         "email": "",
-        "ricarico": "0"
+        "ricarico": "30"
     },
     "ROSSI01": {
         "password": "R2026#",
@@ -179,7 +179,7 @@ def ricarico_default(profilo):
         return 30.0
     return 60.0
 
-RICARICO_ATTIVO = 35.0
+RICARICO_ATTIVO = 30.0
 
 def prezzo_vendita(listino):
     costo = costo_satec_reale(listino)
@@ -655,7 +655,7 @@ def carica_utenti_csv():
                 }
     return utenti
 
-def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email, ricarico="35"):
+def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email, ricarico="30"):
     file_exists = Path(UTENTI_CSV).exists()
     campi = ["utente", "password", "profilo", "nome", "azienda", "telefono", "email", "ricarico", "data_creazione"]
 
@@ -1406,6 +1406,27 @@ section[data-testid="stSidebar"] div {
         border-radius:22px!important;
         background:#EAF3FF!important;
         box-shadow:0 0 0 4px rgba(0,87,217,.14),0 12px 26px rgba(0,87,217,.18)!important;
+    }
+
+    
+    /* V1009 - accessori più arrotondati e bordi più spessi */
+    [data-testid="stCheckbox"] label{
+        border:3px solid #B7CAE8!important;
+        border-radius:24px!important;
+        padding:15px 17px!important;
+        box-shadow:0 8px 22px rgba(0,43,103,.12)!important;
+        background:#FFFFFF!important;
+        transition:all .18s ease!important;
+    }
+    [data-testid="stCheckbox"] label:hover{
+        border-color:#0057D9!important;
+        box-shadow:0 10px 26px rgba(0,87,217,.18)!important;
+    }
+    [data-testid="stCheckbox"] label:has(input:checked){
+        border:3px solid #0057D9!important;
+        border-radius:24px!important;
+        background:#EAF3FF!important;
+        box-shadow:0 0 0 4px rgba(0,87,217,.16),0 12px 28px rgba(0,87,217,.20)!important;
     }
 
     </style>
@@ -7212,7 +7233,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1008 - Ricarico 30%, accessori arrotondati, ante definite")
+st.caption("Versione V1009 - Ricarico admin 30 modificabile")
 
 st.markdown(f"""
 <div class="footer">
