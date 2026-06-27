@@ -6457,7 +6457,7 @@ with col_main:
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
 
-    st.markdown(disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa), unsafe_allow_html=True)
+    components.html(disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa), height=760, scrolling=False)
 
     # Render vecchio rimosso in V1001
     st.markdown(f"""
@@ -7185,7 +7185,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1006 - Codice grafica definitiva")
+st.caption("Versione V1007 - SVG renderizzato correttamente")
 
 st.markdown(f"""
 <div class="footer">
