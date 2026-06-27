@@ -113,17 +113,16 @@ def ricarico_default(profilo):
     return {"SA-TEC": 0.0, "GROSSISTA": 20.0, "RIVENDITORE": 30.0}.get(profilo, 60.0)
 
 def carica_tutti_utenti():
-    # Admin iniettato di base hardcoded per evitare blocchi da file esterni
+    # Admin iniettato hardcoded nativo per bypassare qualsiasi errore del CSV
     utenti = {
         "ADMIN": {"password": "SATEC-ADMIN", "profilo": "SA-TEC", "azienda": "SA-TEC Srl", "ricarico": "0"}
     }
-    # Carica gli altri dal CSV se esiste
     if Path(UTENTI_CSV).exists():
         try:
             with open(UTENTI_CSV, "r", encoding="utf-8") as f:
                 for r in csv.DictReader(f):
                     u = r.get("utente", "").strip().upper()
-                    if u and u != "ADMIN": # Non permette al CSV di sovrascrivere l'Admin principale
+                    if u and u != "ADMIN":
                         utenti[u] = {
                             "password": r.get("password", ""),
                             "profilo": r.get("profilo", "RIVENDITORE"),
@@ -187,7 +186,6 @@ if not st.session_state.auth:
     if st.sidebar.button("Accedi al Sistema"):
         if u_in in utenti_totali and utenti_totali[u_in]["password"] == p_in:
             st.session_state.auth, st.session_state.user, st.session_state.profilo, st.session_state.dati = True, u_in, utenti_totali[u_in]["profilo"], utenti_totali[u_in]
-            st.sidebar.success("Accesso eseguito!")
             st.rerun()
         else: st.sidebar.error("ID o Password non validi.")
 else:
@@ -228,12 +226,10 @@ if sezione == "📐 Calcolo & Configurazione":
 
         st.markdown("### 📐 Sezione Tecnica Automazione SESAMO PRO")
         
-        # NUOVA GRAFICA PROFESSIONALE COMPATTA AD ALTO IMPATTO VISIVO SENZA BUG DI STRUTTURA
         allineamento_meccanico = "space-around" if ante == "2 ante" else "flex-end"
         stringa_carrello_b = '<div style="color: #a7f3d0; font-size: 12px; font-weight: bold;">⚙️ Carrello B</div>' if ante == "2 ante" else ''
         
-        # Gestione rendering dinamico delle ante via puro CSS Flexbox (Molto elegante e stabile)
-        blocco_ante_html = ""
+        # Escape corretto delle parentesi graffe per evitare crash dell'interprete delle f-string
         if ante == "1 anta":
             blocco_ante_html = """
             <div style="display: flex; gap: 10px; height: 110px; margin-top: 5px;">
@@ -470,6 +466,6 @@ elif sezione == "🛠️ CRM Gestione" and st.session_state.profilo == "SA-TEC":
                 with open(UTENTI_CSV, "a", newline="", encoding="utf-8") as f:
                     w = csv.DictWriter(f, fieldnames=["utente", "password", "profilo", "azienda", "ricarico"])
                     if not fe: w.writeheader()
-                    w.writerow({"utente": nuevo_id, "password": nuova_pwd, "profilo": r_ruolo, "azienda": r_az, "ricarico": ric_final})
+                    w.writerow({"utente": nuovo_id, "password": nuova_pwd, "profilo": r_ruolo, "azienda": r_az, "ricarico": ric_final})
                 
                 st.success(f"Account Creato!\n* **ID LOGIN:** `{nuovo_id}`\n* **PASSWORD TEMPORANEA:** `{nuova_pwd}`\n* **RICARICO:** {ric_final}%")
