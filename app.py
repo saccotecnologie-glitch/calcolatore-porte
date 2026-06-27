@@ -276,18 +276,4 @@ if sezione == "📐 Calcolo & Configurazione":
             
         html_schema += f"""
             <div style="margin-top: 15px; font-size: 12px; color: #94a3b8; text-align: center;">
-                Layout Operativo Sesamo (Luce Passaggio: {luce} mm | Altezza Vano: {altezza} mm)
-            </div>
-        </div>
-        """
-        st.markdown(html_schema, unsafe_allow_html=True)
-
-    with col_b:
-        st.markdown("### ⚡ Sicurezze & Selettori Sesamo")
-        elettro = st.checkbox("Elettroblocco Meccanico Sesamo")
-        radar = st.checkbox("Radar Volumetrico Laterale Sesamo")
-        collaudo = st.checkbox("Allaccio Tecnico Certificato e Collaudo")
-        
-        st.markdown(f"""
-        <div style="background: rgba(56, 189, 248, 0.1); padding: 20px; border-radius: 12px; border: 1px dashed #38bdf8; margin-top: 45px;">
-            <span style="color:#94a3b8; font-size:12px; text
+                Layout Operativo Sesamo (Luce Passaggio: {luce} mm |
