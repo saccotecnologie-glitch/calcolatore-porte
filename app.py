@@ -20,7 +20,7 @@ st.set_page_config(
 # Reset totale dello stile Streamlit per creare un'interfaccia Premium SaaS
 st.markdown("""
 <style>
-    /* Sfondo globale e palette tech scura */
+    /* Sfondo generale e palette tech scura */
     .stApp { background-color: #0f172a; color: #f1f5f9; }
     
     /* Forzatura testi scuri nei moduli di input per massima leggibilità */
@@ -215,13 +215,59 @@ if sezione == "📐 Calcolo & Configurazione":
         altezza = st.number_input("Altezza Vano H (mm)", 1600, 3000, 2100, 50)
         traversa_m = calcola_traversa(luce, ante)
 
-        # --- BLOCCO DISEGNO SCHEMATICO DINAMICO DELLE ANTE ---
+        # --- BLOCCO DISEGNO SCHEMATICO DINAMICO CORRETTO ---
         st.markdown("### 📐 Schema Visivo Automazione")
         if ante == "1 anta":
-            st.markdown(f"""
+            html_schema = f"""
             <div style="background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; text-align: center; font-family: monospace;">
                 <div style="color: #38bdf8; font-weight: bold; margin-bottom: 10px;">SVILUPPO TRAVERSA: {traversa_m:.2f} m</div>
                 <div style="border: 3px solid #64748b; background: #0f172a; height: 12px; width: 100%; border-radius: 4px; margin-bottom: 8px;"></div>
                 <div style="display: flex; justify-content: space-between; height: 120px; align-items: flex-end;">
                     <div style="width: 48%; height: 100%; background: rgba(56, 189, 248, 0.05); border: 2px dashed #334155; display: flex; align-items: center; justify-content: center; color: #64748b;">PARETE FISSA</div>
-                    <div style="width: 48%; height: 100%; background: #38bdf8; border: 2px solid #0284c7; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-
+                    <div style="width: 48%; height: 100%; background: #38bdf8; border: 2px solid #0284c7; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                        <span>ANTA MOBILE</span>
+                        <span style="font-size: 20px; margin-top: 5px;">➔</span>
+                    </div>
+                </div>
+                <div style="margin-top: 10px; font-size: 13px; color: #94a3b8;">Apertura Singola Laterale (Luce Passaggio: {luce} mm)</div>
+            </div>
+            """
+        else:
+            html_schema = f"""
+            <div style="background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; text-align: center; font-family: monospace;">
+                <div style="color: #38bdf8; font-weight: bold; margin-bottom: 10px;">SVILUPPO TRAVERSA: {traversa_m:.2f} m</div>
+                <div style="border: 3px solid #64748b; background: #0f172a; height: 12px; width: 100%; border-radius: 4px; margin-bottom: 8px;"></div>
+                <div style="display: flex; justify-content: space-between; height: 120px; align-items: flex-end;">
+                    <div style="width: 23%; height: 100%; background: rgba(56, 189, 248, 0.05); border: 2px dashed #334155; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO DX</div>
+                    <div style="width: 24%; height: 100%; background: #38bdf8; border: 2px solid #0284c7; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: -2px 4px 6px rgba(0,0,0,0.2);">
+                        <span>ANTA 1</span>
+                        <span style="font-size: 20px; margin-top: 5px;">➔</span>
+                    </div>
+                    <div style="width: 24%; height: 100%; background: #38bdf8; border: 2px solid #0284c7; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: 2px 4px 6px rgba(0,0,0,0.2);">
+                        <span>ANTA 2</span>
+                        <span style="font-size: 20px; margin-top: 5px;">⬅</span>
+                    </div>
+                    <div style="width: 23%; height: 100%; background: rgba(56, 189, 248, 0.05); border: 2px dashed #334155; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO SX</div>
+                </div>
+                <div style="margin-top: 10px; font-size: 13px; color: #94a3b8;">Apertura Centrale Doppia (Luce Passaggio: {luce} mm)</div>
+            </div>
+            """
+        st.markdown(html_schema, unsafe_allow_html=True)
+
+    with col_b:
+        st.markdown("### ⚡ Sicurezze & Servizi Accessori")
+        elettro = st.checkbox("Elettroblocco Meccanico Standard")
+        radar = st.checkbox("Radar Volumetrico Laterale (Sicurezza)")
+        collaudo = st.checkbox("Allaccio Tecnico Certificato e Collaudo")
+        
+        st.markdown(f"""
+        <div style="background: rgba(56, 189, 248, 0.1); padding: 20px; border-radius: 12px; border: 1px dashed #38bdf8; margin-top: 45px;">
+            <span style="color:#94a3b8; font-size:12px; text-transform:uppercase; display:block;">Taglio Profilo Traversa:</span>
+            <strong style="color:#38bdf8; font-size:24px;">{traversa_m:.2f} metri lineari</strong>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Motore Algoritmico di Calcolo Economico Real-time
+    costo_alluminio = ((LISTINI["CASSA"] * traversa_m) + (LISTINI["COPERCHIO"] * traversa_m) + (LISTINI["CINGHIA"] * traversa_m * 2) + (LISTINI["GUIDA"] * traversa_m))
+    base_meccanica = LISTINI[modello] + costo_alluminio
+    e
