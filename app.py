@@ -83,7 +83,7 @@ UTENTI_BASE = {
     "GROS001": {"password": "G2026#", "profilo": "GROSSISTA", "azienda": "Emme Distribuzione", "ricarico": "20"}
 }
 
-# NUOVO LISTINO COMPONENTI INDUSTRIALI SESAMO AUTOMATIONS
+# LISTINO COMPONENTI INDUSTRIALI SESAMO AUTOMATIONS
 LISTINI = {
     "SESAMO_LH100": 1340.00, 
     "SESAMO_LH140": 2280.00,
@@ -247,4 +247,110 @@ if sezione == "📐 Calcolo & Configurazione":
         if ante == "1 anta":
             html_schema += f"""
             <div style="display: flex; justify-content: space-between; height: 130px; align-items: flex-end;">
-                <div style="width: 49%; height: 100%; background: rgba(56, 189, 248, 0.
+                <div style="width: 49%; height: 100%; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px;">VANO FISSO LATERALE</div>
+                <div style="width: 49%; height: 100%; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <span style="font-size:11px; color:#64748b !important;">ANTA MOBILE SESAMO</span>
+                    <span style="font-size: 22px; color:#38bdf8 !important; margin-top: 5px;">➔</span>
+                </div>
+            </div>
+            """
+        else:
+            html_schema += f"""
+            <div style="display: flex; justify-content: space-between; height: 130px; align-items: flex-end;">
+                <div style="width: 22%; height: 100%; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO DX</div>
+                <div style="width: 27%; height: 100%; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: -3px 4px 8px rgba(0,0,0,0.25);">
+                    <span style="font-size:10px; color:#64748b !important;">ANTA 1 (SESAMO)</span>
+                    <span style="font-size: 20px; color:#38bdf8 !important; margin-top: 3px;">➔</span>
+                </div>
+                <div style="width: 27%; height: 100%; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: 3px 4px 8px rgba(0,0,0,0.25);">
+                    <span style="font-size:10px; color:#64748b !important;">ANTA 2 (SESAMO)</span>
+                    <span style="font-size: 20px; color:#38bdf8 !important; margin-top: 3px;">⬅</span>
+                </div>
+                <div style="width: 22%; height: 100%; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO SX</div>
+            </div>
+            """
+            
+        html_schema += f"""
+            <div style="margin-top: 15px; font-size: 12px; color: #94a3b8; text-align: center;">
+                Layout Operativo Sesamo (Luce Passaggio: {luce} mm | Altezza Vano: {altezza} mm)
+            </div>
+        </div>
+        """
+        st.markdown(html_schema, unsafe_allow_html=True)
+
+    with col_b:
+        st.markdown("### ⚡ Sicurezze & Selettori Sesamo")
+        elettro = st.checkbox("Elettroblocco Meccanico Sesamo")
+        radar = st.checkbox("Radar Volumetrico Laterale Sesamo")
+        collaudo = st.checkbox("Allaccio Tecnico Certificato e Collaudo")
+        
+        st.markdown(f"""
+        <div style="background: rgba(56, 189, 248, 0.1); padding: 20px; border-radius: 12px; border: 1px dashed #38bdf8; margin-top: 45px;">
+            <span style="color:#94a3b8; font-size:12px; text-transform:uppercase; display:block;">Taglio Profilo Traversa:</span>
+            <strong style="color:#38bdf8; font-size:24px;">{traversa_m:.2f} metri lineari</strong>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Motore Algoritmico di Calcolo Economico Real-time
+    costo_alluminio = ((LISTINI["CASSA"] * traversa_m) + (LISTINI["COPERCHIO"] * traversa_m) + (LISTINI["CINGHIA"] * traversa_m * 2) + (LISTINI["GUIDA"] * traversa_m))
+    base_meccanica = LISTINI[modello] + costo_alluminio
+    elettronica_base = (LISTINI["SESAMO_RADAR_PRO"] * 2) + LISTINI["SESAMO_DIGITAL_KEY"] + LISTINI["BATTERIE_EMERGENZA"]
+    kit_opzionali = (LISTINI["ELETTROBLOCCO_SESAMO"] if elettro else 0) + (LISTINI["RADAR_SICUREZZA_LATERALE"] if radar else 0) + (LISTINI["ALLACCIO_COLLAUDO_STANDARD"] if collaudo else 0)
+    
+    totale_listino = base_meccanica + elettronica_base + kit_opzionali
+    prezzo_costo_satec = costo_satec_reale(totale_listino)
+    
+    imponibile_cliente = prezzo_costo_satec * (1 + (ricarico_corrente / 100))
+    totale_iva = imponibile_cliente * IVA
+    prezzo_finito_ivato = imponibile_cliente + totale_iva
+
+    # Quadro Finanziario di Sintesi (KPI Cards)
+    st.markdown(f"""
+    <div class="kpi-container">
+        <div class="kpi-card"><div class="kpi-title">Imponibile Netto</div><div class="kpi-value">{euro(imponibile_cliente)}</div></div>
+        <div class="kpi-card" style="border-top-color: #10b981;"><div class="kpi-title">Margine Applicato</div><div class="kpi-value">{ricarico_corrente} %</div></div>
+        <div class="kpi-card" style="border-top-color: #6366f1;"><div class="kpi-title">Totale Ivato (22%)</div><div class="kpi-value">{euro(prezzo_finito_ivato)}</div></div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.session_state.profilo == "SA-TEC":
+        with st.expander("🔍 Monitoraggio Margini Industriali (Solo Admin)"):
+            st.info(f"Prezzo di Fabbrica Netto: {euro(prezzo_costo_satec)} | Utile Netto su questa vendita: {euro(imponibile_cliente - prezzo_costo_satec)}")
+
+    st.markdown("### 📝 Intestazione e Archiviazione Preventivo")
+    with st.form("salva_offerta"):
+        c1, c2 = st.columns(2)
+        with c1: n_client = st.text_input("Nome Referente / Cliente").strip()
+        with c2: a_client = st.text_input("Società / Ragione Sociale").strip()
+        t_client = st.text_input("Telefono Diretto")
+        m_client = st.text_input("Email Cliente")
+        
+        if st.form_submit_button("Conferma ed Emetti Offerta"):
+            if not n_client and not a_client: st.error("Inserire un'intestazione valida per salvare il file.")
+            else:
+                nuovo_cod = genera_nuovo_codice()
+                payload = {
+                    "codice_preventivo": nuovo_cod, "data_ora": datetime.now().strftime("%d/%m/%Y %H:%M"),
+                    "utente": st.session_state.user, "profilo": st.session_state.profilo,
+                    "cliente_nome": n_client, "cliente_azienda": a_client, "cliente_telefono": t_client, "cliente_email": m_client,
+                    "configurazione": f"{modello} ({ante})", "luce_mm": str(luce), "altezza_mm": str(altezza),
+                    "traversa_m": f"{traversa_m:.2f}", "imponibile": f"{imponibile_cliente:.2f}",
+                    "iva": f"{totale_iva:.2f}", "totale_iva": f"{prezzo_finito_ivato:.2f}", "stato": "Bozza"
+                }
+                salva_preventivo_local(payload)
+                st.success(f"🚀 Offerta salvata! Codice: {nuovo_cod}. Controlla il Registro per visualizzarla.")
+
+# =========================================================
+# SEZIONE 2: REGISTRO STORICO E RICEVUTE CLIENTI PREMIUM
+# =========================================================
+elif sezione == "📋 Registro Offerte":
+    st.markdown("<h1>📋 Archivio Storico e Generazione Offerte</h1>", unsafe_allow_html=True)
+    offerte = carica_preventivi()
+    if st.session_state.profilo != "SA-TEC": offerte = [o for o in offerte if o.get("utente") == st.session_state.user]
+    
+    if not offerte: st.info("Nessun preventivo presente in archivio.")
+    else:
+        df = pd.DataFrame(offerte).fillna("").astype(str)
+        
+        cx1, cx2, cx3 = st.columns([2, 2, 1])
+        with cx1: p_sel = st
