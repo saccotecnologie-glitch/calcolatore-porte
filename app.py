@@ -5117,6 +5117,7 @@ def disegno_porta_v1005(ante, luce_mm, altezza_mm, lunghezza_traversa):
 # V1006 - CODICE DEFINITIVO GRAFICA TRAVERSA + ANTE
 # =========================
 
+
 def disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa):
     try:
         luce = int(float(luce_mm))
@@ -5127,146 +5128,95 @@ def disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa):
     except Exception:
         altezza = 2200
     try:
-        traversa = float(lunghezza_traversa)
+        traversa = int(float(lunghezza_traversa) * 1000)
     except Exception:
-        traversa = 0.0
+        traversa = 3400
 
     due = "2" in str(ante or "")
     ante_numero = "2 ANTE" if due else "1 ANTA"
     titolo = "PORTA SCORREVOLE AUTOMATICA A 2 ANTE" if due else "PORTA SCORREVOLE AUTOMATICA A 1 ANTA"
 
     if due:
-        ante_svg = """
-        <g filter="url(#shadowGlass)">
-            <rect x="295" y="225" width="385" height="315" rx="7" fill="url(#glassNew)" stroke="#003C96" stroke-width="8"/>
-            <rect x="310" y="240" width="355" height="285" rx="5" fill="none" stroke="#9CDBF7" stroke-width="3"/>
-            <path d="M330 230 L445 230 L650 535 L535 535 Z" fill="#ffffff" opacity=".20"/>
-            <rect x="680" y="225" width="385" height="315" rx="7" fill="url(#glassNew)" stroke="#003C96" stroke-width="8"/>
-            <rect x="695" y="240" width="355" height="285" rx="5" fill="none" stroke="#9CDBF7" stroke-width="3"/>
-            <path d="M720 230 L835 230 L1040 535 L925 535 Z" fill="#ffffff" opacity=".20"/>
-            <rect x="680" y="225" width="192" height="315" fill="rgba(7,44,77,.13)"/>
-            <line x1="680" y1="225" x2="680" y2="540" stroke="#071B46" stroke-width="9"/>
-            <line x1="662" y1="242" x2="662" y2="523" stroke="#77CEF0" stroke-width="3"/>
-            <line x1="698" y1="242" x2="698" y2="523" stroke="#77CEF0" stroke-width="3"/>
-            <path d="M648 382 L538 382" stroke="#0B8F2A" stroke-width="11" stroke-linecap="round"/>
-            <polygon points="538,382 566,365 566,399" fill="#0B8F2A"/>
-            <path d="M712 382 L822 382" stroke="#0B8F2A" stroke-width="11" stroke-linecap="round"/>
-            <polygon points="822,382 794,365 794,399" fill="#0B8F2A"/>
+        porta_svg = '''
+        <g filter="url(#soft)">
+          <rect x="250" y="238" width="410" height="382" rx="3" fill="url(#glass)" stroke="#132B3A" stroke-width="8"/>
+          <rect x="266" y="254" width="378" height="350" rx="2" fill="none" stroke="#A7DDF5" stroke-width="3" opacity=".85"/>
+          <path d="M282 245 L405 245 L645 612 L520 612 Z" fill="white" opacity=".22"/>
+          <path d="M330 245 L405 245 L610 612 L535 612 Z" fill="white" opacity=".12"/>
+          <rect x="660" y="238" width="410" height="382" rx="3" fill="url(#glass)" stroke="#132B3A" stroke-width="8"/>
+          <rect x="676" y="254" width="378" height="350" rx="2" fill="none" stroke="#A7DDF5" stroke-width="3" opacity=".85"/>
+          <path d="M692 245 L815 245 L1055 612 L930 612 Z" fill="white" opacity=".22"/>
+          <path d="M740 245 L815 245 L1020 612 L945 612 Z" fill="white" opacity=".12"/>
+          <line x1="660" y1="238" x2="660" y2="620" stroke="#0A1720" stroke-width="13"/>
+          <line x1="645" y1="256" x2="645" y2="603" stroke="#6EC6EA" stroke-width="4"/>
+          <line x1="675" y1="256" x2="675" y2="603" stroke="#6EC6EA" stroke-width="4"/>
+          <path d="M620 430 L505 430" stroke="#138534" stroke-width="13" stroke-linecap="round"/>
+          <polygon points="505,430 535,411 535,449" fill="#138534"/>
+          <path d="M700 430 L815 430" stroke="#138534" stroke-width="13" stroke-linecap="round"/>
+          <polygon points="815,430 785,411 785,449" fill="#138534"/>
+          <text x="560" y="482" text-anchor="middle" fill="#087328" font-size="21" font-weight="900">APERTURA</text>
+          <text x="560" y="508" text-anchor="middle" fill="#087328" font-size="21" font-weight="900">AUTOMATICA</text>
+          <text x="760" y="482" text-anchor="middle" fill="#087328" font-size="21" font-weight="900">APERTURA</text>
+          <text x="760" y="508" text-anchor="middle" fill="#087328" font-size="21" font-weight="900">AUTOMATICA</text>
         </g>
-        """
+        '''
     else:
-        ante_svg = """
-        <g filter="url(#shadowGlass)">
-            <rect x="390" y="225" width="585" height="315" rx="7" fill="url(#glassNew)" stroke="#003C96" stroke-width="8"/>
-            <rect x="407" y="242" width="551" height="281" rx="5" fill="none" stroke="#9CDBF7" stroke-width="3"/>
-            <rect x="683" y="225" width="292" height="315" fill="rgba(7,44,77,.13)"/>
-            <line x1="968" y1="230" x2="968" y2="535" stroke="#071B46" stroke-width="6"/>
-            <line x1="948" y1="245" x2="948" y2="520" stroke="#77CEF0" stroke-width="3"/>
-            <path d="M435 230 L585 230 L920 535 L770 535 Z" fill="#ffffff" opacity=".20"/>
-            <path d="M590 382 L805 382" stroke="#0B8F2A" stroke-width="11" stroke-linecap="round"/>
-            <polygon points="805,382 777,365 777,399" fill="#0B8F2A"/>
+        porta_svg = '''
+        <g filter="url(#soft)">
+          <rect x="365" y="238" width="590" height="382" rx="3" fill="url(#glass)" stroke="#132B3A" stroke-width="8"/>
+          <rect x="382" y="255" width="556" height="348" rx="2" fill="none" stroke="#A7DDF5" stroke-width="3" opacity=".85"/>
+          <line x1="947" y1="245" x2="947" y2="613" stroke="#0A1720" stroke-width="8"/>
+          <line x1="930" y1="260" x2="930" y2="598" stroke="#6EC6EA" stroke-width="4"/>
+          <path d="M405 245 L545 245 L910 612 L770 612 Z" fill="white" opacity=".22"/>
+          <path d="M590 430 L815 430" stroke="#138534" stroke-width="13" stroke-linecap="round"/>
+          <polygon points="815,430 785,411 785,449" fill="#138534"/>
+          <text x="700" y="482" text-anchor="middle" fill="#087328" font-size="21" font-weight="900">APERTURA</text>
+          <text x="700" y="508" text-anchor="middle" fill="#087328" font-size="21" font-weight="900">AUTOMATICA</text>
         </g>
-        """
+        '''
 
-    return f"""
-    <html>
-    <head>
-    <meta charset="utf-8">
-    <style>
-        html,body{{margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;}}
-        .satec-box{{background:#ffffff;border:2px solid #d5e6fb;border-radius:22px;overflow:hidden;box-shadow:0 14px 34px rgba(0,42,110,.12);}}
-        .top{{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 24px 10px 24px;background:linear-gradient(180deg,#ffffff,#f8fbff);}}
-        .title{{color:#003C96;font-size:25px;font-weight:1000;line-height:1.1;}}
-        .sub{{color:#64748B;font-size:13px;font-weight:900;margin-top:7px;text-transform:uppercase;}}
-        .brand{{color:#0057D9;font-size:31px;font-weight:1000;text-align:right;line-height:1;}}
-        .brand small{{display:block;color:#475569;font-size:11px;letter-spacing:1.1px;margin-top:5px;}}
-        .svg-wrap{{padding:8px 18px 0 18px;}}
-        svg{{width:100%;height:auto;display:block;border:1px solid #edf3fc;border-radius:18px;background:#ffffff;}}
-        .metrics{{border-top:1px solid #d5e6fb;background:#fbfdff;display:grid;grid-template-columns:repeat(6,1fr);}}
-        .metric{{padding:14px 8px;border-right:1px solid #d5e6fb;text-align:center;color:#06245c;font-weight:900;}}
-        .metric:last-child{{border-right:0;}}
-        .metric b{{display:block;color:#0057D9;font-size:18px;margin-top:4px;}}
-        .metric small{{display:block;color:#465b78;font-size:10px;margin-top:3px;}}
-    </style>
-    </head>
-    <body>
-    <div class="satec-box">
-        <div class="top">
-            <div>
-                <div class="title">V1011 - {titolo}</div>
-                <div class="sub">NUOVA GRAFICA REALE · PROFILI DEFINITI · DOPPIA BATTUTA</div>
-            </div>
-            <div class="brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div>
-        </div>
-        <div class="svg-wrap">
-            <svg viewBox="0 0 1360 650" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <linearGradient id="railNew" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#f7f7f7"/>
-                        <stop offset="16%" stop-color="#d0d0d0"/>
-                        <stop offset="43%" stop-color="#969696"/>
-                        <stop offset="74%" stop-color="#707070"/>
-                        <stop offset="100%" stop-color="#4f4f4f"/>
-                    </linearGradient>
-                    <linearGradient id="glassNew" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#ffffff" stop-opacity=".97"/>
-                        <stop offset="45%" stop-color="#c7efff" stop-opacity=".88"/>
-                        <stop offset="100%" stop-color="#70b8d6" stop-opacity=".93"/>
-                    </linearGradient>
-                    <filter id="shadowRail" x="-15%" y="-25%" width="130%" height="170%">
-                        <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#000000" flood-opacity=".25"/>
-                    </filter>
-                    <filter id="shadowGlass" x="-15%" y="-25%" width="130%" height="170%">
-                        <feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#000000" flood-opacity=".18"/>
-                    </filter>
-                </defs>
-
-                <rect x="130" y="60" width="1100" height="118" rx="10" fill="url(#railNew)" stroke="#161616" stroke-width="3" filter="url(#shadowRail)"/>
-                <rect x="130" y="60" width="34" height="118" rx="10" fill="#202020"/>
-                <rect x="1196" y="60" width="34" height="118" rx="10" fill="#202020"/>
-                <rect x="170" y="80" width="1020" height="16" rx="4" fill="rgba(255,255,255,.50)"/>
-                <line x1="175" y1="122" x2="1185" y2="122" stroke="#4a4a4a" stroke-width="4"/>
-                <line x1="175" y1="133" x2="1185" y2="133" stroke="#dfdfdf" stroke-width="1.5"/>
-                <rect x="170" y="158" width="1020" height="12" rx="4" fill="rgba(0,0,0,.36)"/>
-                <text x="255" y="135" fill="#0057D9" font-size="37" font-weight="1000" text-anchor="middle">SESAMO</text>
-                <text x="680" y="134" fill="#ffffff" font-size="24" font-weight="1000" text-anchor="middle">TRAVERSA AUTOMAZIONE</text>
-                <text x="1115" y="135" fill="#003C96" font-size="29" font-weight="1000" text-anchor="middle">PW100</text>
-
-                <rect x="188" y="178" width="16" height="384" fill="#c8c8c8" stroke="#696969" stroke-width="1.5"/>
-                <rect x="1156" y="178" width="16" height="384" fill="#c8c8c8" stroke="#696969" stroke-width="1.5"/>
-                <rect x="184" y="178" width="992" height="384" rx="4" fill="none" stroke="#252525" stroke-width="4"/>
-                <rect x="125" y="562" width="1110" height="14" fill="#cfcfcf"/>
-                <line x1="110" y1="582" x2="1250" y2="582" stroke="#8f8f8f" stroke-width="3"/>
-
-                {ante_svg}
-
-                <text x="680" y="440" fill="#0B8F2A" font-size="20" font-weight="1000" text-anchor="middle">APERTURA AUTOMATICA</text>
-
-                <line x1="82" y1="225" x2="82" y2="562" stroke="#003C96" stroke-width="2.3"/>
-                <line x1="68" y1="225" x2="96" y2="225" stroke="#003C96" stroke-width="2.3"/>
-                <line x1="68" y1="562" x2="96" y2="562" stroke="#003C96" stroke-width="2.3"/>
-                <text x="72" y="370" fill="#003C96" font-size="15" font-weight="900" text-anchor="end">ALTEZZA</text>
-                <text x="72" y="402" fill="#003C96" font-size="20" font-weight="1000" text-anchor="end">{altezza} mm</text>
-
-                <line x1="410" y1="605" x2="950" y2="605" stroke="#003C96" stroke-width="2.3"/>
-                <line x1="410" y1="592" x2="410" y2="618" stroke="#003C96" stroke-width="2.3"/>
-                <line x1="950" y1="592" x2="950" y2="618" stroke="#003C96" stroke-width="2.3"/>
-                <text x="680" y="598" fill="#003C96" font-size="15" font-weight="900" text-anchor="middle">LUCE NETTA</text>
-                <text x="680" y="635" fill="#003C96" font-size="21" font-weight="1000" text-anchor="middle">{luce} mm</text>
-            </svg>
-        </div>
-        <div class="metrics">
-            <div class="metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
-            <div class="metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
-            <div class="metric">Altezza<b>{altezza} mm</b><small>Luce porta</small></div>
-            <div class="metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
-            <div class="metric">Portata<b>120 kg</b><small>Per anta</small></div>
-            <div class="metric">Velocità<b>0,6 m/s</b><small>Regolabile</small></div>
-        </div>
-    </div>
-    </body>
-    </html>
-    """
+    return f'''
+<html><head><meta charset="utf-8"><style>
+html,body{{margin:0;padding:0;background:#fff;font-family:Arial,Helvetica,sans-serif;color:#081633;}}
+.wrap{{background:#fff;border:1px solid #d9e4f3;border-radius:22px;overflow:hidden;box-shadow:0 18px 42px rgba(0,45,110,.10);}}
+.topbar{{display:grid;grid-template-columns:220px 1fr 150px 260px 250px;gap:18px;align-items:center;padding:14px 20px;border-bottom:1px solid #e1eaf5;}}
+.logo{{color:#004a9f;font-size:48px;font-weight:1000;letter-spacing:-2px;line-height:.9;}} .logo small{{display:block;color:#f05a24;font-size:13px;letter-spacing:0;margin-top:8px;}}
+.head{{border-left:3px solid #f05a24;padding-left:18px;font-size:24px;font-weight:1000;}} .head small{{display:block;font-size:15px;font-weight:500;margin-top:8px;}}
+.badge{{border:1px solid #cfd9e8;border-radius:10px;padding:11px;text-align:center;font-weight:1000;}} .badge b{{color:#087328;display:block;margin-top:5px;}}
+.sesamo{{color:#0057b8;font-size:36px;font-weight:1000;line-height:.9;}} .sesamo small{{display:block;font-size:10px;letter-spacing:.9px;margin-top:8px;}}
+.total{{border:1px solid #cfd9e8;border-radius:12px;padding:12px 16px;text-align:right;font-weight:900;}} .total b{{display:block;color:#004a9f;font-size:30px;margin-top:7px;}}
+.main{{display:grid;grid-template-columns:1fr 350px;gap:16px;padding:14px 18px 8px 18px;}}
+.panel{{border:1px solid #d9e4f3;border-radius:18px;background:#fff;overflow:hidden;}}
+.draw{{padding:22px 26px 10px 26px;}}
+.title{{font-size:34px;font-weight:1000;line-height:1.05;}} .sub{{font-size:21px;margin-top:8px;}} .sub b{{color:#0057b8;}} .note{{margin-top:10px;font-size:15px;font-weight:800;letter-spacing:.3px;}}
+svg{{width:100%;height:auto;display:block;}}
+.side{{padding:18px 16px;}} .side h3{{margin:0 0 18px 0;font-size:21px;font-weight:1000;}}
+.card{{display:grid;grid-template-columns:72px 1fr 28px;gap:16px;align-items:center;border:2px solid #d3dfee;border-radius:18px;padding:16px 14px;margin-bottom:16px;min-height:112px;background:#fff;}}
+.icon{{width:62px;height:62px;border-radius:50%;background:#004a9f;color:white;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;}}
+.card h4{{margin:0;font-size:16px;font-weight:1000;}} .code{{color:#0057b8;font-size:13px;font-weight:1000;margin-bottom:4px;}} .card p{{margin:7px 0 0 0;font-size:13px;line-height:1.35;}}
+.price{{color:#004a9f;font-size:19px;font-weight:1000;margin-top:9px;}} .check{{width:22px;height:22px;border:2px solid #8d9aad;border-radius:5px;}}
+.norma{{border:1px solid #d3dfee;border-radius:14px;padding:14px;color:#004a9f;font-size:13px;font-weight:800;line-height:1.45;background:#f7fbff;margin-top:10px;}}
+.metrics{{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid #d9e4f3;background:#fff;margin:0 18px;border-left:1px solid #d9e4f3;border-right:1px solid #d9e4f3;border-radius:16px 16px 0 0;overflow:hidden;}}
+.metric{{text-align:center;padding:12px 6px;border-right:1px solid #d9e4f3;font-size:12px;font-weight:800;}} .metric:last-child{{border-right:0;}} .ico{{color:#004a9f;font-size:30px;height:34px;margin-bottom:6px;}} .metric b{{display:block;font-size:18px;margin-top:5px;}}
+.footer{{display:flex;justify-content:space-between;align-items:center;margin:0 18px 14px;border:1px solid #d9e4f3;border-radius:0 0 14px 14px;padding:9px 16px;font-size:13px;}} .ok{{color:#087328;font-weight:1000;}}
+</style></head><body>
+<div class="wrap">
+<div class="topbar"><div class="logo">SA-TEC<small>Automazioni per porte e ingressi</small></div><div class="head">CONFIGURATORE PORTE AUTOMATICHE<small>Preventivo personalizzato</small></div><div class="badge">EN 16005<b>CONFORME</b></div><div class="sesamo">sesamo<small>THE DOOR TECHNOLOGY</small></div><div class="total">RIEPILOGO CONFIGURAZIONE<b>€ 7.785,00</b></div></div>
+<div class="main"><div class="panel draw"><div class="title">{titolo}</div><div class="sub">SISTEMA <b>SESAMO</b> PW100</div><div class="note">NUOVA GRAFICA REALE · PROFILI DEFINITI · DOPPIA BATTUTA CENTRALE</div>
+<svg viewBox="0 0 1180 705" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="rail" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f4f4f4"/><stop offset="18%" stop-color="#dadada"/><stop offset="48%" stop-color="#9e9e9e"/><stop offset="78%" stop-color="#696969"/><stop offset="100%" stop-color="#3f3f3f"/></linearGradient><linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity=".95"/><stop offset="42%" stop-color="#cceeff" stop-opacity=".78"/><stop offset="100%" stop-color="#76bddb" stop-opacity=".88"/></linearGradient><filter id="railShadow" x="-20%" y="-30%" width="140%" height="180%"><feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000" flood-opacity=".25"/></filter><filter id="soft" x="-20%" y="-30%" width="140%" height="180%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000" flood-opacity=".16"/></filter></defs>
+<text x="1040" y="20" text-anchor="middle" fill="#087328" font-size="18" font-weight="1000">←  →</text><text x="1040" y="50" text-anchor="middle" fill="#087328" font-size="15" font-weight="1000">APERTURA</text><text x="1040" y="70" text-anchor="middle" fill="#087328" font-size="15" font-weight="1000">AUTOMATICA</text>
+<rect x="155" y="95" width="900" height="88" rx="8" fill="url(#rail)" stroke="#111" stroke-width="3" filter="url(#railShadow)"/><rect x="155" y="95" width="28" height="88" rx="8" fill="#202020"/><rect x="1027" y="95" width="28" height="88" rx="8" fill="#202020"/><rect x="190" y="112" width="830" height="12" rx="3" fill="rgba(255,255,255,.55)"/><line x1="190" y1="145" x2="1020" y2="145" stroke="#535353" stroke-width="4"/><line x1="190" y1="154" x2="1020" y2="154" stroke="#dfdfdf" stroke-width="1"/><text x="260" y="148" fill="#004A9F" font-size="28" font-weight="1000">SESAMO</text><rect x="580" y="127" width="54" height="22" rx="9" fill="#1b1b1b" stroke="#000"/><circle cx="599" cy="138" r="4" fill="#444"/><circle cx="616" cy="138" r="4" fill="#444"/><text x="940" y="148" fill="#004A9F" font-size="25" font-weight="1000">PW100</text>
+<rect x="185" y="183" width="34" height="440" fill="url(#rail)" stroke="#333" stroke-width="2"/><rect x="992" y="183" width="34" height="440" fill="url(#rail)" stroke="#333" stroke-width="2"/><rect x="217" y="183" width="782" height="440" fill="none" stroke="#111" stroke-width="4"/><line x1="130" y1="623" x2="1080" y2="623" stroke="#c7c7c7" stroke-width="5"/>
+{porta_svg}
+<line x1="75" y1="238" x2="75" y2="623" stroke="#004A9F" stroke-width="2"/><line x1="55" y1="238" x2="95" y2="238" stroke="#004A9F" stroke-width="2"/><line x1="55" y1="623" x2="95" y2="623" stroke="#004A9F" stroke-width="2"/><text x="70" y="397" text-anchor="end" fill="#004A9F" font-size="15" font-weight="900">ALTEZZA</text><text x="70" y="421" text-anchor="end" fill="#004A9F" font-size="15" font-weight="900">PASSAGGIO</text><text x="70" y="465" text-anchor="end" fill="#004A9F" font-size="28" font-weight="1000">{altezza}</text><text x="70" y="492" text-anchor="end" fill="#004A9F" font-size="15" font-weight="900">mm</text>
+<line x1="235" y1="650" x2="995" y2="650" stroke="#004A9F" stroke-width="2"/><line x1="235" y1="638" x2="235" y2="662" stroke="#004A9F" stroke-width="2"/><line x1="995" y1="638" x2="995" y2="662" stroke="#004A9F" stroke-width="2"/><text x="615" y="646" text-anchor="middle" fill="#004A9F" font-size="16" font-weight="1000">LUCE NETTA PASSAGGIO</text><text x="615" y="682" text-anchor="middle" fill="#004A9F" font-size="26" font-weight="1000">{luce} mm</text>
+</svg></div>
+<div class="panel side"><h3>ACCESSORI E SERVIZI</h3><div class="card"><div class="icon">🔒</div><div><div class="code">PF54.62</div><h4>ELETTROBLOCCO</h4><p>Sicurezza e chiusura elettromeccanica.</p><div class="price">+ € 195,00</div></div><div class="check"></div></div><div class="card"><div class="icon">◎</div><div><div class="code">SSR3-ER-BL</div><h4>RADAR DI APERTURA</h4><p>Sensore di movimento per apertura automatica.</p><div class="price">+ € 375,00</div></div><div class="check"></div></div><div class="card"><div class="icon">⚒</div><div><div class="code">ALL-COLL-01</div><h4>ALLACCIO E COLLAUDO</h4><p>Allaccio elettrico, programmazione e collaudo finale dell'impianto.</p><div class="price">+ € 350,00</div></div><div class="check"></div></div><div class="norma">🛡️ Tutti i nostri impianti sono conformi alla normativa EN 16005 e certificati.</div></div></div>
+<div class="metrics"><div class="metric"><div class="ico">▥</div>TIPOLOGIA<b>{ante_numero}</b></div><div class="metric"><div class="ico">↔</div>LUCE NETTA<b>{luce} mm</b></div><div class="metric"><div class="ico">↕</div>ALTEZZA PASSAGGIO<b>{altezza} mm</b></div><div class="metric"><div class="ico">▰</div>LUNGHEZZA TRAVERSA<b>{traversa} mm</b></div><div class="metric"><div class="ico">▣</div>PORTATA<b>{'2 x ' if due else ''}120 kg</b></div><div class="metric"><div class="ico">◴</div>VELOCITÀ APERTURA<b>0,7 m/s</b></div><div class="metric"><div class="ico">☑</div>NORMA<b>EN 16005</b></div></div>
+<div class="footer"><div><span class="ok">✓</span> CONFIGURAZIONE CONFORME ALLE NORMATIVE EUROPEE DI SICUREZZA EN 16005</div><div>CODICE CONFIGURAZIONE: <b>PW100-{'2A' if due else '1A'}-{luce}-{altezza}-{traversa}</b></div></div>
+</div></body></html>
+    '''
 
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
@@ -6549,7 +6499,7 @@ with col_main:
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
 
-    components.html(disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa), height=860, scrolling=False)
+    components.html(disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa), height=1120, scrolling=False)
 
     # Render vecchio rimosso in V1001
     st.markdown(f"""
@@ -7277,7 +7227,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1011 - Disegno porta sostituito davvero")
+st.caption("Versione V1012 - Grafica definitiva applicata")
 
 st.markdown(f"""
 <div class="footer">
