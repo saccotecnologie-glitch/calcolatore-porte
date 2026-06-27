@@ -5055,6 +5055,128 @@ def disegno_porta_v1005(ante, luce_mm, altezza_mm, lunghezza_traversa):
     </div>
     """
 
+
+
+# =========================
+# V1006 - CODICE DEFINITIVO GRAFICA TRAVERSA + ANTE
+# =========================
+def disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa):
+    try:
+        luce = int(float(luce_mm))
+    except Exception:
+        luce = 1600
+    try:
+        altezza = int(float(altezza_mm))
+    except Exception:
+        altezza = 2200
+    try:
+        traversa = float(lunghezza_traversa)
+    except Exception:
+        traversa = 0.0
+
+    due_ante = "2" in str(ante or "")
+    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
+    titolo = "PORTA SCORREVOLE AUTOMATICA A 2 ANTE" if due_ante else "PORTA SCORREVOLE AUTOMATICA A 1 ANTA"
+
+    if due_ante:
+        ante_svg = """
+        <rect x="330" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
+        <rect x="680" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
+        <rect x="680" y="188" width="175" height="300" fill="rgba(10,60,90,.09)"/>
+        <line x1="680" y1="188" x2="680" y2="488" stroke="#003C96" stroke-width="5"/>
+        <path d="M655 340 L555 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
+        <polygon points="555,340 578,327 578,353" fill="#0B8F2A"/>
+        <path d="M705 340 L805 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
+        <polygon points="805,340 782,327 782,353" fill="#0B8F2A"/>
+        """
+    else:
+        ante_svg = """
+        <rect x="430" y="188" width="510" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
+        <rect x="685" y="188" width="255" height="300" rx="0" fill="rgba(10,60,90,.09)"/>
+        <path d="M600 340 L780 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
+        <polygon points="780,340 756,326 756,354" fill="#0B8F2A"/>
+        """
+
+    return f"""
+    <div class="v1001-sheet">
+        <div class="v1001-sheet-head">
+            <div>
+                <div class="v1001-sheet-title">V1006 - {titolo}</div>
+                <div class="v1001-sheet-sub">Traversa professionale · ante vetro scure · grafica definitiva</div>
+            </div>
+            <div class="v1001-brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div>
+        </div>
+
+        <div class="v1001-svgbox">
+            <svg viewBox="0 0 1360 585" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="railPro" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#f4f4f4"/>
+                        <stop offset="18%" stop-color="#cfcfcf"/>
+                        <stop offset="44%" stop-color="#9a9a9a"/>
+                        <stop offset="72%" stop-color="#747474"/>
+                        <stop offset="100%" stop-color="#565656"/>
+                    </linearGradient>
+                    <linearGradient id="glassSoft" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity=".94"/>
+                        <stop offset="45%" stop-color="#c8eaf7" stop-opacity=".86"/>
+                        <stop offset="100%" stop-color="#78b7c9" stop-opacity=".91"/>
+                    </linearGradient>
+                    <filter id="shadowPro" x="-15%" y="-25%" width="130%" height="170%">
+                        <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000000" flood-opacity=".24"/>
+                    </filter>
+                    <filter id="softShadow" x="-15%" y="-25%" width="130%" height="170%">
+                        <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000000" flood-opacity=".16"/>
+                    </filter>
+                </defs>
+
+                <rect x="145" y="60" width="1070" height="96" rx="8" fill="url(#railPro)" stroke="#1b1b1b" stroke-width="2.5" filter="url(#shadowPro)"/>
+                <rect x="145" y="60" width="28" height="96" rx="8" fill="#242424"/>
+                <rect x="1187" y="60" width="28" height="96" rx="8" fill="#242424"/>
+                <rect x="165" y="74" width="1030" height="12" rx="3" fill="rgba(255,255,255,.45)"/>
+                <line x1="170" y1="111" x2="1188" y2="111" stroke="#555" stroke-width="3"/>
+                <line x1="170" y1="119" x2="1188" y2="119" stroke="#dddddd" stroke-width="1"/>
+                <rect x="165" y="138" width="1030" height="11" rx="3" fill="rgba(0,0,0,.33)"/>
+                <text x="255" y="122" fill="#0057D9" font-size="34" font-weight="1000" text-anchor="middle">SESAMO</text>
+                <text x="680" y="121" fill="#ffffff" font-size="22" font-weight="1000" text-anchor="middle">TRAVERSA AUTOMAZIONE</text>
+                <text x="1110" y="122" fill="#003C96" font-size="26" font-weight="1000" text-anchor="middle">PW100</text>
+
+                <rect x="190" y="156" width="12" height="352" fill="#c8c8c8" stroke="#777" stroke-width="1"/>
+                <rect x="1158" y="156" width="12" height="352" fill="#c8c8c8" stroke="#777" stroke-width="1"/>
+                <rect x="185" y="156" width="990" height="352" rx="3" fill="none" stroke="#333" stroke-width="3"/>
+                <rect x="130" y="508" width="1100" height="12" fill="#cfcfcf"/>
+                <line x1="115" y1="525" x2="1245" y2="525" stroke="#9a9a9a" stroke-width="3"/>
+
+                <g filter="url(#softShadow)">
+                    {ante_svg}
+                    <path d="M465 190 L610 190 L900 488 L760 488 Z" fill="white" opacity=".16"/>
+                </g>
+
+                <text x="680" y="392" fill="#0B8F2A" font-size="19" font-weight="1000" text-anchor="middle">APERTURA AUTOMATICA</text>
+
+                <line x1="86" y1="188" x2="86" y2="508" stroke="#003C96" stroke-width="2"/>
+                <line x1="73" y1="188" x2="99" y2="188" stroke="#003C96" stroke-width="2"/>
+                <line x1="73" y1="508" x2="99" y2="508" stroke="#003C96" stroke-width="2"/>
+                <text x="76" y="335" fill="#003C96" font-size="15" font-weight="900" text-anchor="end">ALTEZZA</text>
+                <text x="76" y="365" fill="#003C96" font-size="19" font-weight="1000" text-anchor="end">{altezza} mm</text>
+
+                <line x1="420" y1="545" x2="940" y2="545" stroke="#003C96" stroke-width="2"/>
+                <line x1="420" y1="533" x2="420" y2="557" stroke="#003C96" stroke-width="2"/>
+                <line x1="940" y1="533" x2="940" y2="557" stroke="#003C96" stroke-width="2"/>
+                <text x="680" y="538" fill="#003C96" font-size="15" font-weight="900" text-anchor="middle">LUCE NETTA</text>
+                <text x="680" y="574" fill="#003C96" font-size="20" font-weight="1000" text-anchor="middle">{luce} mm</text>
+            </svg>
+        </div>
+
+        <div class="v1001-metrics">
+            <div class="v1001-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
+            <div class="v1001-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
+            <div class="v1001-metric">Altezza<b>{altezza} mm</b><small>Luce porta</small></div>
+            <div class="v1001-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
+        </div>
+    </div>
+    """
+
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
 # V400: riapplica stile dopo login
@@ -6335,7 +6457,7 @@ with col_main:
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
 
-    st.markdown(disegno_porta_v1005(ante, luce_mm, altezza_mm, lunghezza_traversa), unsafe_allow_html=True)
+    st.markdown(disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa), unsafe_allow_html=True)
 
     # Render vecchio rimosso in V1001
     st.markdown(f"""
@@ -7063,7 +7185,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1005 - Grafica definitiva semplice")
+st.caption("Versione V1006 - Codice grafica definitiva")
 
 st.markdown(f"""
 <div class="footer">
