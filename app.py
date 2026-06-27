@@ -224,56 +224,31 @@ if sezione == "📐 Calcolo & Configurazione":
 
         st.markdown("### 📐 Sezione Tecnica Automazione SESAMO PRO")
         
-        # Variabili esterne allineate in modo pulito senza logiche interne all'f-string
+        # Rimozione totale di qualsiasi f-string nidificata per l'HTML dello schema
         allineamento_carrelli = "space-around" if ante == "2 ante" else "flex-end"
-        carrello_b_html = '<span style="color: #a7f3d0; font-size: 11px;">⚙️ Carrello B</span>' if ante == "2 ante" else ""
+        carrello_b_html = '<span style="color: #a7f3d0; font-size: 11px;">Carrello B</span>' if ante == "2 ante" else ""
         
-        # Struttura superiore Meccanica aperta (Layout Interno)
-        html_schema = f"""
+        # Ricostruzione stringhe senza f-string letterale dove si rompeva
+        html_parte_1 = """
         <div style="background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; font-family: 'Segoe UI', sans-serif;">
             <div style="color: #38bdf8; font-weight: bold; font-size:14px; text-align: center; margin-bottom: 12px; letter-spacing:1px;">
-                TRAVERSA SESAMO IN ALLUMINIO ESTRUSO: {traversa_m:.2f} m
+                TRAVERSA SESAMO IN ALLUMINIO ESTRUSO: """ + f"{traversa_m:.2f}" + """ m
             </div>
-            
             <div style="border: 2px solid #64748b; background: #0f172a; border-radius: 6px; padding: 10px; margin-bottom: 15px; position: relative;">
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: bold;">
                     <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px;">CENTRALINA SESAMO DIGITAL</span>
                     <span style="background: #f59e0b; color: #0f172a; padding: 2px 6px; border-radius: 4px;">BATTERIE EMERGENZA</span>
                     <span style="background: #38bdf8; color: #0f172a; padding: 2px 6px; border-radius: 4px;">MOTORE INDUSTRIALE</span>
                 </div>
-                <div style="border-top: 2px dashed #475569; margin-top: 8px; padding-top: 4px; display: flex; justify-content: {allineamento_carrelli};">
-                    <span style="color: #a7f3d0; font-size: 11px;">⚙️ Carrello A</span>
-                    {carrello_b_html}
+                <div style="border-top: 2px dashed #475569; margin-top: 8px; padding-top: 4px; display: flex; justify-content: """ + allineamento_carrelli + """;">
+                    <span style="color: #a7f3d0; font-size: 11px;">Carrello A</span>
+                    """ + carrello_b_html + """
                 </div>
             </div>
         """
         
         if ante == "1 anta":
-            html_schema += f"""
+            html_parte_2 = """
             <div style="display: flex; justify-content: space-between; height: 130px; align-items: flex-end;">
                 <div style="width: 49%; height: 100%; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px;">VANO FISSO LATERALE</div>
                 <div style="width: 49%; height: 100%; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                    <span style="font-size:11px; color:#64748b !important;">ANTA MOBILE SESAMO</span>
-                    <span style="font-size: 22px; color:#38bdf8 !important; margin-top: 5px;">➔</span>
-                </div>
-            </div>
-            """
-        else:
-            html_schema += f"""
-            <div style="display: flex; justify-content: space-between; height: 130px; align-items: flex-end;">
-                <div style="width: 22%; height: 100%; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO DX</div>
-                <div style="width: 27%; height: 100%; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: -3px 4px 8px rgba(0,0,0,0.25);">
-                    <span style="font-size:10px; color:#64748b !important;">ANTA 1 (SESAMO)</span>
-                    <span style="font-size: 20px; color:#38bdf8 !important; margin-top: 3px;">➔</span>
-                </div>
-                <div style="width: 27%; height: 100%; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: 3px 4px 8px rgba(0,0,0,0.25);">
-                    <span style="font-size:10px; color:#64748b !important;">ANTA 2 (SESAMO)</span>
-                    <span style="font-size: 20px; color:#38bdf8 !important; margin-top: 3px;">⬅</span>
-                </div>
-                <div style="width: 22%; height: 100%; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO SX</div>
-            </div>
-            """
-            
-        html_schema += f"""
-            <div style="margin-top: 15px; font-size: 12px; color: #94a3b8; text-align: center;">
-                Layout Operativo Sesamo (Luce Passaggio: {luce} mm |
