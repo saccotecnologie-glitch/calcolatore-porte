@@ -4916,6 +4916,114 @@ def disegno_porta_v1002(ante, luce_mm, altezza_mm, lunghezza_traversa):
     </div>
     """
 
+
+
+# =========================
+# V1003 - TRAVERSA + ANTE SEMPLICI DEFINITIVO
+# =========================
+def disegno_porta_v1003(ante, luce_mm, altezza_mm, lunghezza_traversa):
+    try:
+        luce = int(float(luce_mm))
+    except Exception:
+        luce = 1600
+    try:
+        altezza = int(float(altezza_mm))
+    except Exception:
+        altezza = 2200
+    try:
+        traversa = float(lunghezza_traversa)
+    except Exception:
+        traversa = 0.0
+
+    due_ante = "2" in str(ante or "")
+    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
+    titolo = "PORTA SCORREVOLE AUTOMATICA A 2 ANTE" if due_ante else "PORTA SCORREVOLE AUTOMATICA A 1 ANTA"
+
+    if due_ante:
+        ante_svg = """
+            <rect x="230" y="205" width="460" height="245" rx="4" fill="url(#glassDark)" stroke="#0B82F0" stroke-width="4"/>
+            <rect x="690" y="205" width="460" height="245" rx="4" fill="url(#glassDark)" stroke="#0B82F0" stroke-width="4"/>
+            <line x1="690" y1="205" x2="690" y2="450" stroke="#003C96" stroke-width="5"/>
+            <path d="M660 325 L550 325" stroke="#148C2E" stroke-width="9" stroke-linecap="round"/>
+            <polygon points="550,325 574,311 574,339" fill="#148C2E"/>
+            <path d="M720 325 L830 325" stroke="#148C2E" stroke-width="9" stroke-linecap="round"/>
+            <polygon points="830,325 806,311 806,339" fill="#148C2E"/>
+        """
+    else:
+        ante_svg = """
+            <rect x="405" y="205" width="570" height="245" rx="4" fill="url(#glassDark)" stroke="#0B82F0" stroke-width="4"/>
+            <path d="M650 325 L850 325" stroke="#148C2E" stroke-width="9" stroke-linecap="round"/>
+            <polygon points="850,325 826,311 826,339" fill="#148C2E"/>
+        """
+
+    return f"""
+    <div class="v1001-sheet">
+        <div class="v1001-sheet-head">
+            <div>
+                <div class="v1001-sheet-title">V1003 - {titolo}</div>
+                <div class="v1001-sheet-sub">Traversa semplice · ante vetro scure · vista pulita</div>
+            </div>
+            <div class="v1001-brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div>
+        </div>
+        <div class="v1001-svgbox">
+            <svg viewBox="0 0 1360 540" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="railStrong" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#efefef"/>
+                        <stop offset="25%" stop-color="#cfcfcf"/>
+                        <stop offset="62%" stop-color="#9a9a9a"/>
+                        <stop offset="100%" stop-color="#6a6a6a"/>
+                    </linearGradient>
+                    <linearGradient id="glassDark" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity=".92"/>
+                        <stop offset="45%" stop-color="#b9e3ff" stop-opacity=".82"/>
+                        <stop offset="100%" stop-color="#4faee8" stop-opacity=".88"/>
+                    </linearGradient>
+                    <filter id="dropStrong" x="-10%" y="-20%" width="120%" height="160%">
+                        <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#000" flood-opacity=".22"/>
+                    </filter>
+                </defs>
+
+                <rect x="140" y="70" width="1080" height="95" rx="5" fill="url(#railStrong)" stroke="#222" stroke-width="3" filter="url(#dropStrong)"/>
+                <rect x="150" y="82" width="1060" height="16" rx="2" fill="rgba(255,255,255,.38)"/>
+                <rect x="150" y="143" width="1060" height="10" rx="2" fill="rgba(0,0,0,.28)"/>
+                <text x="245" y="127" fill="#0057D9" font-size="34" font-weight="1000" text-anchor="middle">SESAMO</text>
+                <text x="680" y="127" fill="#ffffff" font-size="20" font-weight="1000" text-anchor="middle">TRAVERSA AUTOMAZIONE</text>
+                <text x="1115" y="128" fill="#003C96" font-size="24" font-weight="1000" text-anchor="middle">PW100</text>
+
+                <rect x="185" y="185" width="990" height="285" rx="4" fill="none" stroke="#222" stroke-width="3"/>
+                <rect x="175" y="185" width="10" height="285" fill="#d6d6d6"/>
+                <rect x="1175" y="185" width="10" height="285" fill="#d6d6d6"/>
+                <rect x="130" y="470" width="1100" height="11" fill="#cfcfcf"/>
+                <line x1="115" y1="488" x2="1245" y2="488" stroke="#9a9a9a" stroke-width="3"/>
+
+                {ante_svg}
+
+                <text x="680" y="377" fill="#148C2E" font-size="18" font-weight="1000" text-anchor="middle">APERTURA AUTOMATICA</text>
+
+                <line x1="85" y1="185" x2="85" y2="470" stroke="#003C96" stroke-width="2"/>
+                <line x1="73" y1="185" x2="97" y2="185" stroke="#003C96" stroke-width="2"/>
+                <line x1="73" y1="470" x2="97" y2="470" stroke="#003C96" stroke-width="2"/>
+                <text x="75" y="315" fill="#003C96" font-size="14" font-weight="900" text-anchor="end">ALTEZZA</text>
+                <text x="75" y="342" fill="#003C96" font-size="17" font-weight="1000" text-anchor="end">{altezza} mm</text>
+
+                <line x1="460" y1="505" x2="900" y2="505" stroke="#003C96" stroke-width="2"/>
+                <line x1="460" y1="494" x2="460" y2="516" stroke="#003C96" stroke-width="2"/>
+                <line x1="900" y1="494" x2="900" y2="516" stroke="#003C96" stroke-width="2"/>
+                <text x="680" y="499" fill="#003C96" font-size="14" font-weight="900" text-anchor="middle">LUCE NETTA</text>
+                <text x="680" y="532" fill="#003C96" font-size="17" font-weight="1000" text-anchor="middle">{luce} mm</text>
+            </svg>
+        </div>
+
+        <div class="v1001-metrics">
+            <div class="v1001-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
+            <div class="v1001-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
+            <div class="v1001-metric">Altezza<b>{altezza} mm</b><small>Luce porta</small></div>
+            <div class="v1001-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
+        </div>
+    </div>
+    """
+
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
 # V400: riapplica stile dopo login
@@ -6196,7 +6304,7 @@ with col_main:
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
 
-    st.markdown(disegno_porta_v1002(ante, luce_mm, altezza_mm, lunghezza_traversa), unsafe_allow_html=True)
+    st.markdown(disegno_porta_v1003(ante, luce_mm, altezza_mm, lunghezza_traversa), unsafe_allow_html=True)
     st.markdown(f"""
     <div class="measure-total">
     <div><b>MISURA TRAVERSA CALCOLATA</b><br>1 anta = doppio luce + 10 cm<br>2 ante = doppio luce + 20 cm</div>
@@ -6922,7 +7030,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1002 - Traversa visibile")
+st.caption("Versione V1003 - Traversa e ante pulite")
 
 st.markdown(f"""
 <div class="footer">
