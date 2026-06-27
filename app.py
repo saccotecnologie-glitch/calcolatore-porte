@@ -83,7 +83,7 @@ UTENTI_BASE = {
     "GROS001": {"password": "G2026#", "profilo": "GROSSISTA", "azienda": "Emme Distribuzione", "ricarico": "20"}
 }
 
-# NUOVO LISTINO COMPONENTI INDUSTRIALI (UPDATE: SESAMO AUTOMATIONS)
+# NUOVO LISTINO COMPONENTI INDUSTRIALI SESAMO AUTOMATIONS
 LISTINI = {
     "SESAMO_LH100": 1340.00, 
     "SESAMO_LH140": 2280.00,
@@ -148,7 +148,7 @@ def aggiorna_stato_csv(codice, nuovo_stato):
     try:
         with open(PREVENTIVI_CSV, "r", encoding="utf-8") as f: righe = list(csv.DictReader(f))
         for r in righe:
-            if r.get("codice_preventivo") == codice: r["stato"] = nuevo_stato
+            if r.get("codice_preventivo") == codice: r["stato"] = nuovo_stato
         with open(PREVENTIVI_CSV, "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=list(righe[0].keys()))
             w.writeheader()
@@ -222,43 +222,63 @@ if sezione == "📐 Calcolo & Configurazione":
         altezza = st.number_input("Altezza Vano H (mm)", 1600, 3000, 2100, 50)
         traversa_m = calcola_traversa(luce, ante)
 
-        # --- BLOCCO DISEGNO SCHEMATICO DINAMICO ---
-        st.markdown("### 📐 Schema Visivo Automazione Sesamo")
+        # --- SCHEMA VISIVO SPECIFICO E REALE DELL'AUTOMAZIONE SESAMO ---
+        st.markdown("### 📐 Sezione Tecnica Automazione SESAMO PRO")
+        
+        # Generazione dell'architettura interna dinamica (Meccanica + Elettronica superiore)
+        html_schema = f"""
+        <div style="background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; font-family: 'Segoe UI', sans-serif;">
+            <div style="color: #38bdf8; font-weight: bold; font-size:14px; text-align: center; margin-bottom: 12px; letter-spacing:1px;">
+                TRAVERSA SESAMO IN ALLUMINIO ESTRUSO: {traversa_m:.2f} m
+            </div>
+            
+            <div style="border: 2px solid #64748b; background: #0f172a; border-radius: 6px; padding: 10px; margin-bottom: 15px; position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: bold;">
+                    <span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px;">CENTRALINA SESAMO DIGITAL</span>
+                    <span style="background: #f59e0b; color: #0f172a; padding: 2px 6px; border-radius: 4px;">BATTERIE EMERGENZA</span>
+                    <span style="background: #38bdf8; color: #0f172a; padding: 2px 6px; border-radius: 4px;">MOTORE INDUSTRIALE</span>
+                </div>
+                <div style="border-top: 2px dashed #475569; margin-top: 8px; padding-top: 4px; display: flex; justify-content: {"space-around" if ante == "2 ante" else "flex-end"};">
+                    <span style="color: #a7f3d0; font-size: 11px;">⚙️ Carrello A</span>
+                    {"<span style='color: #a7f3d0; font-size: 11px;'>⚙️ Carrello B</span>" if ante == "2 ante" else ""}
+                </div>
+            </div>
+
+            {"_2_DOORS_HTML_" if ante == "2 ante" else "_1_DOOR_HTML_"}
+            
+            <div style="margin-top: 15px; font-size: 12px; color: #94a3b8; text-align: center;">
+                Layout Operativo Sesamo (Luce Passaggio: {luce} mm | Altezza Vano: {altezza} mm)
+            </div>
+        </div>
+        """
+        
+        # Sostituzione delle stringhe segnaposto con la corretta configurazione geometrica ad ante mobili
         if ante == "1 anta":
-            html_schema = f"""
-            <div style="background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; text-align: center; font-family: monospace;">
-                <div style="color: #38bdf8; font-weight: bold; margin-bottom: 10px;">SVILUPPO TRAVERSA: {traversa_m:.2f} m</div>
-                <div style="border: 3px solid #64748b; background: #0f172a; height: 12px; width: 100%; border-radius: 4px; margin-bottom: 8px;"></div>
-                <div style="display: flex; justify-content: space-between; height: 120px; align-items: flex-end;">
-                    <div style="width: 48%; height: 100%; background: rgba(56, 189, 248, 0.05); border: 2px dashed #334155; display: flex; align-items: center; justify-content: center; color: #64748b;">PARETE FISSA</div>
-                    <div style="width: 48%; height: 100%; background: #38bdf8; border: 2px solid #0284c7; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
-                        <span>ANTA MOBILE</span>
-                        <span style="font-size: 20px; margin-top: 5px;">➔</span>
-                    </div>
+            html_schema = html_schema.replace("_1_DOOR_HTML_", f"""
+            <div style="display: flex; justify-content: space-between; height: 130px; align-items: flex-end;">
+                <div style="width: 49%; height: 100%; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 12px;">VANO FISSO LATERALE</div>
+                <div style="width: 49%; height: 100%; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <span style="font-size:11px; color:#64748b !important;">ANTA MOBILE SESAMO</span>
+                    <span style="font-size: 22px; color:#38bdf8 !important; margin-top: 5px;">➔</span>
                 </div>
-                <div style="margin-top: 10px; font-size: 13px; color: #94a3b8;">Apertura Singola Laterale (Luce Passaggio: {luce} mm)</div>
             </div>
-            """
+            """)
         else:
-            html_schema = f"""
-            <div style="background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; text-align: center; font-family: monospace;">
-                <div style="color: #38bdf8; font-weight: bold; margin-bottom: 10px;">SVILUPPO TRAVERSA: {traversa_m:.2f} m</div>
-                <div style="border: 3px solid #64748b; background: #0f172a; height: 12px; width: 100%; border-radius: 4px; margin-bottom: 8px;"></div>
-                <div style="display: flex; justify-content: space-between; height: 120px; align-items: flex-end;">
-                    <div style="width: 23%; height: 100%; background: rgba(56, 189, 248, 0.05); border: 2px dashed #334155; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO DX</div>
-                    <div style="width: 24%; height: 100%; background: #38bdf8; border: 2px solid #0284c7; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: -2px 4px 6px rgba(0,0,0,0.2);">
-                        <span>ANTA 1</span>
-                        <span style="font-size: 20px; margin-top: 5px;">➔</span>
-                    </div>
-                    <div style="width: 24%; height: 100%; background: #38bdf8; border: 2px solid #0284c7; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: 2px 4px 6px rgba(0,0,0,0.2);">
-                        <span>ANTA 2</span>
-                        <span style="font-size: 20px; margin-top: 5px;">⬅</span>
-                    </div>
-                    <div style="width: 23%; height: 100%; background: rgba(56, 189, 248, 0.05); border: 2px dashed #334155; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO SX</div>
+            html_schema = html_schema.replace("_2_DOORS_HTML_", f"""
+            <div style="display: flex; justify-content: space-between; height: 130px; align-items: flex-end;">
+                <div style="width: 22%; height: 100%; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO DX</div>
+                <div style="width: 27%; height: 100%; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: -3px 4px 8px rgba(0,0,0,0.25);">
+                    <span style="font-size:10px; color:#64748b !important;">ANTA 1 (SESAMO)</span>
+                    <span style="font-size: 20px; color:#38bdf8 !important; margin-top: 3px;">➔</span>
                 </div>
-                <div style="margin-top: 10px; font-size: 13px; color: #94a3b8;">Apertura Centrale Doppia (Luce Passaggio: {luce} mm)</div>
+                <div style="width: 27%; height: 100%; background: #ffffff; border: 2px solid #38bdf8; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #0f172a; font-weight: bold; box-shadow: 3px 4px 8px rgba(0,0,0,0.25);">
+                    <span style="font-size:10px; color:#64748b !important;">ANTA 2 (SESAMO)</span>
+                    <span style="font-size: 20px; color:#38bdf8 !important; margin-top: 3px;">⬅</span>
+                </div>
+                <div style="width: 22%; height: 100%; background: rgba(56, 189, 248, 0.03); border: 1px dashed #475569; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 11px;">FISSO SX</div>
             </div>
-            """
+            """)
+            
         st.markdown(html_schema, unsafe_allow_html=True)
 
     with col_b:
@@ -268,169 +288,4 @@ if sezione == "📐 Calcolo & Configurazione":
         collaudo = st.checkbox("Allaccio Tecnico Certificato e Collaudo")
         
         st.markdown(f"""
-        <div style="background: rgba(56, 189, 248, 0.1); padding: 20px; border-radius: 12px; border: 1px dashed #38bdf8; margin-top: 45px;">
-            <span style="color:#94a3b8; font-size:12px; text-transform:uppercase; display:block;">Taglio Profilo Traversa:</span>
-            <strong style="color:#38bdf8; font-size:24px;">{traversa_m:.2f} metri lineari</strong>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # Motore Algoritmico di Calcolo Economico Real-time
-    costo_alluminio = ((LISTINI["CASSA"] * traversa_m) + (LISTINI["COPERCHIO"] * traversa_m) + (LISTINI["CINGHIA"] * traversa_m * 2) + (LISTINI["GUIDA"] * traversa_m))
-    base_meccanica = LISTINI[modello] + costo_alluminio
-    elettronica_base = (LISTINI["SESAMO_RADAR_PRO"] * 2) + LISTINI["SESAMO_DIGITAL_KEY"] + LISTINI["BATTERIE_EMERGENZA"]
-    kit_opzionali = (LISTINI["ELETTROBLOCCO_SESAMO"] if elettro else 0) + (LISTINI["RADAR_SICUREZZA_LATERALE"] if radar else 0) + (LISTINI["ALLACCIO_COLLAUDO_STANDARD"] if collaudo else 0)
-    
-    totale_listino = base_meccanica + elettronica_base + kit_opzionali
-    prezzo_costo_satec = costo_satec_reale(totale_listino)
-    
-    imponibile_cliente = prezzo_costo_satec * (1 + (ricarico_corrente / 100))
-    totale_iva = imponibile_cliente * IVA
-    prezzo_finito_ivato = imponibile_cliente + totale_iva
-
-    # Quadro Finanziario di Sintesi (KPI Cards)
-    st.markdown(f"""
-    <div class="kpi-container">
-        <div class="kpi-card"><div class="kpi-title">Imponibile Netto</div><div class="kpi-value">{euro(imponibile_cliente)}</div></div>
-        <div class="kpi-card" style="border-top-color: #10b981;"><div class="kpi-title">Margine Applicato</div><div class="kpi-value">{ricarico_corrente} %</div></div>
-        <div class="kpi-card" style="border-top-color: #6366f1;"><div class="kpi-title">Totale Ivato (22%)</div><div class="kpi-value">{euro(prezzo_finito_ivato)}</div></div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if st.session_state.profilo == "SA-TEC":
-        with st.expander("🔍 Monitoraggio Margini Industriali (Solo Admin)"):
-            st.info(f"Prezzo di Fabbrica Netto: {euro(prezzo_costo_satec)} | Utile Netto su questa vendita: {euro(imponibile_cliente - prezzo_costo_satec)}")
-
-    st.markdown("### 📝 Intestazione e Archiviazione Preventivo")
-    with st.form("salva_offerta"):
-        c1, c2 = st.columns(2)
-        with c1: n_client = st.text_input("Nome Referente / Cliente").strip()
-        with c2: a_client = st.text_input("Società / Ragione Sociale").strip()
-        t_client = st.text_input("Telefono Diretto")
-        m_client = st.text_input("Email Cliente")
-        
-        if st.form_submit_button("Conferma ed Emetti Offerta"):
-            if not n_client and not a_client: st.error("Inserire un'intestazione valida per salvare il file.")
-            else:
-                nuovo_cod = genera_nuovo_codice()
-                payload = {
-                    "codice_preventivo": nuovo_cod, "data_ora": datetime.now().strftime("%d/%m/%Y %H:%M"),
-                    "utente": st.session_state.user, "profilo": st.session_state.profilo,
-                    "cliente_nome": n_client, "cliente_azienda": a_client, "cliente_telefono": t_client, "cliente_email": m_client,
-                    "configurazione": f"{modello} ({ante})", "luce_mm": str(luce), "altezza_mm": str(altezza),
-                    "traversa_m": f"{traversa_m:.2f}", "imponibile": f"{imponibile_cliente:.2f}",
-                    "iva": f"{totale_iva:.2f}", "totale_iva": f"{prezzo_finito_ivato:.2f}", "stato": "Bozza"
-                }
-                salva_preventivo_local(payload)
-                st.success(f"🚀 Offerta salvata! Codice: {nuovo_cod}. Controlla il Registro per visualizzarla.")
-
-# =========================================================
-# SEZIONE 2: REGISTRO STORICO E RICEVUTE CLIENTI PREMIUM
-# =========================================================
-elif sezione == "📋 Registro Offerte":
-    st.markdown("<h1>📋 Archivio Storico e Generazione Offerte</h1>", unsafe_allow_html=True)
-    offerte = carica_preventivi()
-    if st.session_state.profilo != "SA-TEC": offerte = [o for o in offerte if o.get("utente") == st.session_state.user]
-    
-    if not offerte: st.info("Nessun preventivo presente in archivio.")
-    else:
-        df = pd.DataFrame(offerte).fillna("").astype(str)
-        
-        cx1, cx2, cx3 = st.columns([2, 2, 1])
-        with cx1: p_sel = st.selectbox("Seleziona File Preventivo", df["codice_preventivo"].unique())
-        with cx2: s_sel = st.selectbox("Avanzamento Stato", STATI_PREVENTIVO)
-        with cx3:
-            st.write(" ")
-            if st.button("Aggiorna Stato Lavori", use_container_width=True):
-                if aggiorna_stato_csv(p_sel, s_sel): st.success("Stato Aggiornato!"); st.rerun()
-
-        record = df[df["codice_preventivo"] == p_sel].iloc[0]
-        
-        st.markdown("---")
-        st.markdown("### 📄 Documento Offerta Commerciale")
-        
-        # Rendering Grafico Elegante della Fattura/Preventivo ad Impatto Visivo SaaS
-        html_stampa = f"""
-        <div class="invoice-box">
-            <div class="invoice-header">
-                <div>
-                    <div class="invoice-brand">{AZIENDA}</div>
-                    <div style="font-size: 12px; color: #64748b !important;">Sistemi di Automazione Porte Professionali</div>
-                    <div style="font-size: 11px; margin-top:5px;">{SEDE}<br>P.IVA: {PIVA} | {EMAIL}</div>
-                </div>
-                <div class="invoice-details">
-                    <span style="font-size:18px; font-weight:700; color:#0f172a !important; display:block;">PREVENTIVO</span>
-                    <strong>Codice:</strong> {record['codice_preventivo']}<br>
-                    <strong>Data:</strong> {record['data_ora']}<br>
-                    <strong>Stato Attuale:</strong> <span style="color:#38bdf8 !important; font-weight:bold;">{record['stato']}</span>
-                </div>
-            </div>
-            
-            <div style="margin: 25px 0;">
-                <span style="font-size:11px; text-transform:uppercase; color:#64748b !important; font-weight:700; display:block; margin-bottom:5px;">Destinatario / Intestatario:</span>
-                <strong style="font-size:16px; color:#0f172a !important;">{record['cliente_nome']} {record['cliente_azienda']}</strong><br>
-                <span style="font-size:13px;">Contatti: {record['cliente_telefono']} | {record['cliente_email']}</span>
-            </div>
-            
-            <div class="invoice-grid">
-                <div>
-                    <small style="color:#64748b !important; display:block;">Configurazione Richiesta</small>
-                    <strong style="font-size:15px;">Automazione Serie {record['configurazione']}</strong>
-                </div>
-                <div>
-                    <small style="color:#64748b !important; display:block;">Specifiche Geometriche</small>
-                    <strong>Luce Passaggio: {record['luce_mm']} mm | Altezza: {record['altezza_mm']} mm</strong><br>
-                    <small>Sviluppo taglio profilo della traversa: {record['traversa_m']} metri</small>
-                </div>
-            </div>
-            
-            <div class="invoice-totali">
-                <table style="width:250px; margin-left:auto; font-size:14px; border-spacing:0 8px;">
-                    <tr>
-                        <td style="color:#64748b !important; text-align:left;">Totale Imponibile:</td>
-                        <td style="text-align:right; font-weight:600;">{euro(record['imponibile'])}</td>
-                    </tr>
-                    <tr>
-                        <td style="color:#64748b !important; text-align:left;">IVA Corrente (22%):</td>
-                        <td style="text-align:right;">{euro(record['iva'])}</td>
-                    </tr>
-                    <tr style="font-size:18px; font-weight:800; border-top:2px solid #0f172a;">
-                        <td style="color:#0f172a !important; text-align:left; padding-top:10px;">Totale Offerta:</td>
-                        <td style="text-align:right; color:#38bdf8 !important; padding-top:10px;">{euro(record['totale_iva'])}</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-        """
-        st.markdown(html_stampa, unsafe_allow_html=True)
-        
-        st.markdown("#### 📂 Database Storico Completo")
-        st.markdown(df.to_html(index=False, classes="dataframe"), unsafe_allow_html=True)
-
-# =========================================================
-# SEZIONE 3: CRM AMMINISTRATORE (SOLO PROFILI ACCREDITATI)
-# =========================================================
-elif sezione == "🛠️ CRM Gestione" and st.session_state.profilo == "SA-TEC":
-    st.markdown("<h1>🛠️ Controllo e Registrazione Partner</h1>", unsafe_allow_html=True)
-    
-    with st.form("crea_nuovo_partner"):
-        st.subheader("Rilascia Nuove Credenziali di Accesso")
-        r_ruolo = st.selectbox("Livello Listino Assegnato", ["RIVENDITORE", "GROSSISTA"])
-        r_az = st.text_input("Ragione Sociale Azienda Partner").strip()
-        r_ric = st.number_input("Ricarico Customizzato % (Lascia 0 per Default Automazione)", min_value=0.0, value=0.0)
-        
-        if st.form_submit_button("Genera Account Privato"):
-            if not r_az: st.error("Inserire la ragione sociale dell'azienda partner.")
-            else:
-                pref = "RIV" if r_ruolo == "RIVENDITORE" else "GROS"
-                prossimo_num = random.randint(100, 999)
-                nuovo_id = f"{pref}{prossimo_num}"
-                nuova_pwd = "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))
-                ric_final = str(r_ric) if r_ric > 0 else str(ricarico_default(r_ruolo))
-                
-                fe = Path(UTENTI_CSV).exists()
-                with open(UTENTI_CSV, "a", newline="", encoding="utf-8") as f:
-                    w = csv.DictWriter(f, fieldnames=["utente", "password", "profilo", "azienda", "ricarico"])
-                    if not fe: w.writeheader()
-                    w.writerow({"utente": nuovo_id, "password": nuova_pwd, "profilo": r_ruolo, "azienda": r_az, "ricarico": ric_final})
-                
-                st.success(f"✨ Account Creato!\n* **ID LOGIN:** `{nuovo_id}`\n* **PASSWORD TEMPORANEA:** `{nuova_pwd}`\n* **RICARICO:** {ric_final}%")
+        <div style="background: rgba(56,
