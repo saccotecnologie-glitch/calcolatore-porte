@@ -83,12 +83,20 @@ UTENTI_BASE = {
     "GROS001": {"password": "G2026#", "profilo": "GROSSISTA", "azienda": "Emme Distribuzione", "ricarico": "20"}
 }
 
-# Listino Prezzi Componenti Industriali
+# NUOVO LISTINO COMPONENTI INDUSTRIALI (UPDATE: SESAMO AUTOMATIONS)
 LISTINI = {
-    "PW100_1": 1236.00, "PW100_2": 1298.00, "ER140_1": 2140.00, "ER140_2": 2200.00,
-    "CASSA": 343.00 / 6.6, "COPERCHIO": 214.00 / 6.6, "CINGHIA": 671.00 / 60, "GUIDA": 49.20 / 6.6,
-    "HR100": 285.00, "ICON": 114.00, "BATTERIE": 118.00, "ELETTRO_STANDARD": 195.00,
-    "RADAR_SICUREZZA_LATERALE": 280.00, "ALLACCIO_COLLAUDO_STANDARD": 350.00
+    "SESAMO_LH100": 1340.00, 
+    "SESAMO_LH140": 2280.00,
+    "CASSA": 343.00 / 6.6, 
+    "COPERCHIO": 214.00 / 6.6, 
+    "CINGHIA": 671.00 / 60, 
+    "GUIDA": 49.20 / 6.6,
+    "SESAMO_RADAR_PRO": 295.00, 
+    "SESAMO_DIGITAL_KEY": 135.00, 
+    "BATTERIE_EMERGENZA": 120.00, 
+    "ELETTROBLOCCO_SESAMO": 210.00,
+    "RADAR_SICUREZZA_LATERALE": 280.00, 
+    "ALLACCIO_COLLAUDO_STANDARD": 350.00
 }
 
 STATI_PREVENTIVO = ["Bozza", "Inviato", "Trattativa", "Accettato", "Perso", "Ordinato"]
@@ -140,7 +148,7 @@ def aggiorna_stato_csv(codice, nuovo_stato):
     try:
         with open(PREVENTIVI_CSV, "r", encoding="utf-8") as f: righe = list(csv.DictReader(f))
         for r in righe:
-            if r.get("codice_preventivo") == codice: r["stato"] = nuovo_stato
+            if r.get("codice_preventivo") == codice: r["stato"] = nuevo_stato
         with open(PREVENTIVI_CSV, "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=list(righe[0].keys()))
             w.writeheader()
@@ -160,7 +168,7 @@ def genera_nuovo_codice():
 st.sidebar.markdown("""
 <div style="text-align: center; padding: 15px; background: #1e293b; border-radius: 12px; margin-bottom: 25px; border: 1px solid #334155;">
     <h2 style="color: #38bdf8 !important; margin: 0; font-size: 24px; letter-spacing: 1.5px;">SA-TEC</h2>
-    <span style="color: #94a3b8; font-size: 10px; text-transform: uppercase; font-weight:600;">Automations Dashboard</span>
+    <span style="color: #94a3b8; font-size: 10px; text-transform: uppercase; font-weight:600;">Sesamo Dashboard</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -207,15 +215,15 @@ if sezione == "📐 Calcolo & Configurazione":
     
     col_a, col_b = st.columns(2)
     with col_a:
-        st.markdown("### 🛠️ Dimensioni e Modello")
-        modello = st.selectbox("Seleziona Automazione", ["PW100_1", "PW100_2", "ER140_1", "ER140_2"])
+        st.markdown("### 🛠️ Dimensioni e Modello Sesamo")
+        modello = st.selectbox("Seleziona Automazione", ["SESAMO_LH100", "SESAMO_LH140"])
         ante = st.radio("Tipologia Ante", ["1 anta", "2 ante"], horizontal=True)
         luce = st.number_input("Luce Libera Passaggio L (mm)", 700, 3000, 1000, 50)
         altezza = st.number_input("Altezza Vano H (mm)", 1600, 3000, 2100, 50)
         traversa_m = calcola_traversa(luce, ante)
 
         # --- BLOCCO DISEGNO SCHEMATICO DINAMICO ---
-        st.markdown("### 📐 Schema Visivo Automazione")
+        st.markdown("### 📐 Schema Visivo Automazione Sesamo")
         if ante == "1 anta":
             html_schema = f"""
             <div style="background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; text-align: center; font-family: monospace;">
@@ -254,9 +262,9 @@ if sezione == "📐 Calcolo & Configurazione":
         st.markdown(html_schema, unsafe_allow_html=True)
 
     with col_b:
-        st.markdown("### ⚡ Sicurezze & Servizi Accessori")
-        elettro = st.checkbox("Elettroblocco Meccanico Standard")
-        radar = st.checkbox("Radar Volumetrico Laterale (Sicurezza)")
+        st.markdown("### ⚡ Sicurezze & Selettori Sesamo")
+        elettro = st.checkbox("Elettroblocco Meccanico Sesamo")
+        radar = st.checkbox("Radar Volumetrico Laterale Sesamo")
         collaudo = st.checkbox("Allaccio Tecnico Certificato e Collaudo")
         
         st.markdown(f"""
@@ -269,8 +277,8 @@ if sezione == "📐 Calcolo & Configurazione":
     # Motore Algoritmico di Calcolo Economico Real-time
     costo_alluminio = ((LISTINI["CASSA"] * traversa_m) + (LISTINI["COPERCHIO"] * traversa_m) + (LISTINI["CINGHIA"] * traversa_m * 2) + (LISTINI["GUIDA"] * traversa_m))
     base_meccanica = LISTINI[modello] + costo_alluminio
-    elettronica_base = (LISTINI["HR100"] * 2) + LISTINI["ICON"] + LISTINI["BATTERIE"]
-    kit_opzionali = (LISTINI["ELETTRO_STANDARD"] if elettro else 0) + (LISTINI["RADAR_SICUREZZA_LATERALE"] if radar else 0) + (LISTINI["ALLACCIO_COLLAUDO_STANDARD"] if collaudo else 0)
+    elettronica_base = (LISTINI["SESAMO_RADAR_PRO"] * 2) + LISTINI["SESAMO_DIGITAL_KEY"] + LISTINI["BATTERIE_EMERGENZA"]
+    kit_opzionali = (LISTINI["ELETTROBLOCCO_SESAMO"] if elettro else 0) + (LISTINI["RADAR_SICUREZZA_LATERALE"] if radar else 0) + (LISTINI["ALLACCIO_COLLAUDO_STANDARD"] if collaudo else 0)
     
     totale_listino = base_meccanica + elettronica_base + kit_opzionali
     prezzo_costo_satec = costo_satec_reale(totale_listino)
@@ -310,4 +318,119 @@ if sezione == "📐 Calcolo & Configurazione":
                     "cliente_nome": n_client, "cliente_azienda": a_client, "cliente_telefono": t_client, "cliente_email": m_client,
                     "configurazione": f"{modello} ({ante})", "luce_mm": str(luce), "altezza_mm": str(altezza),
                     "traversa_m": f"{traversa_m:.2f}", "imponibile": f"{imponibile_cliente:.2f}",
-                    "iva": f"{totale_iva:.2f}", "tot
+                    "iva": f"{totale_iva:.2f}", "totale_iva": f"{prezzo_finito_ivato:.2f}", "stato": "Bozza"
+                }
+                salva_preventivo_local(payload)
+                st.success(f"🚀 Offerta salvata! Codice: {nuovo_cod}. Controlla il Registro per visualizzarla.")
+
+# =========================================================
+# SEZIONE 2: REGISTRO STORICO E RICEVUTE CLIENTI PREMIUM
+# =========================================================
+elif sezione == "📋 Registro Offerte":
+    st.markdown("<h1>📋 Archivio Storico e Generazione Offerte</h1>", unsafe_allow_html=True)
+    offerte = carica_preventivi()
+    if st.session_state.profilo != "SA-TEC": offerte = [o for o in offerte if o.get("utente") == st.session_state.user]
+    
+    if not offerte: st.info("Nessun preventivo presente in archivio.")
+    else:
+        df = pd.DataFrame(offerte).fillna("").astype(str)
+        
+        cx1, cx2, cx3 = st.columns([2, 2, 1])
+        with cx1: p_sel = st.selectbox("Seleziona File Preventivo", df["codice_preventivo"].unique())
+        with cx2: s_sel = st.selectbox("Avanzamento Stato", STATI_PREVENTIVO)
+        with cx3:
+            st.write(" ")
+            if st.button("Aggiorna Stato Lavori", use_container_width=True):
+                if aggiorna_stato_csv(p_sel, s_sel): st.success("Stato Aggiornato!"); st.rerun()
+
+        record = df[df["codice_preventivo"] == p_sel].iloc[0]
+        
+        st.markdown("---")
+        st.markdown("### 📄 Documento Offerta Commerciale")
+        
+        # Rendering Grafico Elegante della Fattura/Preventivo ad Impatto Visivo SaaS
+        html_stampa = f"""
+        <div class="invoice-box">
+            <div class="invoice-header">
+                <div>
+                    <div class="invoice-brand">{AZIENDA}</div>
+                    <div style="font-size: 12px; color: #64748b !important;">Sistemi di Automazione Porte Professionali</div>
+                    <div style="font-size: 11px; margin-top:5px;">{SEDE}<br>P.IVA: {PIVA} | {EMAIL}</div>
+                </div>
+                <div class="invoice-details">
+                    <span style="font-size:18px; font-weight:700; color:#0f172a !important; display:block;">PREVENTIVO</span>
+                    <strong>Codice:</strong> {record['codice_preventivo']}<br>
+                    <strong>Data:</strong> {record['data_ora']}<br>
+                    <strong>Stato Attuale:</strong> <span style="color:#38bdf8 !important; font-weight:bold;">{record['stato']}</span>
+                </div>
+            </div>
+            
+            <div style="margin: 25px 0;">
+                <span style="font-size:11px; text-transform:uppercase; color:#64748b !important; font-weight:700; display:block; margin-bottom:5px;">Destinatario / Intestatario:</span>
+                <strong style="font-size:16px; color:#0f172a !important;">{record['cliente_nome']} {record['cliente_azienda']}</strong><br>
+                <span style="font-size:13px;">Contatti: {record['cliente_telefono']} | {record['cliente_email']}</span>
+            </div>
+            
+            <div class="invoice-grid">
+                <div>
+                    <small style="color:#64748b !important; display:block;">Configurazione Richiesta</small>
+                    <strong style="font-size:15px;">Automazione Serie {record['configurazione']}</strong>
+                </div>
+                <div>
+                    <small style="color:#64748b !important; display:block;">Specifiche Geometriche</small>
+                    <strong>Luce Passaggio: {record['luce_mm']} mm | Altezza: {record['altezza_mm']} mm</strong><br>
+                    <small>Sviluppo taglio profilo della traversa: {record['traversa_m']} metri</small>
+                </div>
+            </div>
+            
+            <div class="invoice-totali">
+                <table style="width:250px; margin-left:auto; font-size:14px; border-spacing:0 8px;">
+                    <tr>
+                        <td style="color:#64748b !important; text-align:left;">Totale Imponibile:</td>
+                        <td style="text-align:right; font-weight:600;">{euro(record['imponibile'])}</td>
+                    </tr>
+                    <tr>
+                        <td style="color:#64748b !important; text-align:left;">IVA Corrente (22%):</td>
+                        <td style="text-align:right;">{euro(record['iva'])}</td>
+                    </tr>
+                    <tr style="font-size:18px; font-weight:800; border-top:2px solid #0f172a;">
+                        <td style="color:#0f172a !important; text-align:left; padding-top:10px;">Totale Offerta:</td>
+                        <td style="text-align:right; color:#38bdf8 !important; padding-top:10px;">{euro(record['totale_iva'])}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        """
+        st.markdown(html_stampa, unsafe_allow_html=True)
+        
+        st.markdown("#### 📂 Database Storico Completo")
+        st.markdown(df.to_html(index=False, classes="dataframe"), unsafe_allow_html=True)
+
+# =========================================================
+# SEZIONE 3: CRM AMMINISTRATORE (SOLO PROFILI ACCREDITATI)
+# =========================================================
+elif sezione == "🛠️ CRM Gestione" and st.session_state.profilo == "SA-TEC":
+    st.markdown("<h1>🛠️ Controllo e Registrazione Partner</h1>", unsafe_allow_html=True)
+    
+    with st.form("crea_nuovo_partner"):
+        st.subheader("Rilascia Nuove Credenziali di Accesso")
+        r_ruolo = st.selectbox("Livello Listino Assegnato", ["RIVENDITORE", "GROSSISTA"])
+        r_az = st.text_input("Ragione Sociale Azienda Partner").strip()
+        r_ric = st.number_input("Ricarico Customizzato % (Lascia 0 per Default Automazione)", min_value=0.0, value=0.0)
+        
+        if st.form_submit_button("Genera Account Privato"):
+            if not r_az: st.error("Inserire la ragione sociale dell'azienda partner.")
+            else:
+                pref = "RIV" if r_ruolo == "RIVENDITORE" else "GROS"
+                prossimo_num = random.randint(100, 999)
+                nuovo_id = f"{pref}{prossimo_num}"
+                nuova_pwd = "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(7))
+                ric_final = str(r_ric) if r_ric > 0 else str(ricarico_default(r_ruolo))
+                
+                fe = Path(UTENTI_CSV).exists()
+                with open(UTENTI_CSV, "a", newline="", encoding="utf-8") as f:
+                    w = csv.DictWriter(f, fieldnames=["utente", "password", "profilo", "azienda", "ricarico"])
+                    if not fe: w.writeheader()
+                    w.writerow({"utente": nuovo_id, "password": nuova_pwd, "profilo": r_ruolo, "azienda": r_az, "ricarico": ric_final})
+                
+                st.success(f"✨ Account Creato!\n* **ID LOGIN:** `{nuovo_id}`\n* **PASSWORD TEMPORANEA:** `{nuova_pwd}`\n* **RICARICO:** {ric_final}%")
