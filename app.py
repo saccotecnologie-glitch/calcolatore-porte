@@ -1388,7 +1388,27 @@ section[data-testid="stSidebar"] div {
     color:inherit;
 }
 
-</style>
+
+    /* V1008 - accessori/checkbox più arrotondati e bordi più spessi */
+    [data-testid="stCheckbox"] label{
+        border:3px solid #B7CAE8!important;
+        border-radius:22px!important;
+        padding:14px 16px!important;
+        box-shadow:0 8px 20px rgba(0,43,103,.10)!important;
+        background:#FFFFFF!important;
+    }
+    [data-testid="stCheckbox"] label:hover{
+        border-color:#0057D9!important;
+        box-shadow:0 10px 24px rgba(0,87,217,.16)!important;
+    }
+    [data-testid="stCheckbox"] label:has(input:checked){
+        border:3px solid #0057D9!important;
+        border-radius:22px!important;
+        background:#EAF3FF!important;
+        box-shadow:0 0 0 4px rgba(0,87,217,.14),0 12px 26px rgba(0,87,217,.18)!important;
+    }
+
+    </style>
     </head>
     <body>
         <div class="head">
@@ -5080,10 +5100,14 @@ def disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa):
 
     if due_ante:
         ante_svg = """
-        <rect x="330" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-        <rect x="680" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-        <rect x="680" y="188" width="175" height="300" fill="rgba(10,60,90,.09)"/>
-        <line x1="680" y1="188" x2="680" y2="488" stroke="#003C96" stroke-width="5"/>
+        <rect x="330" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#003C96" stroke-width="7"/>
+        <rect x="340" y="198" width="330" height="280" rx="3" fill="none" stroke="#8FD0F4" stroke-width="2" opacity=".95"/>
+        <rect x="680" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#003C96" stroke-width="7"/>
+        <rect x="690" y="198" width="330" height="280" rx="3" fill="none" stroke="#8FD0F4" stroke-width="2" opacity=".95"/>
+        <rect x="680" y="188" width="175" height="300" fill="rgba(10,60,90,.10)"/>
+        <line x1="680" y1="188" x2="680" y2="488" stroke="#0B2D6B" stroke-width="6"/>
+        <line x1="668" y1="198" x2="668" y2="478" stroke="#6BBDEB" stroke-width="2" opacity=".95"/>
+        <line x1="692" y1="198" x2="692" y2="478" stroke="#6BBDEB" stroke-width="2" opacity=".95"/>
         <path d="M655 340 L555 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
         <polygon points="555,340 578,327 578,353" fill="#0B8F2A"/>
         <path d="M705 340 L805 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
@@ -5091,8 +5115,11 @@ def disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa):
         """
     else:
         ante_svg = """
-        <rect x="430" y="188" width="510" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-        <rect x="685" y="188" width="255" height="300" rx="0" fill="rgba(10,60,90,.09)"/>
+        <rect x="430" y="188" width="510" height="300" rx="5" fill="url(#glassSoft)" stroke="#003C96" stroke-width="7"/>
+        <rect x="440" y="198" width="490" height="280" rx="3" fill="none" stroke="#8FD0F4" stroke-width="2" opacity=".95"/>
+        <rect x="685" y="188" width="255" height="300" rx="0" fill="rgba(10,60,90,.10)"/>
+        <line x1="932" y1="190" x2="932" y2="486" stroke="#0B2D6B" stroke-width="4"/>
+        <line x1="918" y1="200" x2="918" y2="476" stroke="#6BBDEB" stroke-width="2" opacity=".95"/>
         <path d="M600 340 L780 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
         <polygon points="780,340 756,326 756,354" fill="#0B8F2A"/>
         """
@@ -7185,7 +7212,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1007 - SVG renderizzato correttamente")
+st.caption("Versione V1008 - Ricarico 30%, accessori arrotondati, ante definite")
 
 st.markdown(f"""
 <div class="footer">
