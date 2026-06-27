@@ -148,7 +148,7 @@ def aggiorna_stato_csv(codice, nuovo_stato):
     try:
         with open(PREVENTIVI_CSV, "r", encoding="utf-8") as f: righe = list(csv.DictReader(f))
         for r in righe:
-            if r.get("codice_preventivo") == codice: r["stato"] = nuovo_stato
+            if r.get("codice_preventivo") == codice: r["stato"] = nuevo_stato
         with open(PREVENTIVI_CSV, "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=list(righe[0].keys()))
             w.writeheader()
@@ -353,4 +353,7 @@ elif sezione == "📋 Registro Offerte":
         df = pd.DataFrame(offerte).fillna("").astype(str)
         
         cx1, cx2, cx3 = st.columns([2, 2, 1])
-        with cx1: p_sel = st
+        with cx1: p_sel = st.selectbox("Seleziona File Preventivo", df["codice_preventivo"].unique())
+        with cx2: s_sel = st.selectbox("Avanzamento Stato", STATI_PREVENTIVO)
+        with cx3:
+            st.write
