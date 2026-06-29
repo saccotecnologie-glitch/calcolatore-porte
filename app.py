@@ -1661,6 +1661,426 @@ def render_crm_avanzato(preventivi):
         st.markdown(tabella_html_sicura(righe_utenti), unsafe_allow_html=True)
 
 
+
+
+# =========================
+# V1020 - CRM ADMIN PULITO STILE TABELLA
+# =========================
+
+def v1020_safe_text(v):
+    return str(v or "").strip()
+
+def v1020_riscrivi_csv(path_file, righe, fieldnames):
+    with open(path_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(righe)
+
+def v1020_elimina_preventivo_csv(codice_preventivo):
+    path = Path(PREVENTIVI_CSV)
+    if not path.exists():
+        return False, "File preventivi CSV non trovato."
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        if not righe:
+            return False, "Nessun preventivo presente."
+
+        fieldnames = list(righe[0].keys())
+        codice = v1020_safe_text(codice_preventivo)
+        nuove = [r for r in righe if v1020_safe_text(r.get("codice_preventivo")) != codice]
+
+        if len(nuove) == len(righe):
+            return False, "Preventivo non trovato."
+
+        v1020_riscrivi_csv(path, nuove, fieldnames)
+        return True, "Preventivo eliminato da CSV."
+    except Exception as e:
+        return False, str(e)
+
+def v1020_elimina_cliente_csv(identificativo):
+    path = Path(CLIENTI_CSV)
+    if not path.exists():
+        return False, "File clienti CSV non trovato."
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        if not righe:
+            return False, "Nessun cliente presente."
+
+        fieldnames = list(righe[0].keys())
+        ident = v1020_safe_text(identificativo).lower()
+
+        def match_cliente(r):
+            for c in ["email", "telefono", "nome", "azienda"]:
+                if v1020_safe_text(r.get(c)).lower() == ident:
+                    return True
+            return False
+
+        nuove = [r for r in righe if not match_cliente(r)]
+
+        if len(nuove) == len(righe):
+            return False, "Cliente non trovato."
+
+        v1020_riscrivi_csv(path, nuove, fieldnames)
+        return True, "Cliente eliminato da CSV."
+    except Exception as e:
+        return False, str(e)
+
+def v1020_elimina_preventivo_supabase(codice_preventivo):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato."
+    try:
+        codice = v1020_safe_text(codice_preventivo)
+        if not codice:
+            return False, "Codice mancante."
+        sb.table("preventivi").delete().eq("codice_preventivo", codice).execute()
+        return True, "Preventivo eliminato da Supabase."
+    except Exception as e:
+        return False, str(e)
+
+def v1020_elimina_cliente_supabase(identificativo):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato."
+    try:
+        ident = v1020_safe_text(identificativo)
+        if not ident:
+            return False, "Identificativo mancante."
+        sb.table("clienti").delete().eq("email", ident.lower()).execute()
+        sb.table("clienti").delete().eq("telefono", ident).execute()
+        sb.table("clienti").delete().eq("nome", ident).execute()
+        sb.table("clienti").delete().eq("azienda", ident).execute()
+        return True, "Cliente eliminato da Supabase."
+    except Exception as e:
+        return False, str(e)
+
+def v1020_elimina_preventivo_totale(codice_preventivo):
+    ok_csv, msg_csv = v1020_elimina_preventivo_csv(codice_preventivo)
+    messaggi = [msg_csv]
+    ok = ok_csv
+
+    if supabase_attivo():
+        ok_sb, msg_sb = v1020_elimina_preventivo_supabase(codice_preventivo)
+        messaggi.append(msg_sb)
+        ok = ok or ok_sb
+
+    return ok, " | ".join([m for m in messaggi if m])
+
+def v1020_elimina_cliente_totale(identificativo):
+    ok_csv, msg_csv = v1020_elimina_cliente_csv(identificativo)
+    messaggi = [msg_csv]
+    ok = ok_csv
+
+    if supabase_attivo():
+        ok_sb, msg_sb = v1020_elimina_cliente_supabase(identificativo)
+        messaggi.append(msg_sb)
+        ok = ok or ok_sb
+
+    return ok, " | ".join([m for m in messaggi if m])
+
+def v1020_cliente_id(c):
+    for campo in ["email", "telefono", "nome", "azienda"]:
+        val = v1020_safe_text(c.get(campo))
+        if val:
+            return val
+    return ""
+
+def v1020_euro_from_any(v):
+    try:
+        return euro(float(str(v).replace("€", "").replace(".", "").replace(",", ".").strip()))
+    except:
+        return v1020_safe_text(v)
+
+def v1020_css_admin():
+    st.markdown("""
+<style>
+/* V1020 - CRM bianco/blu leggibile */
+.stApp, .main, .main .block-container {
+    background:#ffffff!important;
+    color:#003C96!important;
+}
+.main .block-container {
+    max-width:1550px!important;
+    padding-top:1rem!important;
+}
+.v1020-title {
+    color:#003C96!important;
+    font-size:32px!important;
+    font-weight:1000!important;
+    margin:8px 0 4px 0!important;
+}
+.v1020-sub {
+    color:#003C96!important;
+    font-size:16px!important;
+    font-weight:800!important;
+    margin-bottom:12px!important;
+}
+.v1020-box {
+    background:#ffffff!important;
+    border:1px solid #d9e4f3!important;
+    border-radius:12px!important;
+    padding:12px!important;
+    box-shadow:0 6px 18px rgba(0,60,150,.08)!important;
+    margin-bottom:18px!important;
+}
+.v1020-row-head {
+    display:grid;
+    grid-template-columns:90px 2.2fr 1.4fr 1.4fr 2fr 1.2fr 1fr 145px;
+    gap:0;
+    background:#ffffff;
+    border:1px solid #d9e4f3;
+    border-bottom:0;
+    color:#003C96;
+    font-weight:1000;
+    font-size:13px;
+}
+.v1020-row-cli {
+    display:grid;
+    grid-template-columns:90px 2.2fr 1.4fr 1.4fr 2fr 1.2fr 1fr 145px;
+    gap:0;
+    border:1px solid #d9e4f3;
+    border-bottom:0;
+    align-items:center;
+    color:#003C96;
+    font-weight:800;
+    background:#ffffff;
+}
+.v1020-row-prev-head {
+    display:grid;
+    grid-template-columns:1.4fr 1.1fr 2.2fr 1.2fr 1.6fr 1.6fr 1.2fr 160px;
+    border:1px solid #d9e4f3;
+    border-bottom:0;
+    color:#003C96;
+    font-weight:1000;
+    font-size:13px;
+}
+.v1020-row-prev {
+    display:grid;
+    grid-template-columns:1.4fr 1.1fr 2.2fr 1.2fr 1.6fr 1.6fr 1.2fr 160px;
+    border:1px solid #d9e4f3;
+    border-bottom:0;
+    align-items:center;
+    color:#003C96;
+    font-weight:800;
+    background:#ffffff;
+}
+.v1020-cell {
+    padding:11px 12px;
+    border-right:1px solid #d9e4f3;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    color:#003C96!important;
+}
+.v1020-cell:last-child { border-right:0; }
+.v1020-footer {
+    border:1px solid #d9e4f3;
+    padding:12px;
+    color:#003C96;
+    font-weight:900;
+    background:#ffffff;
+    border-radius:0 0 12px 12px;
+}
+.v1020-actions {
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:center;
+}
+.v1020-note {
+    color:#003C96;
+    font-size:14px;
+    font-weight:900;
+    margin-top:8px;
+}
+div[data-testid="stTextInput"] input,
+div[data-testid="stSelectbox"] div,
+div[data-testid="stNumberInput"] input {
+    background:#ffffff!important;
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    border:2px solid #d9e4f3!important;
+    border-radius:8px!important;
+    font-weight:900!important;
+}
+div[data-testid="stTextInput"] label,
+div[data-testid="stSelectbox"] label,
+div[data-testid="stCheckbox"] label,
+div[data-testid="stCheckbox"] p {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    font-weight:900!important;
+}
+div[data-testid="stMarkdownContainer"] *,
+div[data-testid="stCaptionContainer"] * {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+.stButton>button {
+    background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    border-radius:8px!important;
+    border:1px solid #003C96!important;
+    font-weight:1000!important;
+    min-height:38px!important;
+}
+button[kind="secondary"] {
+    background:#ffffff!important;
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    border:1px solid #d9e4f3!important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+def render_crm_commerciale_v1020(profilo):
+    if profilo != "SA-TEC":
+        return
+
+    v1020_css_admin()
+
+    st.markdown('<div class="v1020-title">CRM Commerciale</div>', unsafe_allow_html=True)
+
+    tab_clienti, tab_preventivi = st.tabs(["Clienti", "Preventivi"])
+
+    with tab_clienti:
+        st.markdown('<div class="v1020-title">Gestione Clienti</div>', unsafe_allow_html=True)
+        st.markdown('<div class="v1020-sub">Visualizza, modifica ed elimina i clienti registrati.</div>', unsafe_allow_html=True)
+
+        clienti = carica_clienti()
+        c1, c2, c3 = st.columns([2.3, 1.2, 1])
+        with c1:
+            cerca_cli = st.text_input("Cerca per nome, azienda, telefono o email", key="v1020_cerca_cli", label_visibility="collapsed", placeholder="Cerca per nome, azienda, telefono o email...")
+        with c2:
+            filtro_cli = st.selectbox("Profilo", ["Tutti i profili", "CLIENTE", "RIVENDITORE", "GROSSISTA"], key="v1020_filtro_cli", label_visibility="collapsed")
+        with c3:
+            st.button("+ Nuovo Cliente", key="v1020_new_cliente", disabled=True)
+
+        clienti_filtrati = filtra_clienti_dashboard(clienti, cerca_cli)
+        if filtro_cli != "Tutti i profili":
+            clienti_filtrati = [c for c in clienti_filtrati if v1020_safe_text(c.get("owner_profilo")).upper() == filtro_cli or v1020_safe_text(c.get("profilo")).upper() == filtro_cli]
+
+        st.markdown("""
+<div class="v1020-row-head">
+<div class="v1020-cell">ID</div><div class="v1020-cell">NOME / AZIENDA</div><div class="v1020-cell">REFERENTE</div><div class="v1020-cell">TELEFONO</div><div class="v1020-cell">EMAIL</div><div class="v1020-cell">PROFILO</div><div class="v1020-cell">PREVENTIVI</div><div class="v1020-cell">AZIONI</div>
+</div>
+""", unsafe_allow_html=True)
+
+        if not clienti_filtrati:
+            st.info("Nessun cliente trovato.")
+        else:
+            for i, c in enumerate(clienti_filtrati):
+                ident = v1020_cliente_id(c)
+                nome = v1020_safe_text(c.get("azienda")) or v1020_safe_text(c.get("nome")) or "Cliente"
+                referente = v1020_safe_text(c.get("nome"))
+                telefono = v1020_safe_text(c.get("telefono"))
+                email = v1020_safe_text(c.get("email"))
+                prof = v1020_safe_text(c.get("owner_profilo")) or v1020_safe_text(c.get("profilo")) or "CLIENTE"
+                nprev = v1020_safe_text(c.get("numero_preventivi")) or ""
+                cid = f"C{i+1:04d}"
+
+                st.markdown(f"""
+<div class="v1020-row-cli">
+<div class="v1020-cell">{cid}</div><div class="v1020-cell">{nome}</div><div class="v1020-cell">{referente}</div><div class="v1020-cell">{telefono}</div><div class="v1020-cell">{email}</div><div class="v1020-cell">{prof}</div><div class="v1020-cell">{nprev}</div><div class="v1020-cell"> </div>
+</div>
+""", unsafe_allow_html=True)
+
+                _, _, _, col_conf, col_del = st.columns([7.8, .1, .1, 1.1, 1])
+                with col_conf:
+                    conferma = st.checkbox("OK", key=f"v1020_conf_cli_{i}_{ident}")
+                with col_del:
+                    if st.button("🗑", key=f"v1020_del_cli_{i}_{ident}"):
+                        if not conferma:
+                            st.warning("Spunta OK prima di eliminare.")
+                        elif not ident:
+                            st.error("Cliente senza identificativo.")
+                        else:
+                            ok, msg = v1020_elimina_cliente_totale(ident)
+                            if ok:
+                                st.success(f"Cliente eliminato: {nome}")
+                                st.caption(msg)
+                                st.rerun()
+                            else:
+                                st.error(msg)
+
+            st.markdown(f'<div class="v1020-footer">Totale clienti: {len(clienti_filtrati)}</div>', unsafe_allow_html=True)
+
+    with tab_preventivi:
+        st.markdown('<div class="v1020-title">Gestione Preventivi</div>', unsafe_allow_html=True)
+        st.markdown('<div class="v1020-sub">Visualizza, gestisci ed elimina i preventivi creati.</div>', unsafe_allow_html=True)
+
+        preventivi = carica_preventivi()
+        c1, c2, c3, c4 = st.columns([2.5, 1.1, 1.1, 1])
+        with c1:
+            cerca_prev = st.text_input("Cerca per codice, cliente o note", key="v1020_cerca_prev", label_visibility="collapsed", placeholder="Cerca per codice, cliente o note...")
+        with c2:
+            stato_prev = st.selectbox("Stato", ["Tutti"] + STATI_PREVENTIVO, key="v1020_stato_prev", label_visibility="collapsed")
+        with c3:
+            st.button("Filtra", key="v1020_filtra", disabled=True)
+        with c4:
+            st.button("+ Nuovo Preventivo", key="v1020_new_prev", disabled=True)
+
+        preventivi_filtrati = filtra_preventivi_dashboard(preventivi, cerca_prev, stato_prev)
+
+        st.markdown("""
+<div class="v1020-row-prev-head">
+<div class="v1020-cell">CODICE</div><div class="v1020-cell">DATA</div><div class="v1020-cell">CLIENTE</div><div class="v1020-cell">STATO</div><div class="v1020-cell">TOTALE IMPONIBILE</div><div class="v1020-cell">TOTALE IVATO</div><div class="v1020-cell">CREATO DA</div><div class="v1020-cell">AZIONI</div>
+</div>
+""", unsafe_allow_html=True)
+
+        if not preventivi_filtrati:
+            st.info("Nessun preventivo trovato.")
+        else:
+            for i, p in enumerate(preventivi_filtrati):
+                codice = v1020_safe_text(p.get("codice_preventivo"))
+                data = v1020_safe_text(p.get("data_ora"))[:10]
+                cliente = crm_nome_cliente(p)
+                stato = v1020_safe_text(p.get("stato")) or "Bozza"
+                imponibile = v1020_euro_from_any(p.get("imponibile", ""))
+                ivato = v1020_euro_from_any(p.get("totale_iva", p.get("totale", "")))
+                creato = v1020_safe_text(p.get("utente")) or v1020_safe_text(p.get("profilo"))
+
+                st.markdown(f"""
+<div class="v1020-row-prev">
+<div class="v1020-cell">{codice}</div><div class="v1020-cell">{data}</div><div class="v1020-cell">{cliente}</div><div class="v1020-cell">{stato}</div><div class="v1020-cell">{imponibile}</div><div class="v1020-cell">{ivato}</div><div class="v1020-cell">{creato}</div><div class="v1020-cell"> </div>
+</div>
+""", unsafe_allow_html=True)
+
+                _, _, _, col_state, col_conf, col_del = st.columns([5.8, .1, .1, 1.6, 1, .8])
+                with col_state:
+                    nuovo_stato = st.selectbox("Stato", STATI_PREVENTIVO, index=STATI_PREVENTIVO.index(stato) if stato in STATI_PREVENTIVO else 0, key=f"v1020_state_{i}_{codice}", label_visibility="collapsed")
+                    if nuovo_stato != stato:
+                        if st.button("Salva stato", key=f"v1020_save_state_{i}_{codice}"):
+                            if aggiorna_stato_preventivo_admin(codice, nuovo_stato):
+                                st.success("Stato aggiornato.")
+                                st.rerun()
+                            else:
+                                st.error("Stato non aggiornato.")
+                with col_conf:
+                    conferma_p = st.checkbox("OK", key=f"v1020_conf_prev_{i}_{codice}")
+                with col_del:
+                    if st.button("🗑", key=f"v1020_del_prev_{i}_{codice}"):
+                        if not conferma_p:
+                            st.warning("Spunta OK prima di eliminare.")
+                        elif not codice:
+                            st.error("Codice mancante.")
+                        else:
+                            ok, msg = v1020_elimina_preventivo_totale(codice)
+                            if ok:
+                                st.success(f"Preventivo eliminato: {codice}")
+                                st.caption(msg)
+                                st.rerun()
+                            else:
+                                st.error(msg)
+
+            st.markdown(f'<div class="v1020-footer">Totale preventivi: {len(preventivi_filtrati)}</div>', unsafe_allow_html=True)
+
+        st.markdown('<div class="v1020-note">ⓘ Le eliminazioni sono permanenti e non potranno essere annullate.</div>', unsafe_allow_html=True)
+
+
 # =========================
 # LOGIN + REGISTRAZIONE
 # =========================
@@ -3114,137 +3534,14 @@ def crea_html_ordine_fornitore(codice_preventivo, articoli, scelta, luce_mm, alt
     @media print {{.print-button {{display:none;}} body {{margin:18px;}}}}
     
 
-/* =========================
-   V1019 - FIX SCRITTE BLU / NO BIANCO SU BIANCO
-   ========================= */
-
-/* Testi generali nel corpo app */
-.main .block-container,
-.main .block-container p,
-.main .block-container span,
-.main .block-container div,
-.main .block-container label,
-.main .block-container small,
-.main .block-container h1,
-.main .block-container h2,
-.main .block-container h3,
-.main .block-container h4,
-.main .block-container h5,
-.main .block-container h6 {
+/* V1020 metric fix: no white text hidden */
+div[data-testid="stMetric"],
+div[data-testid="stMetric"] *,
+[data-testid="metric-container"],
+[data-testid="metric-container"] * {
     color:#003C96!important;
     -webkit-text-fill-color:#003C96!important;
-}
-
-/* Tabelle */
-table,
-table td,
-table td *,
-tbody,
-tbody tr,
-tbody td {
-    color:#003C96!important;
-    -webkit-text-fill-color:#003C96!important;
-}
-
-table th,
-thead th,
-thead th * {
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    background:#06499b!important;
-}
-
-/* Card e contenitori Admin/CRM */
-div[data-testid="stVerticalBlock"],
-div[data-testid="stHorizontalBlock"],
-div[data-testid="stContainer"] {
-    color:#003C96!important;
-    -webkit-text-fill-color:#003C96!important;
-}
-
-/* Input, select, text area */
-div[data-testid="stTextInput"] input,
-div[data-testid="stNumberInput"] input,
-div[data-testid="stSelectbox"] div,
-div[data-testid="stTextArea"] textarea {
-    background:#ffffff!important;
-    color:#003C96!important;
-    -webkit-text-fill-color:#003C96!important;
-    border:2px solid #06499b!important;
-    font-weight:800!important;
-}
-
-/* Placeholder più leggibile */
-input::placeholder,
-textarea::placeholder {
-    color:#4b6fb3!important;
     opacity:1!important;
-}
-
-/* Caption e markdown dentro CRM */
-div[data-testid="stCaptionContainer"],
-div[data-testid="stCaptionContainer"] *,
-div[data-testid="stMarkdownContainer"],
-div[data-testid="stMarkdownContainer"] * {
-    color:#003C96!important;
-    -webkit-text-fill-color:#003C96!important;
-}
-
-/* Bottoni: testo bianco solo sui bottoni blu */
-.stButton>button,
-.stButton>button *,
-button[kind="primary"],
-button[kind="primary"] * {
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-
-/* Checkbox: testo blu leggibile */
-div[data-testid="stCheckbox"],
-div[data-testid="stCheckbox"] *,
-div[data-testid="stCheckbox"] label,
-div[data-testid="stCheckbox"] p {
-    color:#003C96!important;
-    -webkit-text-fill-color:#003C96!important;
-    font-weight:900!important;
-}
-
-/* Alert leggibili */
-div[data-testid="stAlert"],
-div[data-testid="stAlert"] * {
-    color:#003C96!important;
-    -webkit-text-fill-color:#003C96!important;
-}
-
-/* Sidebar: testi blu, ma bottoni restano leggibili */
-section[data-testid="stSidebar"],
-section[data-testid="stSidebar"] *,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span {
-    color:#003C96!important;
-    -webkit-text-fill-color:#003C96!important;
-}
-
-section[data-testid="stSidebar"] button,
-section[data-testid="stSidebar"] button * {
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-
-/* Selectbox menu dropdown */
-div[role="listbox"] *,
-ul[role="listbox"] *,
-li[role="option"] * {
-    color:#003C96!important;
-    -webkit-text-fill-color:#003C96!important;
-}
-
-/* Titoli principali più forti */
-h1, h2, h3 {
-    color:#003C96!important;
-    -webkit-text-fill-color:#003C96!important;
-    font-weight:1000!important;
 }
 
 </style>
@@ -3450,7 +3747,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1019 - Scritte blu leggibili")
+st.caption("Versione V1020 - CRM blu con eliminazione")
 
 st.markdown(f"""
 <div class="footer">
