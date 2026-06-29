@@ -1937,6 +1937,137 @@ def render_crm_avanzato(preventivi):
         st.markdown(tabella_html_sicura(righe_utenti), unsafe_allow_html=True)
 
 
+
+
+# =========================
+# V1025 - ELIMINA RIVENDITORI / GROSSISTI
+# =========================
+
+def v1025_elimina_utente_csv(username):
+    path = Path(UTENTI_CSV)
+    if not path.exists():
+        return False, "File utenti CSV non trovato."
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+
+        if not righe:
+            return False, "Nessun utente nel CSV."
+
+        fieldnames = list(righe[0].keys())
+        user = str(username or "").strip().upper()
+
+        nuove = [
+            r for r in righe
+            if str(r.get("utente", "") or "").strip().upper() != user
+        ]
+
+        if len(nuove) == len(righe):
+            return False, "Utente non trovato nel CSV."
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+
+        return True, "Utente eliminato da CSV."
+    except Exception as e:
+        return False, str(e)
+
+
+def v1025_elimina_utente_supabase(username):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato."
+
+    try:
+        user = str(username or "").strip().upper()
+        if not user:
+            return False, "Username mancante."
+
+        sb.table("utenti").delete().eq("username", user).execute()
+        return True, "Utente eliminato da Supabase."
+    except Exception as e:
+        return False, str(e)
+
+
+def v1025_elimina_utente_totale(username):
+    user = str(username or "").strip().upper()
+
+    if user == "ADMIN":
+        return False, "ADMIN non può essere eliminato."
+
+    messaggi = []
+    ok = False
+
+    ok_csv, msg_csv = v1025_elimina_utente_csv(user)
+    messaggi.append(msg_csv)
+    ok = ok or ok_csv
+
+    if supabase_attivo():
+        ok_sb, msg_sb = v1025_elimina_utente_supabase(user)
+        messaggi.append(msg_sb)
+        ok = ok or ok_sb
+
+    return ok, " | ".join([m for m in messaggi if m])
+
+
+def render_elimina_rivenditori_grossisti_v1025(profilo):
+    if profilo != "SA-TEC":
+        return
+
+    st.markdown("---")
+    st.markdown("### 🗑 Elimina Rivenditori / Grossisti")
+    st.caption("Elimina l'utente dalla gestione Rivenditori/Grossisti. Agisce su CSV e Supabase se collegato.")
+
+    utenti = carica_tutti_utenti()
+    righe = []
+    for codice, d in utenti.items():
+        prof = str(d.get("profilo", "") or "").strip().upper()
+        if prof in ["RIVENDITORE", "GROSSISTA"]:
+            azienda = str(d.get("azienda", "") or "").strip()
+            nome = str(d.get("nome", "") or "").strip()
+            email = str(d.get("email", "") or "").strip()
+            tel = str(d.get("telefono", "") or "").strip()
+            label = f"{codice} | {prof} | {azienda or nome} | {tel} | {email}"
+            righe.append(label)
+
+    if not righe:
+        st.info("Nessun rivenditore o grossista trovato.")
+        return
+
+    cerca = st.text_input("Cerca rivenditore/grossista", key="v1025_cerca_riv_gros", placeholder="Codice, azienda, nome, email...")
+    if cerca:
+        righe_vis = [r for r in righe if cerca.lower() in r.lower()]
+    else:
+        righe_vis = righe
+
+    if not righe_vis:
+        st.info("Nessun risultato.")
+        return
+
+    scelta = st.selectbox("Utente da eliminare", righe_vis, key="v1025_select_delete_user")
+    username = scelta.split("|")[0].strip().upper()
+
+    conferma = st.checkbox(
+        f"Confermo eliminazione definitiva di {username}",
+        key=f"v1025_confirm_delete_user_{username}"
+    )
+
+    if st.button("🗑 ELIMINA RIVENDITORE / GROSSISTA", key=f"v1025_btn_delete_user_{username}"):
+        if not conferma:
+            st.warning("Spunta la conferma prima di eliminare.")
+        else:
+            ok, msg = v1025_elimina_utente_totale(username)
+            if ok:
+                st.success(f"Utente {username} eliminato.")
+                st.caption(msg)
+                st.rerun()
+            else:
+                st.error(f"Eliminazione non riuscita: {msg}")
+
+
 # =========================
 # LOGIN + REGISTRAZIONE
 # =========================
@@ -3793,6 +3924,105 @@ section[data-testid="stSidebar"] span {
     -webkit-text-fill-color:#003C96!important;
 }
 
+
+
+/* =========================
+   V1025 - CRM SCRITTE NASCOSTE ROSSE
+   ========================= */
+
+/* Qualsiasi testo del CRM/metriche che prima spariva ora rosso */
+div[data-testid="stMetric"],
+div[data-testid="stMetric"] *,
+[data-testid="metric-container"],
+[data-testid="metric-container"] *,
+[data-testid="stMetricValue"],
+[data-testid="stMetricValue"] *,
+[data-testid="stMetricLabel"],
+[data-testid="stMetricLabel"] *,
+[data-testid="stMetricDelta"],
+[data-testid="stMetricDelta"] * {
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    background:#ffffff!important;
+    opacity:1!important;
+    text-shadow:none!important;
+    font-weight:1000!important;
+}
+
+/* Titoli e testi CRM commerciale */
+.main .block-container h1,
+.main .block-container h2,
+.main .block-container h3,
+.main .block-container h4,
+.main .block-container [data-testid="stMarkdownContainer"] *,
+.main .block-container [data-testid="stCaptionContainer"] * {
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    opacity:1!important;
+    text-shadow:none!important;
+}
+
+/* Selectbox e tendine: rosso su bianco */
+div[data-testid="stSelectbox"],
+div[data-testid="stSelectbox"] *,
+div[data-baseweb="select"],
+div[data-baseweb="select"] *,
+div[data-baseweb="popover"],
+div[data-baseweb="popover"] *,
+div[data-baseweb="menu"],
+div[data-baseweb="menu"] *,
+ul[role="listbox"],
+ul[role="listbox"] *,
+li[role="option"],
+li[role="option"] *,
+div[role="listbox"],
+div[role="listbox"] *,
+div[role="option"],
+div[role="option"] * {
+    background:#ffffff!important;
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    opacity:1!important;
+    font-weight:1000!important;
+}
+
+/* Input e checkbox rossi leggibili */
+input, textarea,
+div[data-testid="stTextInput"] input,
+div[data-testid="stNumberInput"] input,
+div[data-testid="stCheckbox"],
+div[data-testid="stCheckbox"] *,
+label, p, span, small {
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    opacity:1!important;
+    font-weight:900!important;
+}
+
+/* Tabelle rosse, intestazioni blu */
+table, tbody, tr, td, td *, div[data-testid="stDataFrame"] *, div[data-testid="stTable"] * {
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    opacity:1!important;
+}
+th, th *, thead, thead * {
+    background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+/* Bottoni restano blu con testo bianco */
+.stButton>button,
+.stButton>button *,
+button,
+button * {
+    background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    opacity:1!important;
+    font-weight:1000!important;
+}
+
 </style>
     </head>
     <body>
@@ -3996,7 +4226,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1024 - Elimina clienti e CRM blu fix")
+st.caption("Versione V1025 - Elimina Rivenditori/Grossisti + CRM rosso")
 
 st.markdown(f"""
 <div class="footer">
