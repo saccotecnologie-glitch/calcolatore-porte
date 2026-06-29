@@ -1331,6 +1331,276 @@ def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
 
 
 
+
+
+# =========================
+# V1017 - CRM ADMIN: ELIMINA DA TABELLA
+# =========================
+
+def elimina_preventivo_csv(codice_preventivo):
+    path = Path(PREVENTIVI_CSV)
+    if not path.exists():
+        return False, "File preventivi CSV non trovato."
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        if not righe:
+            return False, "Nessun preventivo presente."
+
+        fieldnames = list(righe[0].keys())
+        codice = str(codice_preventivo or "").strip()
+        nuove = [r for r in righe if str(r.get("codice_preventivo", "")).strip() != codice]
+
+        if len(nuove) == len(righe):
+            return False, "Preventivo non trovato nel CSV."
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_cliente_csv(identificativo):
+    path = Path(CLIENTI_CSV)
+    if not path.exists():
+        return False, "File clienti CSV non trovato."
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        if not righe:
+            return False, "Nessun cliente presente."
+
+        fieldnames = list(righe[0].keys())
+        ident = str(identificativo or "").strip().lower()
+
+        def match_cliente(r):
+            vals = [
+                str(r.get("email", "")).strip().lower(),
+                str(r.get("telefono", "")).strip().lower(),
+                str(r.get("nome", "")).strip().lower(),
+                str(r.get("azienda", "")).strip().lower(),
+            ]
+            return ident and ident in vals
+
+        nuove = [r for r in righe if not match_cliente(r)]
+
+        if len(nuove) == len(righe):
+            return False, "Cliente non trovato nel CSV."
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_preventivo_supabase(codice_preventivo):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato."
+    try:
+        codice = str(codice_preventivo or "").strip()
+        if not codice:
+            return False, "Codice preventivo mancante."
+        sb.table("preventivi").delete().eq("codice_preventivo", codice).execute()
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_cliente_supabase(identificativo):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato."
+    try:
+        ident = str(identificativo or "").strip()
+        if not ident:
+            return False, "Identificativo cliente mancante."
+        # Cancella per email/telefono/nome/azienda. È intenzionale per compatibilità con CSV.
+        sb.table("clienti").delete().eq("email", ident.lower()).execute()
+        sb.table("clienti").delete().eq("telefono", ident).execute()
+        sb.table("clienti").delete().eq("nome", ident).execute()
+        sb.table("clienti").delete().eq("azienda", ident).execute()
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_preventivo_totale(codice_preventivo):
+    messaggi = []
+    ok_csv, err_csv = elimina_preventivo_csv(codice_preventivo)
+    if ok_csv:
+        messaggi.append("CSV eliminato")
+    elif err_csv:
+        messaggi.append(f"CSV: {err_csv}")
+
+    if supabase_attivo():
+        ok_sb, err_sb = elimina_preventivo_supabase(codice_preventivo)
+        if ok_sb:
+            messaggi.append("Supabase eliminato")
+        elif err_sb:
+            messaggi.append(f"Supabase: {err_sb}")
+
+    ok = ok_csv or any("Supabase eliminato" in m for m in messaggi)
+    return ok, " | ".join(messaggi)
+
+
+def elimina_cliente_totale(identificativo):
+    messaggi = []
+    ok_csv, err_csv = elimina_cliente_csv(identificativo)
+    if ok_csv:
+        messaggi.append("CSV eliminato")
+    elif err_csv:
+        messaggi.append(f"CSV: {err_csv}")
+
+    if supabase_attivo():
+        ok_sb, err_sb = elimina_cliente_supabase(identificativo)
+        if ok_sb:
+            messaggi.append("Supabase eliminato")
+        elif err_sb:
+            messaggi.append(f"Supabase: {err_sb}")
+
+    ok = ok_csv or any("Supabase eliminato" in m for m in messaggi)
+    return ok, " | ".join(messaggi)
+
+
+def cliente_identificativo_v1017(c):
+    for campo in ["email", "telefono", "nome", "azienda"]:
+        val = str(c.get(campo, "") or "").strip()
+        if val:
+            return val
+    return ""
+
+
+def render_admin_crm_v1017(profilo):
+    if profilo != "SA-TEC":
+        return
+
+    st.markdown("---")
+    st.markdown("## 🧾 CRM ADMIN - Clienti e Preventivi")
+
+    tab_clienti, tab_preventivi = st.tabs(["👥 Clienti", "📄 Preventivi"])
+
+    with tab_clienti:
+        clienti = carica_clienti()
+        cerca_cli = st.text_input("Cerca cliente", key="v1017_cerca_cliente")
+        clienti_filtrati = filtra_clienti_dashboard(clienti, cerca_cli)
+
+        st.caption(f"Clienti trovati: {len(clienti_filtrati)}")
+
+        if not clienti_filtrati:
+            st.info("Nessun cliente trovato.")
+        else:
+            for idx, c in enumerate(clienti_filtrati):
+                ident = cliente_identificativo_v1017(c)
+                nome = c.get("nome", "") or "Cliente senza nome"
+                azienda = c.get("azienda", "")
+                tel = c.get("telefono", "")
+                email = c.get("email", "")
+                ultimo = c.get("ultimo_preventivo", "")
+                totale = c.get("totale_preventivi", "")
+
+                with st.container():
+                    col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+                    with col1:
+                        st.markdown(f"**{nome}**")
+                        st.caption(f"Azienda: {azienda} | Email: {email} | Tel: {tel}")
+                    with col2:
+                        st.write(f"Ultimo preventivo: **{ultimo}**")
+                        st.caption(f"Totale preventivi: {totale}")
+                    with col3:
+                        conferma = st.checkbox(
+                            "Conferma eliminazione",
+                            key=f"v1017_confirm_cliente_{idx}_{ident}"
+                        )
+                    with col4:
+                        if st.button("🗑 Elimina", key=f"v1017_del_cliente_{idx}_{ident}"):
+                            if not conferma:
+                                st.warning("Prima spunta conferma eliminazione.")
+                            elif not ident:
+                                st.error("Cliente senza identificativo valido.")
+                            else:
+                                ok, msg = elimina_cliente_totale(ident)
+                                if ok:
+                                    st.success(f"Cliente eliminato: {nome}")
+                                    if msg:
+                                        st.caption(msg)
+                                    st.rerun()
+                                else:
+                                    st.error(f"Errore eliminazione: {msg}")
+                    st.markdown("---")
+
+    with tab_preventivi:
+        preventivi = carica_preventivi()
+        cerca_prev = st.text_input("Cerca preventivo", key="v1017_cerca_preventivo")
+        stato_prev = st.selectbox("Filtra stato", ["Tutti"] + STATI_PREVENTIVO, key="v1017_filtro_stato")
+        preventivi_filtrati = filtra_preventivi_dashboard(preventivi, cerca_prev, stato_prev)
+
+        st.caption(f"Preventivi trovati: {len(preventivi_filtrati)}")
+
+        if not preventivi_filtrati:
+            st.info("Nessun preventivo trovato.")
+        else:
+            for idx, p in enumerate(preventivi_filtrati):
+                codice = str(p.get("codice_preventivo", "") or "").strip()
+                cliente = crm_nome_cliente(p)
+                configurazione = p.get("configurazione", "")
+                totale = p.get("totale_iva", p.get("imponibile", ""))
+                stato_attuale = p.get("stato", "Bozza") or "Bozza"
+
+                with st.container():
+                    col1, col2, col3, col4, col5 = st.columns([2, 3, 2, 2, 1])
+                    with col1:
+                        st.markdown(f"**{codice}**")
+                        st.caption(f"Stato: {stato_attuale}")
+                    with col2:
+                        st.write(cliente)
+                        st.caption(configurazione)
+                    with col3:
+                        st.write(f"Totale: **{totale}**")
+                    with col4:
+                        nuovo_stato = st.selectbox(
+                            "Stato",
+                            STATI_PREVENTIVO,
+                            index=STATI_PREVENTIVO.index(stato_attuale) if stato_attuale in STATI_PREVENTIVO else 0,
+                            key=f"v1017_stato_{idx}_{codice}"
+                        )
+                        if nuovo_stato != stato_attuale:
+                            if st.button("Salva stato", key=f"v1017_salva_stato_{idx}_{codice}"):
+                                if aggiorna_stato_preventivo_admin(codice, nuovo_stato):
+                                    st.success("Stato aggiornato.")
+                                    st.rerun()
+                                else:
+                                    st.error("Stato non aggiornato.")
+                        conferma = st.checkbox(
+                            "Conferma elimina",
+                            key=f"v1017_confirm_prev_{idx}_{codice}"
+                        )
+                    with col5:
+                        if st.button("🗑", key=f"v1017_del_prev_{idx}_{codice}"):
+                            if not conferma:
+                                st.warning("Prima spunta conferma elimina.")
+                            elif not codice:
+                                st.error("Codice preventivo mancante.")
+                            else:
+                                ok, msg = elimina_preventivo_totale(codice)
+                                if ok:
+                                    st.success(f"Preventivo eliminato: {codice}")
+                                    if msg:
+                                        st.caption(msg)
+                                    st.rerun()
+                                else:
+                                    st.error(f"Errore eliminazione: {msg}")
+                    st.markdown("---")
+
+
 # =========================
 # CRM AVANZATO V48
 # =========================
@@ -3045,7 +3315,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1016 - Eliminazione clienti e preventivi")
+st.caption("Versione V1017 - CRM Admin con eliminazione da tabella")
 
 st.markdown(f"""
 <div class="footer">
