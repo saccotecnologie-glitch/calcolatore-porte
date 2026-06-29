@@ -853,104 +853,6 @@ def aggiorna_stato_preventivo_admin(codice_preventivo, nuovo_stato):
         st.warning(f"Stato non aggiornato: {e}")
         return False
 
-
-
-# =========================
-# V1021 - CANCELLA PREVENTIVO DA AGGIORNA STATO
-# =========================
-
-def v1021_elimina_preventivo_csv(codice_preventivo):
-    path = Path(PREVENTIVI_CSV)
-    if not path.exists():
-        return False, "File preventivi CSV non trovato."
-
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            righe = list(csv.DictReader(f))
-
-        if not righe:
-            return False, "Nessun preventivo presente."
-
-        fieldnames = list(righe[0].keys())
-        codice = str(codice_preventivo or "").strip()
-
-        nuove = [
-            r for r in righe
-            if str(r.get("codice_preventivo", "")).strip() != codice
-        ]
-
-        if len(nuove) == len(righe):
-            return False, "Preventivo non trovato nel CSV."
-
-        with open(path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(nuove)
-
-        return True, "Eliminato da CSV."
-    except Exception as e:
-        return False, str(e)
-
-
-def v1021_elimina_preventivo_supabase(codice_preventivo):
-    sb = supabase_client()
-    if sb is None:
-        return False, "Supabase non collegato."
-
-    try:
-        codice = str(codice_preventivo or "").strip()
-        if not codice:
-            return False, "Codice preventivo mancante."
-
-        sb.table("preventivi").delete().eq("codice_preventivo", codice).execute()
-        return True, "Eliminato da Supabase."
-    except Exception as e:
-        return False, str(e)
-
-
-def v1021_elimina_preventivo_totale(codice_preventivo):
-    messaggi = []
-    ok_finale = False
-
-    ok_csv, msg_csv = v1021_elimina_preventivo_csv(codice_preventivo)
-    messaggi.append(msg_csv)
-    ok_finale = ok_finale or ok_csv
-
-    if supabase_attivo():
-        ok_sb, msg_sb = v1021_elimina_preventivo_supabase(codice_preventivo)
-        messaggi.append(msg_sb)
-        ok_finale = ok_finale or ok_sb
-
-    return ok_finale, " | ".join([m for m in messaggi if m])
-
-
-def render_cancella_preventivo_v1021(codice_preventivo):
-    codice_preventivo = str(codice_preventivo or "").strip()
-    if not codice_preventivo:
-        return
-
-    st.markdown("---")
-    st.markdown("### 🗑 Cancella preventivo")
-    st.warning("Attenzione: eliminazione definitiva da CSV e Supabase se collegato.")
-
-    conferma = st.checkbox(
-        f"Confermo cancellazione definitiva del preventivo {codice_preventivo}",
-        key=f"v1021_confirm_delete_{codice_preventivo}"
-    )
-
-    if st.button("🗑 CANCELLA PREVENTIVO", key=f"v1021_delete_{codice_preventivo}"):
-        if not conferma:
-            st.warning("Spunta la conferma prima di cancellare.")
-        else:
-            ok, msg = v1021_elimina_preventivo_totale(codice_preventivo)
-            if ok:
-                st.success(f"Preventivo {codice_preventivo} cancellato.")
-                st.caption(msg)
-                st.rerun()
-            else:
-                st.error(f"Cancellazione non riuscita: {msg}")
-
-
 def statistiche_stati_preventivi(preventivi):
     stats = {s: 0 for s in STATI_PREVENTIVO}
     for p in preventivi:
@@ -1359,6 +1261,80 @@ def render_admin_eliminazioni_v1016():
                     st.rerun()
                 else:
                     st.error(f"Eliminazione non riuscita: {msg}")
+
+
+
+
+# =========================
+# V1022 - CANCELLA PREVENTIVO MANUALE DA ADMIN
+# =========================
+
+def v1022_elimina_preventivo_csv(codice_preventivo):
+    path = Path(PREVENTIVI_CSV)
+    if not path.exists():
+        return False, "File preventivi CSV non trovato."
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        if not righe:
+            return False, "Nessun preventivo presente."
+        fieldnames = list(righe[0].keys())
+        codice = str(codice_preventivo or "").strip()
+        nuove = [r for r in righe if str(r.get("codice_preventivo", "")).strip() != codice]
+        if len(nuove) == len(righe):
+            return False, "Preventivo non trovato."
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+        return True, "Eliminato da CSV."
+    except Exception as e:
+        return False, str(e)
+
+def v1022_elimina_preventivo_supabase(codice_preventivo):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato."
+    try:
+        codice = str(codice_preventivo or "").strip()
+        if not codice:
+            return False, "Codice mancante."
+        sb.table("preventivi").delete().eq("codice_preventivo", codice).execute()
+        return True, "Eliminato da Supabase."
+    except Exception as e:
+        return False, str(e)
+
+def v1022_elimina_preventivo_totale(codice_preventivo):
+    ok_csv, msg_csv = v1022_elimina_preventivo_csv(codice_preventivo)
+    ok = ok_csv
+    msg = [msg_csv]
+    if supabase_attivo():
+        ok_sb, msg_sb = v1022_elimina_preventivo_supabase(codice_preventivo)
+        ok = ok or ok_sb
+        msg.append(msg_sb)
+    return ok, " | ".join([m for m in msg if m])
+
+def render_cancella_preventivo_admin_v1022(profilo):
+    if profilo != "SA-TEC":
+        return
+    st.markdown("---")
+    st.markdown("### 🗑 Cancella preventivo")
+    st.caption("Usalo dalla stessa zona Admin dove aggiorni lo stato del preventivo.")
+    codice_da_cancellare = st.text_input("Codice preventivo da cancellare", key="v1022_codice_delete_prev")
+    conferma_delete = st.checkbox("Confermo cancellazione definitiva", key="v1022_confirm_delete_prev")
+    if st.button("🗑 CANCELLA PREVENTIVO", key="v1022_btn_delete_prev"):
+        if not codice_da_cancellare:
+            st.warning("Inserisci il codice preventivo.")
+        elif not conferma_delete:
+            st.warning("Spunta la conferma.")
+        else:
+            ok, msg = v1022_elimina_preventivo_totale(codice_da_cancellare)
+            if ok:
+                st.success(f"Preventivo {codice_da_cancellare} cancellato.")
+                st.caption(msg)
+                st.rerun()
+            else:
+                st.error(msg)
 
 
 # =========================
@@ -3212,16 +3188,102 @@ def crea_html_ordine_fornitore(codice_preventivo, articoli, scelta, luce_mm, alt
     @media print {{.print-button {{display:none;}} body {{margin:18px;}}}}
     
 
-/* V1021 - testi blu visibili in Aggiorna stato / Cancella */
-div[data-testid="stMarkdownContainer"] *,
-div[data-testid="stCheckbox"] *,
-div[data-testid="stAlert"] *,
-label, p, span {
+/* =========================
+   V1022 - FIX DEFINITIVO SELECTBOX / TENDINE LEGGIBILI
+   ========================= */
+
+/* Campo selectbox chiuso */
+div[data-testid="stSelectbox"] label,
+div[data-testid="stSelectbox"] label *,
+div[data-testid="stSelectbox"] div,
+div[data-testid="stSelectbox"] span,
+div[data-testid="stSelectbox"] input {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    font-weight:900!important;
+}
+
+/* Contenitore selectbox */
+div[data-testid="stSelectbox"] > div,
+div[data-testid="stSelectbox"] [data-baseweb="select"] > div {
+    background:#ffffff!important;
+    color:#003C96!important;
+    border:2px solid #003C96!important;
+    border-radius:8px!important;
+}
+
+/* Freccia selectbox */
+div[data-testid="stSelectbox"] svg {
+    fill:#003C96!important;
+    color:#003C96!important;
+}
+
+/* Menu dropdown aperto - BaseWeb Streamlit */
+div[data-baseweb="popover"],
+div[data-baseweb="popover"] *,
+div[data-baseweb="menu"],
+div[data-baseweb="menu"] *,
+ul[role="listbox"],
+ul[role="listbox"] *,
+li[role="option"],
+li[role="option"] *,
+div[role="listbox"],
+div[role="listbox"] *,
+div[role="option"],
+div[role="option"] * {
+    background:#ffffff!important;
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    font-weight:900!important;
+}
+
+/* Riga opzione hover/selezionata */
+li[role="option"]:hover,
+div[role="option"]:hover,
+li[aria-selected="true"],
+div[aria-selected="true"] {
+    background:#dcecff!important;
     color:#003C96!important;
     -webkit-text-fill-color:#003C96!important;
 }
-.stButton>button {
+
+/* Testi generali CRM e tabelle */
+.main .block-container,
+.main .block-container *,
+div[data-testid="stMarkdownContainer"] *,
+div[data-testid="stCaptionContainer"] *,
+label, p, span, small {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+/* Input bianchi con testo blu */
+div[data-testid="stTextInput"] input,
+div[data-testid="stNumberInput"] input,
+textarea {
+    background:#ffffff!important;
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    border:2px solid #003C96!important;
+    font-weight:900!important;
+}
+
+/* Tabelle leggibili */
+table, td, td *, tbody, tbody * {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+th, th *, thead, thead * {
     background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+/* Bottoni restano blu con testo bianco */
+.stButton>button,
+.stButton>button *,
+button,
+button * {
     color:#ffffff!important;
     -webkit-text-fill-color:#ffffff!important;
     font-weight:900!important;
@@ -3430,7 +3492,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1021 - Cancella da aggiorna stato")
+st.caption("Versione V1022 - Tendine leggibili blu")
 
 st.markdown(f"""
 <div class="footer">
