@@ -29,7 +29,7 @@ from datetime import datetime, date
 st.set_page_config(
     page_title="Configuratore Porte Automatiche SA-TEC",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 AZIENDA = "SA-TEC S.R.L.s"
@@ -177,7 +177,7 @@ def ricarico_default(profilo):
         return 20.0
     if profilo == "RIVENDITORE":
         return 30.0
-    return 60.0
+    return 35.0
 
 RICARICO_ATTIVO = 35.0
 
@@ -299,74 +299,6 @@ def aggiorna_ricarico_utente_supabase(username, nuovo_ricarico):
         return True, ""
     except Exception as e:
         return False, str(e)
-
-
-def elimina_utente_supabase(username):
-    sb = supabase_client()
-    if sb is None:
-        return False, "Supabase non collegato"
-
-    try:
-        username = str(username or "").strip().upper()
-        if username == "ADMIN":
-            return False, "Non puoi eliminare ADMIN"
-
-        sb.table("utenti").delete().eq("username", username).execute()
-        return True, ""
-    except Exception as e:
-        return False, str(e)
-
-
-def elimina_utente_csv(username):
-    path = Path(UTENTI_CSV)
-    if not path.exists():
-        return False, "CSV utenti non presente"
-
-    try:
-        username = str(username or "").strip().upper()
-        if username == "ADMIN":
-            return False, "Non puoi eliminare ADMIN"
-
-        with open(path, "r", encoding="utf-8") as f:
-            righe = list(csv.DictReader(f))
-
-        if not righe:
-            return False, "CSV utenti vuoto"
-
-        fieldnames = list(righe[0].keys())
-        nuove = [
-            r for r in righe
-            if str(r.get("utente", "")).strip().upper() != username
-        ]
-
-        if len(nuove) == len(righe):
-            return False, "Utente non trovato nel CSV"
-
-        with open(path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(nuove)
-
-        return True, ""
-    except Exception as e:
-        return False, str(e)
-
-
-def elimina_utente_admin(username):
-    username = str(username or "").strip().upper()
-
-    if username == "ADMIN":
-        return False, "Non puoi eliminare l'utente ADMIN"
-
-    ok_sb, err_sb = elimina_utente_supabase(username)
-    ok_csv, err_csv = elimina_utente_csv(username)
-
-    if ok_sb or ok_csv:
-        return True, f"Utente {username} eliminato. Lo storico preventivi resta nel CRM."
-
-    return False, f"Supabase: {err_sb} | CSV: {err_csv}"
-
-
 
 def utenti_rivenditori_grossisti():
     utenti = carica_tutti_utenti()
@@ -921,1050 +853,360 @@ def aggiorna_stato_preventivo_admin(codice_preventivo, nuovo_stato):
         st.warning(f"Stato non aggiornato: {e}")
         return False
 
+def statistiche_stati_preventivi(preventivi):
+    stats = {s: 0 for s in STATI_PREVENTIVO}
+    for p in preventivi:
+        stato = str(p.get("stato", "Bozza") or "Bozza")
+        if stato not in stats:
+            stats[stato] = 0
+        stats[stato] += 1
+    return stats
 
-def elimina_preventivo_csv(codice_preventivo):
-    path = Path(PREVENTIVI_CSV)
+def box_stati_html(stats):
+    return ""
+
+
+def valore_preventivo_float(p):
+    for campo in ["imponibile", "totale_iva", "totale"]:
+        try:
+            return float(str(p.get(campo, "0")).replace(",", ".") or 0)
+        except:
+            pass
+    return 0.0
+
+def utile_preventivo_float(p):
+    try:
+        return float(str(p.get("utile_lordo", "0")).replace(",", ".") or 0)
+    except:
+        return 0.0
+
+def dashboard_crm_html(preventivi):
+    return ""
+
+def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
+    cerca = str(cerca or "").strip().lower()
+    stato = str(stato or "Tutti").strip()
+
+    out = []
+    for p in preventivi:
+        if stato != "Tutti" and str(p.get("stato", "")) != stato:
+            continue
+
+        if cerca:
+            testo = " ".join([
+                str(p.get("codice_preventivo", "")),
+                str(p.get("cliente_nome", "")),
+                str(p.get("cliente_azienda", "")),
+                str(p.get("cliente_email", "")),
+                str(p.get("utente", "")),
+                str(p.get("configurazione", "")),
+                str(p.get("stato", "")),
+            ]).lower()
+            if cerca not in testo:
+                continue
+
+        out.append(p)
+    return out
+
+
+
+# =========================
+# CLIENTI CSV
+# =========================
+
+def carica_clienti():
+    clienti_sb = carica_clienti_supabase()
+    if clienti_sb:
+        return clienti_sb
+
+    path = Path(CLIENTI_CSV)
     if not path.exists():
-        return False, "File preventivi CSV non trovato"
+        return []
     try:
         with open(path, "r", encoding="utf-8") as f:
-            righe = list(csv.DictReader(f))
-        if not righe:
-            return False, "Nessun preventivo presente"
-        fieldnames = list(righe[0].keys())
-        codice_preventivo = str(codice_preventivo or "").strip()
-        nuove = [r for r in righe if str(r.get("codice_preventivo", "")).strip() != codice_preventivo]
-        if len(nuove) == len(righe):
-            return False, "Preventivo non trovato nel CSV"
-        with open(path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(nuove)
-        return True, ""
-    except Exception as e:
-        return False, str(e)
+            return list(csv.DictReader(f))
+    except:
+        return []
 
+def salva_cliente_csv(nome, azienda, telefono, email, codice_preventivo, imponibile, owner_utente='CLIENTE', owner_profilo='CLIENTE'):
+    nome = str(nome or "").strip()
+    azienda = str(azienda or "").strip()
+    telefono = str(telefono or "").strip()
+    email = str(email or "").strip().lower()
 
-def elimina_preventivo_supabase(codice_preventivo):
-    sb = supabase_client()
-    if sb is None:
-        return False, "Supabase non collegato"
-    try:
-        sb.table("preventivi").delete().eq("codice_preventivo", codice_preventivo).execute()
-        return True, ""
-    except Exception as e:
-        return False, str(e)
+    if not nome and not azienda and not telefono and not email:
+        return
 
+    clienti = carica_clienti()
+    oggi = datetime.now().strftime("%d/%m/%Y %H:%M")
+    trovato = False
 
-def elimina_preventivo_admin(codice_preventivo):
-    ok_sb, err_sb = elimina_preventivo_supabase(codice_preventivo)
-    if ok_sb:
-        return True, "Preventivo eliminato da Supabase"
-    ok_csv, err_csv = elimina_preventivo_csv(codice_preventivo)
-    if ok_csv:
-        return True, "Preventivo eliminato dal CSV"
-    return False, f"Supabase: {err_sb} | CSV: {err_csv}"
+    for c in clienti:
+        stessa_email = email and str(c.get("email", "")).strip().lower() == email
+        stesso_tel = telefono and str(c.get("telefono", "")).strip() == telefono
 
+        if stessa_email or stesso_tel:
+            c["nome"] = nome or c.get("nome", "")
+            c["azienda"] = azienda or c.get("azienda", "")
+            c["telefono"] = telefono or c.get("telefono", "")
+            c["email"] = email or c.get("email", "")
+            c["ultimo_preventivo"] = codice_preventivo
+            c["data_ultimo_preventivo"] = oggi
+            c["owner_utente"] = c.get("owner_utente", owner_utente) or owner_utente
+            c["owner_profilo"] = c.get("owner_profilo", owner_profilo) or owner_profilo
+            try:
+                c["numero_preventivi"] = str(int(c.get("numero_preventivi", "0") or 0) + 1)
+            except:
+                c["numero_preventivi"] = "1"
+            try:
+                totale_vecchio = float(str(c.get("totale_preventivi", "0")).replace(",", ".") or 0)
+            except:
+                totale_vecchio = 0.0
+            c["totale_preventivi"] = f"{totale_vecchio + float(imponibile or 0):.2f}"
+            trovato = True
+            break
 
+    if not trovato:
+        clienti.append({
+            "nome": nome,
+            "azienda": azienda,
+            "telefono": telefono,
+            "email": email,
+            "primo_preventivo": codice_preventivo,
+            "ultimo_preventivo": codice_preventivo,
+            "data_primo_preventivo": oggi,
+            "data_ultimo_preventivo": oggi,
+            "numero_preventivi": "1",
+            "totale_preventivi": f"{float(imponibile or 0):.2f}",
+            "owner_utente": owner_utente,
+            "owner_profilo": owner_profilo,
+        })
 
-def duplica_preventivo_admin(codice_preventivo):
-    path = Path(PREVENTIVI_CSV)
-    if not path.exists():
-        return False, "File preventivi CSV non trovato"
-
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            righe = list(csv.DictReader(f))
-
-        originale = None
-        for r in righe:
-            if str(r.get("codice_preventivo", "")).strip() == str(codice_preventivo).strip():
-                originale = dict(r)
-                break
-
-        if not originale:
-            return False, "Preventivo originale non trovato"
-
-        nuovo_codice = genera_codice_preventivo()
-        originale["codice_preventivo"] = nuovo_codice
-        originale["data_ora"] = datetime.now().strftime("%d/%m/%Y %H:%M")
-        originale["stato"] = "Bozza"
-
-        fieldnames = list(righe[0].keys())
-        for k in originale.keys():
-            if k not in fieldnames:
-                fieldnames.append(k)
-
-        with open(path, "a", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writerow(originale)
-
-        return True, nuovo_codice
-    except Exception as e:
-        return False, str(e)
-
-
-def html_export_preventivo_admin(p):
-    codice = str(p.get("codice_preventivo", "") or "")
-    righe = ""
     campi = [
-        ("Codice", "codice_preventivo"),
-        ("Data", "data_ora"),
-        ("Rivenditore / Utente", "utente"),
-        ("Profilo", "profilo"),
-        ("Cliente", "cliente_nome"),
-        ("Azienda cliente", "cliente_azienda"),
-        ("Telefono", "cliente_telefono"),
-        ("Email", "cliente_email"),
-        ("Configurazione", "configurazione"),
-        ("Luce mm", "luce_mm"),
-        ("Altezza mm", "altezza_mm"),
-        ("Traversa m", "traversa_m"),
-        ("Elettroblocco", "elettroblocco"),
-        ("Radar sicurezza laterale", "radar_sicurezza_laterale"),
-        ("Allaccio / Collaudo", "allaccio"),
-        ("Ricarico totale %", "ricarico_percento"),
-        ("Ricarico base %", "ricarico_base_percento"),
-        ("Ricarico extra %", "ricarico_extra_percento"),
-        ("Imponibile", "imponibile"),
-        ("IVA", "iva"),
-        ("Totale IVA inclusa", "totale_iva"),
-        ("Costo SA-TEC", "costo_satec"),
-        ("Utile lordo", "utile_lordo"),
-        ("Margine %", "margine_percento"),
-        ("Stato", "stato"),
+        "nome", "azienda", "telefono", "email",
+        "primo_preventivo", "ultimo_preventivo",
+        "data_primo_preventivo", "data_ultimo_preventivo",
+        "numero_preventivi", "totale_preventivi", "owner_utente", "owner_profilo"
     ]
 
-    for label, key in campi:
-        righe += f"<tr><th>{label}</th><td>{p.get(key, '')}</td></tr>"
+    with open(CLIENTI_CSV, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=campi)
+        writer.writeheader()
+        writer.writerows(clienti)
 
-    html = """
-    <html>
-    <head>
-    <meta charset="utf-8">
-    <title>Dettaglio preventivo __CODICE__</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 30px; color:#111; }
-        .head { background:#06499b; color:white; padding:18px; border-radius:12px; }
-        h1 { margin:0; }
-        table { width:100%; border-collapse:collapse; margin-top:20px; }
-        th { width:260px; background:#eef6ff; color:#06499b; text-align:left; }
-        th, td { border:1px solid #bdd4ef; padding:10px; }
-        .footer { margin-top:25px; font-size:13px; color:#555; }
-    
-/* V73 - CRM ADMIN PULITO */
-.admin-preventivo-row {
-    background:#ffffff!important;
-    border:2px solid #bdd4ef!important;
-    border-radius:18px!important;
-    padding:18px!important;
-    margin:18px 0 10px 0!important;
-    box-shadow:0 6px 18px rgba(6,73,155,0.10)!important;
-}
-.admin-preventivo-code {
-    color:#06499b!important;
-    font-size:22px!important;
-    font-weight:900!important;
-    margin-bottom:8px!important;
-}
-.admin-preventivo-line {
-    color:#111!important;
-    font-size:15px!important;
-    font-weight:800!important;
-    line-height:1.55!important;
-}
-.admin-actions-card-v73 {
-    background:#f7fbff;
-    border:2px solid #bdd4ef;
-    border-radius:16px;
-    padding:14px;
-    margin:8px 0 18px 0;
-}
-.admin-delete-note {
-    color:#eb5757!important;
-    font-size:13px!important;
-    font-weight:900!important;
-    margin-top:4px!important;
-}
-.crm-open-detail-v73 {
-    background:#06499b;
-    color:white!important;
-    border-radius:14px;
-    padding:14px;
-    margin:18px 0 10px 0;
-    text-align:center;
-    font-size:20px;
-    font-weight:900;
-}
+def righe_clienti_dashboard(clienti):
+    righe = []
+    for c in clienti:
+        try:
+            totale = euro(float(str(c.get("totale_preventivi", "0")).replace(",", ".") or 0))
+        except:
+            totale = ""
+        righe.append({
+            "Nome": c.get("nome", ""),
+            "Azienda": c.get("azienda", ""),
+            "Telefono": c.get("telefono", ""),
+            "Email": c.get("email", ""),
+            "N. preventivi": c.get("numero_preventivi", ""),
+            "Totale": totale,
+            "Ultimo preventivo": c.get("ultimo_preventivo", ""),
+            "Data ultimo": c.get("data_ultimo_preventivo", ""),
+            "Utente": c.get("owner_utente", ""),
+            "Profilo": c.get("owner_profilo", ""),
+        })
+    return righe
+
+def filtra_clienti_dashboard(clienti, cerca):
+    cerca = str(cerca or "").strip().lower()
+    if not cerca:
+        return clienti
+    out = []
+    for c in clienti:
+        testo = " ".join([
+            str(c.get("nome", "")),
+            str(c.get("azienda", "")),
+            str(c.get("telefono", "")),
+            str(c.get("email", "")),
+            str(c.get("ultimo_preventivo", "")),
+        ]).lower()
+        if cerca in testo:
+            out.append(c)
+    return out
+
+def clienti_visibili_per_profilo(clienti, profilo, utente_codice):
+    if profilo == "SA-TEC":
+        return clienti
+    return [
+        c for c in clienti
+        if str(c.get("owner_utente", "")).strip().upper() == str(utente_codice).strip().upper()
+    ]
 
 
-/* V74 - CRM ADMIN DEFINITIVO */
-.admin-preventivo-row {
-    background:#ffffff!important;
-    border:2px solid #bdd4ef!important;
-    border-radius:18px!important;
-    padding:18px!important;
-    margin:18px 0 12px 0!important;
-    box-shadow:0 6px 18px rgba(6,73,155,0.10)!important;
-}
-.admin-preventivo-code {
-    color:#06499b!important;
-    font-size:23px!important;
-    font-weight:900!important;
-    margin-bottom:10px!important;
-}
-.admin-preventivo-line {
-    color:#111!important;
-    font-size:15px!important;
-    font-weight:800!important;
-    line-height:1.55!important;
-}
-.crm-detail-open-title-v74 {
-    background:#06499b;
-    color:#ffffff!important;
-    border-radius:14px;
-    padding:14px 18px;
-    margin:16px 0 12px 0;
-    text-align:center;
-    font-size:22px;
-    font-weight:900;
-    box-shadow:0 5px 16px rgba(6,73,155,0.18);
-}
-.crm-detail-v68 {
-    background:#ffffff;
-    border:2px solid #bdd4ef;
-    border-radius:18px;
-    padding:16px;
-    margin:18px 0;
-    box-shadow:0 6px 18px rgba(6,73,155,0.10);
-}
-.crm-detail-head-v68 {
-    background:#06499b;
-    color:white;
-    border-radius:12px;
-    padding:14px 18px;
-}
-.crm-detail-code-v68 {
-    font-size:24px;
-    font-weight:900;
-}
-.crm-detail-sub-v68 {
-    font-size:14px;
-    font-weight:800;
-    margin-top:4px;
-}
-.crm-detail-grid-v68 {
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:12px;
-    margin-top:14px;
-}
-.crm-mini-card-v68 {
-    background:#eef6ff;
-    border:1px solid #bdd4ef;
-    border-radius:12px;
-    padding:12px;
-    color:#111;
-    font-size:14px;
-    font-weight:800;
-}
-.crm-mini-card-v68 span {
-    color:#06499b;
-    font-size:20px;
-    font-weight:900;
-}
-.crm-white-box-v68 {
-    background:#ffffff;
-    border:2px solid #bdd4ef;
-    border-radius:14px;
-    padding:16px;
-    color:#111;
-    font-size:15px;
-    font-weight:800;
-    line-height:1.65;
-}
-.crm-price-row-v68 {
-    display:flex;
-    justify-content:space-between;
-    gap:12px;
-    padding:8px 0;
-    color:#111;
-    font-size:15px;
-    font-weight:800;
-}
-.crm-price-row-v68.total {
-    color:#06499b;
-    font-size:20px;
-    font-weight:900;
-}
-.admin-delete-note {
-    color:#eb5757!important;
-    font-size:13px!important;
-    font-weight:900!important;
-    margin-top:4px!important;
-}
+# =========================
+# PREVENTIVI CSV
+# =========================
+
+def salva_preventivo(dati):
+    file_exists = Path(PREVENTIVI_CSV).exists()
+    campi = [
+        "codice_preventivo", "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
+        "cliente_telefono", "cliente_email", "configurazione", "luce_mm",
+        "altezza_mm", "traversa_m", "elettroblocco", "allaccio", "radar_sicurezza_laterale",
+        "ricarico_percento", "imponibile", "iva", "totale_iva", "costo_satec", "utile_lordo", "margine_percento", "stato"
+    ]
+    with open(PREVENTIVI_CSV, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=campi)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow(dati)
+
+def carica_preventivi():
+    preventivi_sb = carica_preventivi_supabase()
+    if preventivi_sb:
+        return preventivi_sb
+
+    path = Path(PREVENTIVI_CSV)
+    if not path.exists():
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
 
 
-/* V85 - SEZIONI ADMIN A SCOMPARSA */
-.v85-toggle-title {
-    background:#06499b;
-    color:#ffffff!important;
-    border-radius:14px;
-    padding:14px 18px;
-    margin:16px 0 8px 0;
-    font-size:19px;
-    font-weight:900;
-    box-shadow:0 5px 15px rgba(6,73,155,0.18);
-}
-.v85-help-box {
-    background:#eef6ff;
-    color:#111827!important;
-    border:2px solid #bdd4ef;
-    border-radius:14px;
-    padding:14px;
-    margin:12px 0;
-    font-size:15px;
-    font-weight:800;
-    line-height:1.55;
-}
+# =========================
+# CRM DASHBOARD NATIVA - FIX SICURO
+# =========================
 
+def crm_valore_float(p):
+    for campo in ["imponibile", "totale_iva", "totale"]:
+        try:
+            return float(str(p.get(campo, "0")).replace(",", ".") or 0)
+        except:
+            pass
+    return 0.0
 
-/* =========================================================
-   V87 - FIX DEFINITIVO COLORI CRM / ADMIN SA-TEC
-   ========================================================= */
-
-/* Area principale Admin */
-section.main,
-.stApp,
-.block-container {
-    color:#111827 !important;
-}
-
-/* Titoli e testi standard */
-h1, h2, h3, h4, h5, h6,
-p, label, span, div,
-[data-testid="stMarkdownContainer"],
-[data-testid="stMarkdownContainer"] * {
-    color:#111827 !important;
-    -webkit-text-fill-color:#111827 !important;
-}
-
-/* Titoli blu SA-TEC */
-h1, h2, h3 {
-    color:#06499b !important;
-    -webkit-text-fill-color:#06499b !important;
-    font-weight:900 !important;
-}
-
-/* Tabs Streamlit: Preventivi / Utenti CRM */
-.stTabs [data-baseweb="tab"],
-.stTabs [data-baseweb="tab"] *,
-button[data-baseweb="tab"],
-button[data-baseweb="tab"] * {
-    color:#111827 !important;
-    -webkit-text-fill-color:#111827 !important;
-    font-weight:900 !important;
-}
-
-.stTabs [aria-selected="true"],
-.stTabs [aria-selected="true"] * {
-    color:#06499b !important;
-    -webkit-text-fill-color:#06499b !important;
-    font-weight:900 !important;
-}
-
-/* Testi dentro alert/info/warning */
-[data-testid="stAlert"],
-[data-testid="stAlert"] *,
-.stAlert,
-.stAlert * {
-    color:#111827 !important;
-    -webkit-text-fill-color:#111827 !important;
-    font-weight:800 !important;
-}
-
-/* Input, select, textarea */
-input, textarea, select,
-[data-baseweb="input"] *,
-[data-baseweb="select"] *,
-[data-baseweb="textarea"] * {
-    color:#111827 !important;
-    -webkit-text-fill-color:#111827 !important;
-    background:#ffffff !important;
-    font-weight:800 !important;
-}
-
-/* Labels degli input */
-[data-testid="stTextInput"] label,
-[data-testid="stSelectbox"] label,
-[data-testid="stNumberInput"] label,
-[data-testid="stCheckbox"] label,
-[data-testid="stTextArea"] label,
-[data-testid="stTextInput"] label *,
-[data-testid="stSelectbox"] label *,
-[data-testid="stNumberInput"] label *,
-[data-testid="stCheckbox"] label *,
-[data-testid="stTextArea"] label * {
-    color:#111827 !important;
-    -webkit-text-fill-color:#111827 !important;
-    font-weight:900 !important;
-}
-
-/* Tabelle CRM */
-table, thead, tbody, tr, td, th {
-    color:#111827 !important;
-    -webkit-text-fill-color:#111827 !important;
-}
-
-th {
-    background:#06499b !important;
-    color:#ffffff !important;
-    -webkit-text-fill-color:#ffffff !important;
-    font-weight:900 !important;
-}
-
-td {
-    background:#ffffff !important;
-    color:#111827 !important;
-    -webkit-text-fill-color:#111827 !important;
-    font-weight:700 !important;
-}
-
-/* Card dashboard vecchie e nuove */
-.v84-dashboard,
-.v84-dashboard *,
-.v85-help-box,
-.v85-help-box *,
-.v85-toggle-title,
-.v85-toggle-title *,
-.v87-crm-title,
-.v87-crm-title *,
-.v87-section-title,
-.v87-section-title *,
-.v87-card,
-.v87-card * {
-    -webkit-text-fill-color: unset !important;
-}
-
-.v85-help-box,
-.v85-help-box * {
-    color:#111827 !important;
-    -webkit-text-fill-color:#111827 !important;
-}
-
-/* Titolo sezione pulito */
-.v87-section-title {
-    background:#06499b !important;
-    color:#ffffff !important;
-    -webkit-text-fill-color:#ffffff !important;
-    border-radius:14px !important;
-    padding:14px 18px !important;
-    margin:18px 0 12px 0 !important;
-    font-size:22px !important;
-    font-weight:900 !important;
-    box-shadow:0 5px 15px rgba(6,73,155,0.18) !important;
-}
-
-/* Bottoni */
-.stButton button,
-.stDownloadButton button {
-    font-weight:900 !important;
-    border-radius:12px !important;
-}
-
-/* Checkbox testo */
-[data-testid="stCheckbox"] span,
-[data-testid="stCheckbox"] p {
-    color:#111827 !important;
-    -webkit-text-fill-color:#111827 !important;
-}
-
-/* Sidebar mantiene leggibilità */
-section[data-testid="stSidebar"] *,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] div {
-    color:inherit;
-}
-
-</style>
-    </head>
-    <body>
-        <div class="head">
-            <h1>Dettaglio preventivo __CODICE__</h1>
-            <div>SA-TEC S.R.L.s - CRM Commerciale</div>
-        </div>
-        <table>__RIGHE__</table>
-        <div class="footer">Documento gestionale interno. Stampare o salvare come PDF dal browser.</div>
-    </body>
-    </html>
-    """
-    html = html.replace("__CODICE__", codice).replace("__RIGHE__", righe)
-    return html
-
-
-def valore_admin_euro(p, campo):
+def crm_utile_float(p):
     try:
-        return euro(float(str(p.get(campo, "0")).replace(",", ".") or 0))
+        return float(str(p.get("utile_lordo", "0")).replace(",", ".") or 0)
     except:
-        return str(p.get(campo, "") or "")
+        return 0.0
+
+def render_dashboard_crm(preventivi):
+    totale_preventivi = len(preventivi)
+    valore_totale = sum(crm_valore_float(p) for p in preventivi)
+    utile_totale = sum(crm_utile_float(p) for p in preventivi)
+
+    accettati = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "accettato")
+    ordinati = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "ordinato")
+    persi = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "perso")
+    conversione = ((accettati + ordinati) / totale_preventivi * 100) if totale_preventivi else 0
+
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("Preventivi", totale_preventivi)
+    c2.metric("Valore totale", euro(valore_totale))
+    c3.metric("Utile lordo", euro(utile_totale))
+    c4.metric("Accettati/Ordinati", accettati + ordinati)
+    c5.metric("Persi", persi)
+    c6.metric("Conversione", f"{conversione:.1f}%")
+
+def render_stati_preventivi(stats):
+    cols = st.columns(len(STATI_PREVENTIVO))
+    for col, stato in zip(cols, STATI_PREVENTIVO):
+        col.metric(stato, stats.get(stato, 0))
+
+def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
+    cerca = str(cerca or "").strip().lower()
+    stato = str(stato or "Tutti").strip()
+
+    out = []
+    for p in preventivi:
+        if stato != "Tutti" and str(p.get("stato", "")) != stato:
+            continue
+
+        if cerca:
+            testo = " ".join([
+                str(p.get("codice_preventivo", "")),
+                str(p.get("cliente_nome", "")),
+                str(p.get("cliente_azienda", "")),
+                str(p.get("cliente_email", "")),
+                str(p.get("utente", "")),
+                str(p.get("configurazione", "")),
+                str(p.get("stato", "")),
+            ]).lower()
+            if cerca not in testo:
+                continue
+
+        out.append(p)
+    return out
 
 
 
-def cliente_label_admin(p):
+# =========================
+# CRM AVANZATO V48
+# =========================
+
+def crm_nome_cliente(p):
     nome = str(p.get("cliente_nome", "") or "").strip()
     azienda = str(p.get("cliente_azienda", "") or "").strip()
-    email = str(p.get("cliente_email", "") or "").strip()
-    telefono = str(p.get("cliente_telefono", "") or "").strip()
+    if nome and azienda:
+        return f"{nome} - {azienda}"
+    return nome or azienda or "Cliente non indicato"
 
-    # Se arriva solo un ID numerico tipo "5", non usarlo come nome cliente
-    if nome.isdigit() and not azienda and not email and not telefono:
-        return "Cliente non indicato"
+def crm_nome_utente(p):
+    return str(p.get("utente", "") or "Non indicato").strip() or "Non indicato"
 
-    if nome and not nome.isdigit():
-        return nome
-    if azienda:
-        return azienda
-    if email:
-        return email
-    if telefono:
-        return telefono
-    if nome:
-        return nome
-    return "Cliente non indicato"
+def top_aggregati(preventivi, campo_nome_fn, limite=10):
+    agg = {}
+    for p in preventivi:
+        nome = campo_nome_fn(p)
+        if nome not in agg:
+            agg[nome] = {"N.": 0, "Valore": 0.0, "Utile": 0.0}
+        agg[nome]["N."] += 1
+        agg[nome]["Valore"] += crm_valore_float(p)
+        agg[nome]["Utile"] += crm_utile_float(p)
 
+    righe = []
+    for nome, d in agg.items():
+        righe.append({
+            "Nome": nome,
+            "N. preventivi": d["N."],
+            "Valore": euro(d["Valore"]),
+            "Utile": euro(d["Utile"]),
+        })
+    righe.sort(key=lambda r: float(str(r["Valore"]).replace("€", "").replace(".", "").replace(",", ".").strip() or 0), reverse=True)
+    return righe[:limite]
 
-def aggiorna_stato_preventivo_admin_robusto(codice_preventivo, nuovo_stato):
-    ok = False
+def render_crm_avanzato(preventivi):
+    st.markdown('<h3 style="color:#06499b;">Analisi commerciale avanzata</h3>', unsafe_allow_html=True)
+
+    stati = statistiche_stati_preventivi(preventivi)
+    dati_stati = []
+    for stato in STATI_PREVENTIVO:
+        dati_stati.append({"Stato": stato, "Numero": stati.get(stato, 0)})
 
     try:
-        ok = aggiorna_stato_preventivo_admin(codice_preventivo, nuovo_stato)
-    except Exception:
-        ok = False
+        st.bar_chart(pd.DataFrame(dati_stati).set_index("Stato"))
+    except:
+        pass
 
-    # Fallback diretto CSV se la funzione esistente non trova il preventivo
-    if not ok:
-        try:
-            path = Path(PREVENTIVI_CSV)
-            if path.exists():
-                with open(path, "r", encoding="utf-8") as f:
-                    righe = list(csv.DictReader(f))
-                if righe:
-                    fieldnames = list(righe[0].keys())
-                    if "stato" not in fieldnames:
-                        fieldnames.append("stato")
-                    trovato = False
-                    for r in righe:
-                        if str(r.get("codice_preventivo", "")).strip() == str(codice_preventivo).strip():
-                            r["stato"] = nuovo_stato
-                            trovato = True
-                    if trovato:
-                        with open(path, "w", newline="", encoding="utf-8") as f:
-                            writer = csv.DictWriter(f, fieldnames=fieldnames)
-                            writer.writeheader()
-                            writer.writerows(righe)
-                        ok = True
-        except Exception:
-            pass
+    ctop1, ctop2 = st.columns(2)
+    with ctop1:
+        st.markdown("### Top clienti")
+        righe_clienti = top_aggregati(preventivi, crm_nome_cliente, 10)
+        st.markdown(tabella_html_sicura(righe_clienti), unsafe_allow_html=True)
 
-    # Fallback Supabase
-    if not ok:
-        try:
-            sb = supabase_client()
-            if sb is not None:
-                sb.table("preventivi").update({"stato": nuovo_stato}).eq("codice_preventivo", codice_preventivo).execute()
-                ok = True
-        except Exception:
-            pass
-
-    return ok
-
-
-
-
-def valore_admin_euro_safe(p, campo):
-    try:
-        return euro(float(str(p.get(campo, "0")).replace(",", ".") or 0))
-    except Exception:
-        return str(p.get(campo, "") or "")
-
-
-def render_dettaglio_preventivo_admin(p):
-    codice = str(p.get("codice_preventivo", "") or "")
-    configurazione = str(p.get("configurazione", "") or "")
-    stato = str(p.get("stato", "Bozza") or "Bozza")
-    cliente = cliente_label_admin(p)
-    rivenditore = p.get("utente", "") or "Utente non indicato"
-
-    elettro = str(p.get("elettroblocco", "") or "No")
-    radar = str(p.get("radar_sicurezza_laterale", "") or "No")
-    allaccio = str(p.get("allaccio", "") or "No")
-
-    accessori = []
-    if elettro.lower() not in ["no", "false", "0", ""]:
-        accessori.append({"Accessorio": "Elettroblocco", "Q.tà": "1", "Valore": elettro})
-    if radar.lower() not in ["no", "false", "0", ""]:
-        accessori.append({"Accessorio": "Radar sicurezza laterale", "Q.tà": "1", "Valore": radar})
-    if allaccio.lower() not in ["no", "false", "0", ""]:
-        accessori.append({"Accessorio": "Allaccio e collaudo", "Q.tà": "1", "Valore": allaccio})
-    if not accessori:
-        accessori.append({"Accessorio": "Nessun accessorio extra indicato", "Q.tà": "", "Valore": ""})
-
-    st.markdown(f"""
-    <div class="crm-detail-v68">
-        <div class="crm-detail-head-v68">
-            <div class="crm-detail-code-v68">DETTAGLIO PREVENTIVO {codice}</div>
-            <div class="crm-detail-sub-v68">{configurazione} · Stato: {stato}</div>
-        </div>
-        <div class="crm-detail-grid-v68">
-            <div class="crm-mini-card-v68"><b>Cliente</b><br>{cliente}</div>
-            <div class="crm-mini-card-v68"><b>Rivenditore / Utente</b><br>{rivenditore}</div>
-            <div class="crm-mini-card-v68"><b>Data</b><br>{p.get('data_ora', '')}</div>
-            <div class="crm-mini-card-v68"><b>Totale vendita</b><br><span>{valore_admin_euro_safe(p, 'totale_iva')}</span></div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    c1, c2 = st.columns([1.25, 1])
-
-    with c1:
-        st.markdown("### Configurazione e misure")
-        st.markdown(f"""
-        <div class="crm-white-box-v68">
-            <b>Automazione scelta:</b> {configurazione}<br>
-            <b>Luce passaggio:</b> {p.get('luce_mm', '')} mm<br>
-            <b>Altezza:</b> {p.get('altezza_mm', '')} mm<br>
-            <b>Traversa:</b> {p.get('traversa_m', '')} m<br>
-            <b>Email:</b> {p.get('cliente_email', '')}<br>
-            <b>Telefono:</b> {p.get('cliente_telefono', '')}
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("### Accessori / servizi")
-        st.markdown(tabella_html_sicura(accessori), unsafe_allow_html=True)
-
-    with c2:
-        st.markdown("### Riepilogo economico")
-        st.markdown(f"""
-        <div class="crm-white-box-v68">
-            <div class="crm-price-row-v68"><span>Totale netto vendita</span><b>{valore_admin_euro_safe(p, 'imponibile')}</b></div>
-            <div class="crm-price-row-v68"><span>IVA</span><b>{valore_admin_euro_safe(p, 'iva')}</b></div>
-            <div class="crm-price-row-v68 total"><span>Totale vendita</span><b>{valore_admin_euro_safe(p, 'totale_iva')}</b></div>
-            <hr>
-            <div class="crm-price-row-v68"><span>Costo netto SA-TEC</span><b>{valore_admin_euro_safe(p, 'costo_satec')}</b></div>
-            <div class="crm-price-row-v68"><span>Utile lordo</span><b>{valore_admin_euro_safe(p, 'utile_lordo')}</b></div>
-            <div class="crm-price-row-v68"><span>Margine</span><b>{p.get('margine_percento', '')}%</b></div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    a1, a2, a3 = st.columns(3)
-
-    with a1:
-        html_admin = html_export_preventivo_admin(p)
-        st.download_button(
-            "ESPORTA HTML / PDF",
-            data=html_admin.encode("utf-8"),
-            file_name=f"Dettaglio_{codice}.html",
-            mime="text/html",
-            use_container_width=True,
-            key=f"export_html_{codice}_{id(p)}_v74"
-        )
-
-    with a2:
-        if st.button("DUPLICA PREVENTIVO", key=f"duplica_{codice}_{id(p)}_v74", use_container_width=True):
-            ok_dup, msg_dup = duplica_preventivo_admin(codice)
-            if ok_dup:
-                st.success(f"Preventivo duplicato: {msg_dup}")
-                st.rerun()
-            else:
-                st.error(msg_dup)
-
-    with a3:
-        st.info("Apri il file HTML e fai Stampa → Salva PDF.")
-
-
+    with ctop2:
+        st.markdown("### Top utenti / rivenditori")
+        righe_utenti = top_aggregati(preventivi, crm_nome_utente, 10)
+        st.markdown(tabella_html_sicura(righe_utenti), unsafe_allow_html=True)
 
 
 # =========================
-# HEADER V400 CLEAN SA-TEC
+# LOGIN + REGISTRAZIONE
 # =========================
 
-def v400_style():
-    st.markdown("""
-    <style>
-    :root{
-        --satec-blue:#0057D9;
-        --satec-dark:#003C96;
-        --satec-orange:#F5B301;
-        --satec-text:#111827;
-        --satec-border:#C9DCF7;
-        --satec-bg:#F4F8FF;
-    }
-
-    .stApp{
-        background:linear-gradient(180deg,#F4F8FF 0%,#FFFFFF 65%)!important;
-    }
-
-    .block-container{
-        padding-top:0.8rem!important;
-    }
-
-    /* HEADER V400 */
-    .v400-header{
-        background:linear-gradient(90deg,#0057D9 0%,#003C96 100%)!important;
-        border-radius:20px!important;
-        padding:22px 26px!important;
-        margin:8px 0 18px 0!important;
-        box-shadow:0 12px 30px rgba(0,87,217,.28)!important;
-        display:grid!important;
-        grid-template-columns:23% 39% 23% 15%!important;
-        gap:20px!important;
-        align-items:center!important;
-    }
-    .v400-header,
-    .v400-header *{
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-        text-shadow:none!important;
-        opacity:1!important;
-    }
-    .v400-brand{
-        font-size:48px!important;
-        font-weight:1000!important;
-        letter-spacing:1px!important;
-        line-height:1!important;
-    }
-    .v400-brand-sub{
-        color:#EAF3FF!important;
-        -webkit-text-fill-color:#EAF3FF!important;
-        font-size:13px!important;
-        font-weight:1000!important;
-        letter-spacing:4px!important;
-        margin-top:12px!important;
-    }
-    .v400-title{
-        border-left:1px solid rgba(255,255,255,.42)!important;
-        padding-left:22px!important;
-    }
-    .v400-title-main{
-        font-size:31px!important;
-        line-height:1.08!important;
-        font-weight:1000!important;
-        letter-spacing:.4px!important;
-    }
-    .v400-title-main span{
-        color:#F5B301!important;
-        -webkit-text-fill-color:#F5B301!important;
-    }
-    .v400-title-sub{
-        color:#EAF3FF!important;
-        -webkit-text-fill-color:#EAF3FF!important;
-        font-size:14px!important;
-        font-weight:900!important;
-        margin-top:10px!important;
-    }
-    .v400-info{
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-        font-size:13px!important;
-        font-weight:900!important;
-        line-height:1.55!important;
-    }
-    .v400-sesamo{
-        border-left:1px solid rgba(255,255,255,.42)!important;
-        padding-left:16px!important;
-        display:flex!important;
-        align-items:center!important;
-        justify-content:center!important;
-        gap:10px!important;
-    }
-    .v400-sesamo-mark{
-        background:#F58220!important;
-        color:#071124!important;
-        -webkit-text-fill-color:#071124!important;
-        font-size:34px!important;
-        font-weight:1000!important;
-        padding:7px 12px!important;
-    }
-    .v400-sesamo-name{
-        font-size:28px!important;
-        font-weight:1000!important;
-        line-height:1!important;
-        letter-spacing:1px!important;
-    }
-    .v400-sesamo-sub{
-        color:#EAF3FF!important;
-        -webkit-text-fill-color:#EAF3FF!important;
-        font-size:10px!important;
-        font-weight:1000!important;
-        letter-spacing:.8px!important;
-        margin-top:4px!important;
-    }
-
-    /* PRODUCT */
-    .v400-product{
-        background:#FFFFFF!important;
-        border:1px solid #C9DCF7!important;
-        border-radius:16px!important;
-        padding:22px 26px!important;
-        margin:0 0 22px 0!important;
-        display:grid!important;
-        grid-template-columns:65% 35%!important;
-        align-items:center!important;
-        box-shadow:0 8px 22px rgba(0,87,217,.08)!important;
-    }
-    .v400-product-title{
-        color:#0B2A4A!important;
-        -webkit-text-fill-color:#0B2A4A!important;
-        font-size:31px!important;
-        font-weight:1000!important;
-    }
-    .v400-product-sub{
-        color:#334155!important;
-        -webkit-text-fill-color:#334155!important;
-        font-size:16px!important;
-        font-weight:800!important;
-        margin-top:9px!important;
-        line-height:1.45!important;
-    }
-    .v400-product-logo{
-        display:flex!important;
-        justify-content:center!important;
-        align-items:center!important;
-        gap:15px!important;
-    }
-    .v400-product-mark{
-        background:#F58220!important;
-        color:#071124!important;
-        -webkit-text-fill-color:#071124!important;
-        font-size:39px!important;
-        font-weight:1000!important;
-        padding:7px 14px!important;
-    }
-    .v400-product-name{
-        color:#111827!important;
-        -webkit-text-fill-color:#111827!important;
-        font-size:39px!important;
-        font-weight:1000!important;
-        line-height:1!important;
-    }
-    .v400-product-tech{
-        color:#111827!important;
-        -webkit-text-fill-color:#111827!important;
-        font-size:13px!important;
-        font-weight:1000!important;
-        letter-spacing:1px!important;
-        margin-top:5px!important;
-    }
-
-    /* SIDEBAR */
-    section[data-testid="stSidebar"]{
-        background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;
-        border-right:5px solid #F5B301!important;
-    }
-    section[data-testid="stSidebar"] h1,
-    section[data-testid="stSidebar"] h2,
-    section[data-testid="stSidebar"] h3,
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] span,
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] div{
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-    }
-    section[data-testid="stSidebar"] input,
-    section[data-testid="stSidebar"] textarea,
-    section[data-testid="stSidebar"] [data-baseweb="input"],
-    section[data-testid="stSidebar"] [data-baseweb="input"] *,
-    section[data-testid="stSidebar"] [data-baseweb="select"],
-    section[data-testid="stSidebar"] [data-baseweb="select"] *{
-        background:#FFFFFF!important;
-        color:#111827!important;
-        -webkit-text-fill-color:#111827!important;
-        font-weight:900!important;
-    }
-
-    /* BOTTONI */
-    .stButton button,
-    .stDownloadButton button{
-        background:#FFFFFF!important;
-        color:#0057D9!important;
-        -webkit-text-fill-color:#0057D9!important;
-        border:2px solid #0057D9!important;
-        border-radius:13px!important;
-        min-height:48px!important;
-        font-size:15px!important;
-        font-weight:1000!important;
-        opacity:1!important;
-        box-shadow:0 4px 12px rgba(0,87,217,.10)!important;
-    }
-    .stButton button *,
-    .stDownloadButton button *{
-        color:inherit!important;
-        -webkit-text-fill-color:inherit!important;
-        font-weight:1000!important;
-        opacity:1!important;
-    }
-    .stButton button:hover,
-    .stDownloadButton button:hover{
-        background:#F5B301!important;
-        color:#111111!important;
-        -webkit-text-fill-color:#111111!important;
-        border-color:#F5B301!important;
-    }
-    .stButton button:hover *,
-    .stDownloadButton button:hover *{
-        color:#111111!important;
-        -webkit-text-fill-color:#111111!important;
-    }
-
-    /* PULSANTI SIDEBAR */
-    section[data-testid="stSidebar"] .stButton button{
-        background:#FFFFFF!important;
-        color:#0057D9!important;
-        -webkit-text-fill-color:#0057D9!important;
-        border:2px solid #FFFFFF!important;
-    }
-    section[data-testid="stSidebar"] .stButton button *,
-    section[data-testid="stSidebar"] .stButton button p,
-    section[data-testid="stSidebar"] .stButton button span,
-    section[data-testid="stSidebar"] .stButton button div{
-        color:#0057D9!important;
-        -webkit-text-fill-color:#0057D9!important;
-        font-weight:1000!important;
-    }
-
-    /* ADMIN TOP BUTTONS */
-    div[data-testid="stHorizontalBlock"] .stButton button{
-        background:#0057D9!important;
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-        border-color:#0057D9!important;
-        min-height:56px!important;
-    }
-    div[data-testid="stHorizontalBlock"] .stButton button *,
-    div[data-testid="stHorizontalBlock"] .stButton button p,
-    div[data-testid="stHorizontalBlock"] .stButton button span,
-    div[data-testid="stHorizontalBlock"] .stButton button div{
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-        font-weight:1000!important;
-    }
-    div[data-testid="stHorizontalBlock"] .stButton button:hover,
-    div[data-testid="stHorizontalBlock"] .stButton button:hover *{
-        background:#F5B301!important;
-        color:#111111!important;
-        -webkit-text-fill-color:#111111!important;
-        border-color:#F5B301!important;
-    }
-
-    /* SEZIONI ADMIN */
-    .v87-section-title,
-    .v85-toggle-title,
-    .v100-title-bar,
-    .v102-title-bar{
-        background:#0057D9!important;
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-        border-radius:16px!important;
-        border:0!important;
-    }
-    .v87-section-title *,
-    .v85-toggle-title *,
-    .v100-title-bar *,
-    .v102-title-bar *{
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-    }
-
-    /* TABELLE */
-    th{
-        background:#0057D9!important;
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-    }
-    td{
-        background:#FFFFFF!important;
-        color:#111827!important;
-        -webkit-text-fill-color:#111827!important;
-    }
-
-    /* RESPONSIVE */
-    @media(max-width:1100px){
-        .v400-header{
-            grid-template-columns:1fr!important;
-            text-align:center!important;
-        }
-        .v400-title,
-        .v400-sesamo{
-            border-left:0!important;
-            padding-left:0!important;
-        }
-        .v400-product{
-            grid-template-columns:1fr!important;
-            gap:18px!important;
-        }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-
-def v400_header():
-    st.markdown("""
-    <div class="v400-header">
-        <div>
-            <div class="v400-brand">SA-TEC</div>
-            <div class="v400-brand-sub">PORTE AUTOMATICHE</div>
-        </div>
-        <div class="v400-title">
-            <div class="v400-title-main">
-                CONFIGURATORE<br>
-                <span>PORTE AUTOMATICHE</span>
-            </div>
-            <div class="v400-title-sub">TECNOLOGIA, SICUREZZA E SOLUZIONI SU MISURA</div>
-        </div>
-        <div class="v400-info">
-            📍 SA-TEC S.R.L.s<br>
-            Via L. Settembrini 84<br>
-            88046 Lamezia Terme (CZ)<br>
-            ☎ 0968-036797<br>
-            ✉ sacco.tecnologie@gmail.com
-        </div>
-        <div class="v400-sesamo">
-            <div class="v400-sesamo-mark">▌</div>
-            <div>
-                <div class="v400-sesamo-name">SESAMO</div>
-                <div class="v400-sesamo-sub">THE DOOR TECHNOLOGY</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="v400-product">
-        <div>
-            <div class="v400-product-title">SESAMO POWERCORE PW100</div>
-            <div class="v400-product-sub">
-                Automazione lineare per porte scorrevoli automatiche,<br>
-                affidabile, sicura e compatibile con la normativa EN16005.
-            </div>
-        </div>
-        <div class="v400-product-logo">
-            <div class="v400-product-mark">▌</div>
-            <div>
-                <div class="v400-product-name">SESAMO</div>
-                <div class="v400-product-tech">THE DOOR TECHNOLOGY</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# =========================
-# V401 - LOGIN BOX RIPRISTINATA PRIMA DELLA CHIAMATA
-# =========================
 def login_box():
     utenti = carica_tutti_utenti()
 
+    # Sessione login stabile
     if "logged_profilo" not in st.session_state:
         st.session_state.logged_profilo = "CLIENTE"
         st.session_state.logged_nome = "Cliente finale"
@@ -1974,11 +1216,11 @@ def login_box():
             "azienda": "",
             "telefono": "",
             "email": "",
-            "ricarico": "60"
+            "ricarico": "35"
         }
 
     st.sidebar.markdown("## Accesso")
-    st.sidebar.info("Cliente finale: può usare il configuratore senza login.")
+    st.sidebar.info("Cliente finale: può usare il configuratore senza login e inviare una richiesta a SA-TEC.")
 
     username = st.sidebar.text_input("Utente", value="", key="login_user")
     password = st.sidebar.text_input("Password", value="", type="password", key="login_pwd")
@@ -2000,7 +1242,7 @@ def login_box():
             "azienda": "",
             "telefono": "",
             "email": "",
-            "ricarico": "60"
+            "ricarico": "35"
         }
         st.sidebar.success("Accesso cliente finale")
 
@@ -2008,6 +1250,7 @@ def login_box():
         u = username.strip().upper()
         pwd_inserita = password.strip()
 
+        # ADMIN SEMPRE ATTIVO, anche se CSV è sporco o mancante
         if u == "ADMIN" and pwd_inserita == "SATEC-ADMIN":
             st.session_state.logged_profilo = "SA-TEC"
             st.session_state.logged_nome = "SA-TEC Amministratore"
@@ -2036,7 +1279,19 @@ def login_box():
     dati_utente = st.session_state.logged_dati
 
     st.sidebar.markdown("---")
-    st.sidebar.write(f"Profilo attivo: **{PROFILI.get(profilo, profilo)}**")
+    st.sidebar.write(f"Profilo attivo: **{PROFILI.get(profilo, 'Cliente finale')}**")
+    st.sidebar.caption(f"Utente attivo: {utente_codice}")
+
+    if profilo in ["RIVENDITORE", "GROSSISTA"]:
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("### Logo azienda")
+        logo_presente = trova_logo_utente(utente_codice)
+        if logo_presente:
+            st.sidebar.success("Logo caricato")
+        logo_upload = st.sidebar.file_uploader("Carica logo PDF", type=["png", "jpg", "jpeg"], key=f"logo_upload_{utente_codice}")
+        if logo_upload is not None:
+            if salva_logo_utente(utente_codice, logo_upload):
+                st.sidebar.success("Logo salvato. Ricarica la pagina se non lo vedi nel PDF.")
 
     with st.sidebar.expander("Registrazione cliente"):
         st.caption("Crea automaticamente una password cliente.")
@@ -2049,25 +1304,66 @@ def login_box():
             utenti_now = carica_tutti_utenti()
             nuovo_user = genera_codice_progressivo("CLIENTE", utenti_now)
             nuova_pwd = genera_password()
-            try:
+            salva_utente_csv(
+                nuovo_user,
+                nuova_pwd,
+                "CLIENTE",
+                reg_nome,
+                reg_azienda,
+                reg_tel,
+                reg_email,
+                "35"
+            )
+            st.success("Accesso cliente creato.")
+            st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
+
+    with st.sidebar.expander("Registrati come rivenditore"):
+        st.caption("Richiesta accesso commerciale. SA-TEC potrà assegnare il ricarico dalla dashboard.")
+        riv_azienda = st.text_input("Ragione sociale", key="riv_reg_azienda")
+        riv_ref = st.text_input("Referente", key="riv_reg_ref")
+        riv_tel = st.text_input("Telefono", key="riv_reg_tel")
+        riv_email = st.text_input("Email", key="riv_reg_email")
+        riv_password = st.text_input("Password desiderata", type="password", key="riv_reg_pwd")
+
+        if st.button("INVIA REGISTRAZIONE RIVENDITORE"):
+            if not riv_azienda or not riv_email or not riv_password:
+                st.error("Inserisci almeno ragione sociale, email e password.")
+            else:
+                utenti_now = carica_tutti_utenti()
+                nuovo_user = genera_codice_progressivo("RIVENDITORE", utenti_now)
+
+                # Backup CSV
                 salva_utente_csv(
                     nuovo_user,
-                    nuova_pwd,
-                    "CLIENTE",
-                    reg_nome,
-                    reg_azienda,
-                    reg_tel,
-                    reg_email,
-                    "60"
+                    riv_password,
+                    "RIVENDITORE",
+                    riv_ref,
+                    riv_azienda,
+                    riv_tel,
+                    riv_email,
+                    "0"
                 )
-                st.success("Accesso cliente creato.")
-                st.code(f"Utente: {nuovo_user}\nPassword: {nuova_pwd}")
-            except Exception as e:
-                st.error(f"Errore creazione utente: {e}")
+
+                ok_sb, err_sb = salva_utente_supabase(
+                    nuovo_user,
+                    riv_password,
+                    "RIVENDITORE",
+                    riv_azienda,
+                    riv_tel,
+                    riv_email,
+                    0
+                )
+
+                if ok_sb:
+                    st.success("Registrazione rivenditore inviata e salvata su Supabase.")
+                else:
+                    st.warning(f"Registrazione salvata in CSV. Supabase non disponibile: {err_sb}")
+
+                st.code(f"Utente: {nuovo_user}\nPassword: {riv_password}\nStato: in attesa ricarico SA-TEC")
 
     try:
         ricarico_effettivo = float(str(dati_utente.get("ricarico", "")).replace(",", "."))
-    except Exception:
+    except:
         ricarico_effettivo = ricarico_default(profilo)
 
     if profilo == "SA-TEC":
@@ -2075,3174 +1371,490 @@ def login_box():
 
     return profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo
 
-
-
-
 # =========================
-# V402 - DISEGNO PORTA RIPRISTINATO
+# DISEGNI PORTE
 # =========================
 
+def mini_porta_html(ante):
+    if ante == "1 anta":
+        return """
+        <svg width="120" height="120" viewBox="0 0 120 120">
+        <rect x="18" y="18" width="84" height="10" fill="#d9d9d9" stroke="#111"/>
+        <rect x="26" y="30" width="34" height="72" fill="#dcecff" stroke="#111" stroke-width="2"/>
+        <rect x="60" y="30" width="34" height="72" fill="#fff" stroke="#111" stroke-width="2"/>
+        <line x1="60" y1="30" x2="60" y2="102" stroke="#111" stroke-width="2"/>
+        </svg>"""
+    return """
+    <svg width="120" height="120" viewBox="0 0 120 120">
+    <rect x="18" y="18" width="84" height="10" fill="#d9d9d9" stroke="#111"/>
+    <rect x="25" y="30" width="35" height="72" fill="#eef7ff" stroke="#111" stroke-width="2"/>
+    <rect x="60" y="30" width="35" height="72" fill="#eef7ff" stroke="#111" stroke-width="2"/>
+    <rect x="56" y="30" width="5" height="72" fill="#fff" stroke="#111"/>
+    <rect x="61" y="30" width="5" height="72" fill="#fff" stroke="#111"/>
+    </svg>"""
+
+def render_choice_card(title, desc, ante, active):
+    border = "#06499b" if active else "#d4dce8"
+    bw = "4px" if active else "2px"
+    bg = "#dcecff" if active else "#fff"
+    components.html(f"""
+    <div style="border:{bw} solid {border};background:{bg};border-radius:14px;text-align:center;padding:14px;min-height:242px;font-family:Arial;">
+    <div style="font-size:19px;font-weight:900;color:#111;line-height:1.15;margin-bottom:6px;">{title}</div>
+    <div>{mini_porta_html(ante)}</div>
+    <div style="font-size:14px;line-height:1.28;color:#111;margin-top:4px;">{desc}</div>
+    </div>""", height=260)
 
 def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    """
-    V502 - Canvas tecnico professionale SA-TEC.
-    Disegno più realistico: traversa alluminio, vetri, carrelli, cinghia, motore, quote.
-    """
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
+    blu = "#06499b"
+    blu_scuro = "#073763"
+    nero = "#111111"
+    vetro_chiaro = "#eaf6ff"
+    vetro_scuro = "#8fbbe8"
+    vetro_fisso = "#f8fbff"
+    alluminio = "#d9e2ec"
+    giallo = "#fff3a3"
+    grigio = "#f7faff"
 
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
+    traversa_mm = int(lunghezza_traversa * 1000)
+    anta_mm = int(luce_mm) if ante == "1 anta" else int(luce_mm / 2)
 
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
+    if ante == "1 anta":
+        titolo = "AUTOMAZIONE SCORREVOLE 1 ANTA"
+        schema_ante = f"""
+        <!-- pannello fisso sinistro chiaro -->
+        <rect x="165" y="180" width="205" height="175" rx="4" fill="{vetro_fisso}" stroke="{nero}" stroke-width="3"/>
+        <line x1="185" y1="198" x2="350" y2="337" stroke="#c7d9ed" stroke-width="2"/>
 
-    due_ante = "2" in str(ante or "")
-    ante_label = "2 ANTE SCORREVOLI" if due_ante else "1 ANTA SCORREVOLE"
+        <!-- anta mobile scura destra -->
+        <rect x="370" y="180" width="205" height="175" rx="4" fill="{vetro_scuro}" stroke="{nero}" stroke-width="5"/>
+        <line x1="392" y1="198" x2="553" y2="337" stroke="#ffffff" stroke-width="2" opacity="0.7"/>
+
+        <line x1="370" y1="180" x2="370" y2="355" stroke="{nero}" stroke-width="6"/>
+        <text x="472" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA MOBILE SCURA {anta_mm} mm</text>
+        <text x="268" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="700">FISSO / PASSAGGIO</text>
+        """
+        legenda = "1 ANTA MOBILE EVIDENZIATA IN BLU SCURO"
+    else:
+        titolo = "AUTOMAZIONE SCORREVOLE 2 ANTE"
+        schema_ante = f"""
+        <!-- anta mobile sx scura -->
+        <rect x="165" y="180" width="205" height="175" rx="4" fill="{vetro_scuro}" stroke="{nero}" stroke-width="5"/>
+        <line x1="187" y1="198" x2="348" y2="337" stroke="#ffffff" stroke-width="2" opacity="0.7"/>
+
+        <!-- anta mobile dx scura -->
+        <rect x="370" y="180" width="205" height="175" rx="4" fill="{vetro_scuro}" stroke="{nero}" stroke-width="5"/>
+        <line x1="392" y1="198" x2="553" y2="337" stroke="#ffffff" stroke-width="2" opacity="0.7"/>
+
+        <!-- incontro centrale -->
+        <rect x="358" y="180" width="12" height="175" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
+        <rect x="370" y="180" width="12" height="175" fill="#ffffff" stroke="{nero}" stroke-width="3"/>
+
+        <text x="267" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA 1 SCURA {anta_mm} mm</text>
+        <text x="472" y="375" text-anchor="middle" font-size="13" fill="{nero}" font-weight="900">ANTA 2 SCURA {anta_mm} mm</text>
+        """
+        legenda = "2 ANTE MOBILI EVIDENZIATE IN BLU SCURO"
 
     return f"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-    html, body {{
-        margin:0;
-        padding:0;
-        font-family:Arial, Helvetica, sans-serif;
-        background:#ffffff;
-    }}
-    .wrap {{
-        border:2px solid #C9DCF7;
-        border-radius:22px;
-        background:linear-gradient(180deg,#FFFFFF 0%,#F5F9FF 100%);
-        box-shadow:0 12px 30px rgba(0,87,217,.10);
-        overflow:hidden;
-    }}
-    .top {{
-        background:linear-gradient(90deg,#003C96,#0057D9);
-        color:white;
-        padding:15px 20px;
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-    }}
-    .title {{
-        font-size:24px;
-        font-weight:1000;
-        letter-spacing:.3px;
-    }}
-    .sub {{
-        font-size:13px;
-        font-weight:800;
-        color:#EAF3FF;
-        margin-top:3px;
-    }}
-    .brand {{
-        text-align:right;
-        font-weight:1000;
-        font-size:18px;
-    }}
-    .brand span {{
-        display:inline-block;
-        background:#F58220;
-        color:#111827;
-        padding:7px 10px;
-        margin-right:8px;
-    }}
-    .canvas-area {{
-        padding:12px 16px 14px 16px;
-    }}
-    canvas {{
-        width:100%;
-        height:390px;
-        display:block;
-        background:linear-gradient(180deg,#FFFFFF,#F7FBFF);
-        border:1px solid #D7E8FF;
-        border-radius:16px;
-    }}
-    .cards {{
-        display:grid;
-        grid-template-columns:repeat(4,1fr);
-        gap:10px;
-        margin-top:12px;
-    }}
-    .card {{
-        background:#FFFFFF;
-        border:1px solid #C9DCF7;
-        border-radius:14px;
-        padding:10px;
-        text-align:center;
-        font-weight:900;
-        color:#111827;
-        box-shadow:0 4px 12px rgba(0,87,217,.06);
-    }}
-    .card b {{
-        display:block;
-        color:#0057D9;
-        font-size:18px;
-        margin-top:4px;
-    }}
-</style>
-</head>
-<body>
-<div class="wrap">
-    <div class="top">
-        <div>
-            <div class="title">Tavola tecnica porta automatica</div>
-            <div class="sub">SA-TEC · SESAMO POWERCORE PW100 · {ante_label}</div>
-        </div>
-        <div class="brand"><span>▌</span>SESAMO<br><small>EN 16005</small></div>
+    <div style="background:#ffffff;border:2px solid #b8d4f3;border-radius:14px;padding:16px;font-family:Arial;">
+    <svg width="100%" height="520" viewBox="0 0 760 520">
+
+        <!-- titolo -->
+        <rect x="34" y="16" width="692" height="48" rx="12" fill="{blu}"/>
+        <text x="380" y="47" text-anchor="middle" font-size="22" fill="#ffffff" font-weight="900">{titolo}</text>
+
+        <!-- corpo disegno centrato -->
+        <rect x="80" y="86" width="600" height="330" rx="14" fill="#ffffff" stroke="#d7e6f7" stroke-width="2"/>
+
+        <!-- quota traversa -->
+        <text x="380" y="112" text-anchor="middle" font-size="15" fill="{blu}" font-weight="900">TRAVERSA / AUTOMAZIONE {traversa_mm} mm</text>
+        <line x1="130" y1="130" x2="630" y2="130" stroke="{blu}" stroke-width="3"/>
+        <line x1="130" y1="120" x2="130" y2="140" stroke="{blu}" stroke-width="3"/>
+        <line x1="630" y1="120" x2="630" y2="140" stroke="{blu}" stroke-width="3"/>
+
+        <!-- traversa centrata -->
+        <rect x="120" y="145" width="520" height="40" rx="5" fill="{alluminio}" stroke="{nero}" stroke-width="3"/>
+        <rect x="138" y="155" width="484" height="8" fill="#ffffff" opacity="0.55"/>
+        <rect x="330" y="158" width="100" height="18" rx="4" fill="{blu_scuro}"/>
+        <text x="380" y="172" text-anchor="middle" font-size="11" fill="#ffffff" font-weight="900">GRUPPO MOTORE</text>
+
+        <!-- telaio laterale -->
+        <rect x="145" y="172" width="20" height="190" fill="{alluminio}" stroke="{nero}" stroke-width="2"/>
+        <rect x="575" y="172" width="20" height="190" fill="{alluminio}" stroke="{nero}" stroke-width="2"/>
+        <rect x="145" y="355" width="450" height="10" fill="{alluminio}" stroke="{nero}" stroke-width="2"/>
+
+        <!-- serramento/ante -->
+        {schema_ante}
+
+        <!-- quota luce passaggio -->
+        <line x1="175" y1="402" x2="565" y2="402" stroke="{blu}" stroke-width="3"/>
+        <line x1="175" y1="392" x2="175" y2="412" stroke="{blu}" stroke-width="3"/>
+        <line x1="565" y1="392" x2="565" y2="412" stroke="{blu}" stroke-width="3"/>
+        <text x="370" y="429" text-anchor="middle" font-size="18" fill="{blu}" font-weight="900">LUCE PASSAGGIO {luce_mm} mm</text>
+
+        <!-- quota altezza -->
+        <line x1="665" y1="180" x2="665" y2="355" stroke="{blu}" stroke-width="3"/>
+        <line x1="653" y1="180" x2="677" y2="180" stroke="{blu}" stroke-width="3"/>
+        <line x1="653" y1="355" x2="677" y2="355" stroke="{blu}" stroke-width="3"/>
+        <text x="700" y="270" text-anchor="middle" font-size="17" fill="{blu}" font-weight="900" transform="rotate(90 700,270)">H {altezza_mm} mm</text>
+
+        <!-- legenda tecnica -->
+        <rect x="35" y="448" width="690" height="52" rx="10" fill="{grigio}" stroke="{blu}" stroke-width="2"/>
+        <text x="55" y="470" font-size="14" fill="{nero}" font-weight="900">LUCE:</text>
+        <text x="108" y="470" font-size="14" fill="{blu}" font-weight="900">{luce_mm} mm</text>
+
+        <text x="200" y="470" font-size="14" fill="{nero}" font-weight="900">H:</text>
+        <text x="225" y="470" font-size="14" fill="{blu}" font-weight="900">{altezza_mm} mm</text>
+
+        <text x="315" y="470" font-size="14" fill="{nero}" font-weight="900">TRAVERSA:</text>
+        <text x="410" y="470" font-size="14" fill="{blu}" font-weight="900">{traversa_mm} mm</text>
+
+        <text x="515" y="470" font-size="14" fill="{nero}" font-weight="900">ANTA:</text>
+        <text x="568" y="470" font-size="14" fill="{blu}" font-weight="900">{anta_mm} mm</text>
+
+        <rect x="55" y="480" width="130" height="13" fill="{vetro_scuro}" stroke="{nero}" stroke-width="1"/>
+        <text x="195" y="492" font-size="12" fill="{nero}" font-weight="700">{legenda}</text>
+
+    </svg>
     </div>
-
-    <div class="canvas-area">
-        <canvas id="doorCanvas" width="1100" height="520"></canvas>
-        <div class="cards">
-            <div class="card">Configurazione<b>{ante_label}</b></div>
-            <div class="card">Luce passaggio<b>{luce} mm</b></div>
-            <div class="card">Altezza<b>{altezza} mm</b></div>
-            <div class="card">Traversa<b>{traversa:.2f} m</b></div>
-        </div>
-    </div>
-</div>
-
-<script>
-const canvas = document.getElementById("doorCanvas");
-const ctx = canvas.getContext("2d");
-
-const luce = {luce};
-const altezza = {altezza};
-const traversa = {traversa:.2f};
-const dueAnte = {str(due_ante).lower()};
-
-function roundRect(x,y,w,h,r,fill,stroke) {{
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.lineTo(x+w-r,y);
-    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-    ctx.lineTo(x+w,y+h-r);
-    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-    ctx.lineTo(x+r,y+h);
-    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-    ctx.lineTo(x,y+r);
-    ctx.quadraticCurveTo(x,y,x+r,y);
-    ctx.closePath();
-    if(fill) ctx.fill();
-    if(stroke) ctx.stroke();
-}}
-
-function line(x1,y1,x2,y2,color,w) {{
-    ctx.strokeStyle = color;
-    ctx.lineWidth = w;
-    ctx.beginPath();
-    ctx.moveTo(x1,y1);
-    ctx.lineTo(x2,y2);
-    ctx.stroke();
-}}
-
-function text(t,x,y,size,color,align="center",weight="900") {{
-    ctx.font = weight + " " + size + "px Arial";
-    ctx.fillStyle = color;
-    ctx.textAlign = align;
-    ctx.fillText(t,x,y);
-}}
-
-function arrow(x1,y1,x2,y2,color) {{
-    line(x1,y1,x2,y2,color,7);
-    const ang = Math.atan2(y2-y1,x2-x1);
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(x2,y2);
-    ctx.lineTo(x2-18*Math.cos(ang-Math.PI/6), y2-18*Math.sin(ang-Math.PI/6));
-    ctx.lineTo(x2-18*Math.cos(ang+Math.PI/6), y2-18*Math.sin(ang+Math.PI/6));
-    ctx.closePath();
-    ctx.fill();
-}}
-
-function drawGlass(x,y,w,h) {{
-    const g = ctx.createLinearGradient(x,y,x+w,y+h);
-    g.addColorStop(0,"rgba(255,255,255,.95)");
-    g.addColorStop(.45,"rgba(185,223,255,.55)");
-    g.addColorStop(1,"rgba(120,190,255,.75)");
-    ctx.fillStyle = g;
-    ctx.strokeStyle = "#0074E8";
-    ctx.lineWidth = 4;
-    roundRect(x,y,w,h,8,true,true);
-
-    ctx.strokeStyle = "rgba(255,255,255,.70)";
-    ctx.lineWidth = 3;
-    line(x+24,y+18,x+w-45,y+h-35,"rgba(255,255,255,.70)",3);
-    line(x+52,y+18,x+w-20,y+h-75,"rgba(255,255,255,.45)",2);
-}}
-
-function draw() {{
-    ctx.clearRect(0,0,1100,520);
-
-    // fondo griglia tecnico
-    ctx.strokeStyle = "rgba(0,87,217,.05)";
-    ctx.lineWidth = 1;
-    for(let x=40;x<1060;x+=40) line(x,30,x,495,"rgba(0,87,217,.05)",1);
-    for(let y=40;y<500;y+=40) line(35,y,1065,y,"rgba(0,87,217,.05)",1);
-
-    // titolo tavola
-    text("SA-TEC · CONFIGURAZIONE TECNICA INGRESSO AUTOMATICO",550,30,18,"#003C96");
-    text("Lunghezza traversa calcolata: " + traversa.toFixed(2) + " m",550,55,14,"#111827");
-
-    // coordinate principali
-    const frameX = 250, frameY = 150, frameW = 600, frameH = 285;
-    const railX = 190, railY = 95, railW = 720, railH = 58;
-
-    // ombra traversa
-    ctx.shadowColor = "rgba(0,60,150,.25)";
-    ctx.shadowBlur = 18;
-    ctx.shadowOffsetY = 8;
-
-    // traversa alluminio
-    let rg = ctx.createLinearGradient(railX,railY,railX,railY+railH);
-    rg.addColorStop(0,"#164FAD");
-    rg.addColorStop(.25,"#0057D9");
-    rg.addColorStop(.55,"#003C96");
-    rg.addColorStop(1,"#0B214A");
-    ctx.fillStyle = rg;
-    ctx.strokeStyle = "#071124";
-    ctx.lineWidth = 2;
-    roundRect(railX,railY,railW,railH,12,true,true);
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-
-    text("TRAVERSA AUTOMAZIONE",550,130,19,"#FFFFFF");
-
-    // coperchio/profilo inferiore
-    line(railX+30,railY+railH+9,railX+railW-30,railY+railH+9,"#F5B301",5);
-
-    // motore e scheda
-    ctx.fillStyle = "#F58220";
-    ctx.strokeStyle = "#111827";
-    ctx.lineWidth = 2;
-    roundRect(815,105,62,38,7,true,true);
-    text("MOT",846,130,14,"#111827");
-
-    ctx.fillStyle = "#EAF3FF";
-    ctx.strokeStyle = "#003C96";
-    roundRect(735,108,58,32,6,true,true);
-    text("CTRL",764,130,11,"#003C96");
-
-    // pulegge cinghia
-    ctx.fillStyle="#F5B301";
-    ctx.strokeStyle="#003C96";
-    ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(245,162,13,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(855,162,13,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    line(245,162,855,162,"#111827",3);
-
-    // telaio vano
-    ctx.strokeStyle = "#111827";
-    ctx.lineWidth = 4;
-    roundRect(frameX,frameY,frameW,frameH,10,false,true);
-
-    // guida pavimento
-    line(frameX-20,frameY+frameH+18,frameX+frameW+20,frameY+frameH+18,"#111827",3);
-    line(frameX+10,frameY+frameH+28,frameX+frameW-10,frameY+frameH+28,"#9CBCE8",2);
-
-    // carrelli
-    function trolley(x) {{
-        ctx.fillStyle="#111827";
-        roundRect(x,150,62,17,5,true,false);
-        line(x+16,167,x+16,190,"#111827",3);
-        line(x+46,167,x+46,190,"#111827",3);
-        ctx.fillStyle="#F5B301";
-        ctx.beginPath(); ctx.arc(x+16,149,6,0,Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(x+46,149,6,0,Math.PI*2); ctx.fill();
-    }}
-
-    if(dueAnte) {{
-        trolley(340); trolley(700);
-        drawGlass(290,185,260,245);
-        drawGlass(550,185,260,245);
-        line(550,185,550,430,"#003C96",5);
-        arrow(512,310,420,310,"#F5B301");
-        arrow(588,310,680,310,"#F5B301");
-    }} else {{
-        trolley(430); trolley(620);
-        drawGlass(385,185,330,245);
-        arrow(535,310,675,310,"#F5B301");
-    }}
-
-    // quote luce orizzontale
-    line(frameX,470,frameX+frameW,470,"#111827",2);
-    line(frameX,460,frameX,480,"#111827",2);
-    line(frameX+frameW,460,frameX+frameW,480,"#111827",2);
-    text("LUCE PASSAGGIO " + luce + " mm",550,505,15,"#111827");
-
-    // quota altezza
-    line(920,frameY,920,frameY+frameH,"#111827",2);
-    line(905,frameY,935,frameY,"#111827",2);
-    line(905,frameY+frameH,935,frameY+frameH,"#111827",2);
-    ctx.save();
-    ctx.translate(955,frameY+frameH/2+70);
-    ctx.rotate(-Math.PI/2);
-    text("ALTEZZA " + altezza + " mm",0,0,15,"#111827");
-    ctx.restore();
-
-    // dettaglio profili laterali
-    ctx.fillStyle="#DDE7F4";
-    ctx.fillRect(frameX-16,frameY,10,frameH);
-    ctx.fillRect(frameX+frameW+6,frameY,10,frameH);
-    ctx.fillStyle="#003C96";
-    ctx.fillRect(frameX-16,frameY,4,frameH);
-    ctx.fillRect(frameX+frameW+12,frameY,4,frameH);
-
-    // legenda tecnica
-    ctx.fillStyle="rgba(255,255,255,.92)";
-    ctx.strokeStyle="#C9DCF7";
-    ctx.lineWidth=2;
-    roundRect(45,115,120,168,12,true,true);
-    text("DETTAGLI",105,143,14,"#003C96");
-    text("• Cinghia",60,172,13,"#111827","left","800");
-    text("• Carrelli",60,198,13,"#111827","left","800");
-    text("• Motore",60,224,13,"#111827","left","800");
-    text("• Vetro",60,250,13,"#111827","left","800");
-
-    // badge normativa
-    ctx.fillStyle="#F5B301";
-    roundRect(940,95,120,40,20,true,false);
-    text("EN 16005",1000,121,15,"#111827");
-
-    // mini logo
-    ctx.fillStyle="#F58220";
-    roundRect(945,375,45,55,3,true,false);
-    text("▌",967,414,36,"#111827");
-    text("SESAMO",1018,402,22,"#111827","center","1000");
-    text("THE DOOR TECHNOLOGY",1018,424,10,"#111827","center","900");
-}}
-
-draw();
-</script>
-</body>
-</html>
-"""
-
-
-# =========================
-# V500 UFFICIALE - FUNZIONI STABILI RIPRISTINATE
-# =========================
-# Questo blocco ripristina le funzioni mancanti senza toccare Supabase,
-# preventivi, CRM e configuratore esistenti.
-
-logo_satec64 = img_to_base64([
-    "logo_satec.jpg", "logo_satec.png", "LOGO_SATEC.png",
-    "/mnt/data/logo_satec.jpg", "/mnt/data/logo_satec.png", "/mnt/data/LOGO_SATEC.png"
-])
-
-logo_sesamo64 = img_to_base64([
-    "SESAMO LOGO.png", "sesamo_logo.png", "logo_sesamo.png", "sesamo.png",
-    "/mnt/data/SESAMO LOGO.png", "/mnt/data/sesamo_logo.png", "/mnt/data/logo_sesamo.png", "/mnt/data/sesamo.png"
-])
-
-sesamo_logo_html = (
-    f'<img src="data:image/png;base64,{logo_sesamo64}" style="max-height:82px;max-width:280px;object-fit:contain;">'
-    if logo_sesamo64 else
-    '<div style="font-size:32px;font-weight:1000;color:#111827;-webkit-text-fill-color:#111827;">SESAMO</div><div style="font-size:12px;font-weight:900;color:#111827;-webkit-text-fill-color:#111827;">THE DOOR TECHNOLOGY</div>'
-)
-
-
-def carica_preventivi():
-    righe = []
-    path = Path(PREVENTIVI_CSV)
-    if path.exists():
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                righe.extend(list(csv.DictReader(f)))
-        except Exception as e:
-            st.sidebar.warning(f"Preventivi CSV non caricati: {e}")
-    if not righe:
-        try:
-            righe.extend(carica_preventivi_supabase() or [])
-        except Exception:
-            pass
-    return righe
-
-
-def salva_preventivo(dati):
-    path = Path(PREVENTIVI_CSV)
-    campi_base = [
-        "codice_preventivo", "data_ora", "utente", "profilo", "cliente_nome", "cliente_azienda",
-        "cliente_telefono", "cliente_email", "configurazione", "luce_mm", "altezza_mm", "traversa_m",
-        "elettroblocco", "allaccio", "radar_sicurezza_laterale", "ricarico_percento",
-        "ricarico_base_percento", "ricarico_extra_percento", "imponibile", "iva", "totale_iva",
-        "costo_satec", "utile_lordo", "margine_percento", "stato"
-    ]
-    campi = list(campi_base)
-    for k in dati.keys():
-        if k not in campi:
-            campi.append(k)
-    file_exists = path.exists()
-    try:
-        with open(path, "a", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=campi)
-            if not file_exists:
-                writer.writeheader()
-            writer.writerow({k: dati.get(k, "") for k in campi})
-        return True
-    except Exception as e:
-        st.error(f"Errore salvataggio preventivo CSV: {e}")
-        return False
-
-
-def salva_cliente_csv(nome, azienda, telefono, email, codice_preventivo="", imponibile=0, owner_utente="", owner_profilo=""):
-    path = Path(CLIENTI_CSV)
-    campi = ["nome", "azienda", "telefono", "email", "primo_preventivo", "ultimo_preventivo", "data_primo_preventivo", "data_ultimo_preventivo", "numero_preventivi", "totale_preventivi", "owner_utente", "owner_profilo"]
-    nome = str(nome or "").strip(); azienda = str(azienda or "").strip(); telefono = str(telefono or "").strip(); email = str(email or "").strip().lower()
-    if not any([nome, azienda, telefono, email]):
-        return False
-    oggi = datetime.now().strftime("%d/%m/%Y %H:%M")
-    try:
-        clienti = []
-        if path.exists():
-            with open(path, "r", encoding="utf-8") as f:
-                clienti = list(csv.DictReader(f))
-        trovato = None
-        for c in clienti:
-            if email and str(c.get("email", "")).strip().lower() == email:
-                trovato = c; break
-            if telefono and str(c.get("telefono", "")).strip() == telefono:
-                trovato = c; break
-        try:
-            imp = float(str(imponibile or 0).replace(",", "."))
-        except Exception:
-            imp = 0.0
-        if trovato:
-            try:
-                prec = int(float(trovato.get("numero_preventivi", "0") or 0))
-            except Exception:
-                prec = 0
-            try:
-                oldtot = float(str(trovato.get("totale_preventivi", "0") or 0).replace(",", "."))
-            except Exception:
-                oldtot = 0.0
-            trovato.update({"nome": nome or trovato.get("nome", ""), "azienda": azienda or trovato.get("azienda", ""), "telefono": telefono or trovato.get("telefono", ""), "email": email or trovato.get("email", ""), "ultimo_preventivo": codice_preventivo, "data_ultimo_preventivo": oggi, "numero_preventivi": str(prec + 1), "totale_preventivi": f"{oldtot + imp:.2f}", "owner_utente": owner_utente or trovato.get("owner_utente", ""), "owner_profilo": owner_profilo or trovato.get("owner_profilo", "")})
-        else:
-            clienti.append({"nome": nome, "azienda": azienda, "telefono": telefono, "email": email, "primo_preventivo": codice_preventivo, "ultimo_preventivo": codice_preventivo, "data_primo_preventivo": oggi, "data_ultimo_preventivo": oggi, "numero_preventivi": "1", "totale_preventivi": f"{imp:.2f}", "owner_utente": owner_utente, "owner_profilo": owner_profilo})
-        with open(path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=campi); writer.writeheader()
-            for c in clienti:
-                writer.writerow({k: c.get(k, "") for k in campi})
-        return True
-    except Exception as e:
-        st.sidebar.warning(f"Cliente non salvato in CSV: {e}")
-        return False
-
-
-def carica_clienti():
-    righe = []
-    path = Path(CLIENTI_CSV)
-    if path.exists():
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                righe.extend(list(csv.DictReader(f)))
-        except Exception as e:
-            st.sidebar.warning(f"Clienti CSV non caricati: {e}")
-    if not righe:
-        try:
-            righe.extend(carica_clienti_supabase() or [])
-        except Exception:
-            pass
-    return righe
-
-
-def clienti_visibili_per_profilo(clienti, profilo, utente_codice):
-    if profilo == "SA-TEC":
-        return clienti
-    out = []
-    for c in clienti:
-        owner = str(c.get("owner_utente", "")).strip().upper()
-        if not owner or owner == str(utente_codice or "").strip().upper():
-            out.append(c)
-    return out
-
-
-def _cliente_search_text(c):
-    return " ".join(str(c.get(k, "")) for k in ["nome", "azienda", "telefono", "email", "primo_preventivo", "ultimo_preventivo", "owner_utente"]).lower()
-
-
-def filtra_clienti_dashboard(clienti, query):
-    q = str(query or "").strip().lower()
-    if not q:
-        return clienti
-    return [c for c in clienti if q in _cliente_search_text(c)]
-
-
-def righe_clienti_dashboard(clienti):
-    out = []
-    for c in clienti:
-        tot = ""
-        if str(c.get("totale_preventivi", "")).strip():
-            tot = euro(_num(c.get("totale_preventivi", 0)))
-        out.append({"Nome": c.get("nome", ""), "Azienda": c.get("azienda", ""), "Telefono": c.get("telefono", ""), "Email": c.get("email", ""), "Ultimo preventivo": c.get("ultimo_preventivo", c.get("primo_preventivo", "")), "N. preventivi": c.get("numero_preventivi", ""), "Totale": tot, "Owner": c.get("owner_utente", "")})
-    return out
-
-
-def label_cliente_elimina(c):
-    return f"{c.get('nome','')} | {c.get('azienda','')} | {c.get('telefono','')} | {c.get('email','')}".strip(" |")
-
-
-def identificativo_cliente_elimina(c):
-    return c.get("email") or c.get("telefono") or c.get("nome") or c.get("azienda") or ""
-
-
-def elimina_cliente_admin(ident):
-    ident = str(ident or "").strip().lower()
-    if not ident:
-        return False, "Identificativo cliente mancante"
-    path = Path(CLIENTI_CSV)
-    if not path.exists():
-        return False, "Archivio clienti CSV non trovato"
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            righe = list(csv.DictReader(f))
-        if not righe:
-            return False, "Archivio clienti vuoto"
-        fieldnames = list(righe[0].keys())
-        nuove = []
-        eliminato = False
-        for c in righe:
-            valori = [str(c.get(k, "")).strip().lower() for k in ["email", "telefono", "nome", "azienda"]]
-            if ident in valori:
-                eliminato = True
-            else:
-                nuove.append(c)
-        if not eliminato:
-            return False, "Cliente non trovato"
-        with open(path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames); writer.writeheader(); writer.writerows(nuove)
-        return True, "Cliente eliminato"
-    except Exception as e:
-        return False, str(e)
-
-
-def _num(v, default=0.0):
-    try:
-        s = str(v if v is not None else "").replace("€", "").replace(" ", "").strip()
-        if not s: return default
-        if "," in s and "." in s and s.rfind(",") > s.rfind("."):
-            s = s.replace(".", "").replace(",", ".")
-        elif "," in s and "." not in s:
-            s = s.replace(",", ".")
-        return float(s)
-    except Exception:
-        return default
-
-
-def statistiche_stati_preventivi(preventivi):
-    d = {s: 0 for s in STATI_PREVENTIVO}
-    for p in preventivi:
-        stato = str(p.get("stato", "Bozza") or "Bozza")
-        d[stato] = d.get(stato, 0) + 1
-    return d
-
-
-def crm_valore_float(p):
-    return _num(p.get("imponibile", p.get("totale_iva", 0)))
-
-
-def crm_utile_float(p):
-    utile = _num(p.get("utile_lordo", 0))
-    if utile: return utile
-    return max(_num(p.get("imponibile", 0)) - _num(p.get("costo_satec", 0)), 0)
-
-
-def v100_render_admin(preventivi):
-    st.markdown('<div class="v100-title-bar">📋 GESTIONE PREVENTIVI</div>', unsafe_allow_html=True)
-    if not preventivi:
-        st.info("Nessun preventivo salvato ancora."); return
-    cerca = st.text_input("Cerca preventivo", key="cerca_prev_v500", placeholder="Codice, cliente, azienda, configurazione")
-    q = str(cerca or "").lower().strip(); righe = []
-    for p in preventivi:
-        testo = " ".join(str(p.get(k, "")) for k in p.keys()).lower()
-        if q and q not in testo: continue
-        righe.append(p)
-    st.write(f"Preventivi trovati: **{len(righe)}**")
-    vista = []
-    for p in righe[:200]:
-        vista.append({"Codice": p.get("codice_preventivo", ""), "Data": p.get("data_ora", ""), "Utente": p.get("utente", ""), "Cliente": p.get("cliente_nome", "") or p.get("cliente_azienda", ""), "Configurazione": p.get("configurazione", ""), "Totale IVA incl.": euro(_num(p.get("totale_iva", 0))), "Stato": p.get("stato", "")})
-    st.markdown(tabella_html_sicura(vista), unsafe_allow_html=True)
-    codici = [str(p.get("codice_preventivo", "")) for p in righe if p.get("codice_preventivo")]
-    if codici:
-        st.markdown("### Azioni preventivo")
-        c1, c2, c3 = st.columns([2, 1, 1])
-        with c1: codice_sel = st.selectbox("Preventivo", codici, key="prev_sel_v500")
-        with c2: nuovo_stato = st.selectbox("Stato", STATI_PREVENTIVO, key="prev_stato_v500")
-        with c3:
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("AGGIORNA STATO", key="prev_agg_v500", use_container_width=True):
-                if aggiorna_stato_preventivo_admin_robusto(codice_sel, nuovo_stato):
-                    st.success("Stato aggiornato"); st.rerun()
-                else:
-                    st.error("Stato non aggiornato")
-        dettaglio = next((p for p in righe if str(p.get("codice_preventivo", "")) == str(codice_sel)), None)
-        if dettaglio:
-            with st.expander("Dettaglio preventivo", expanded=False): render_dettaglio_preventivo_admin(dettaglio)
+    """
 
 
 def aggiungi(articoli, codice, descrizione, descrizione_lunga, quantita=1, scontato=True):
-    listino = float(LISTINI.get(codice, 0) or 0)
-    try: qta = float(quantita or 0)
-    except Exception: qta = 0.0
+    listino = LISTINI[codice]
     if scontato:
+        prezzo_unitario = prezzo_vendita(listino)
         costo_unitario = costo_satec_reale(listino)
-        prezzo_unitario = costo_unitario * (1 + (float(RICARICO_ATTIVO or 0) / 100))
     else:
-        costo_unitario = listino; prezzo_unitario = listino
-    articoli.append({"codice": codice, "descrizione": descrizione, "descrizione_lunga": descrizione_lunga, "quantita": qta, "listino_unitario": listino, "costo_unitario_satec": costo_unitario, "prezzo_unitario": prezzo_unitario, "totale": prezzo_unitario * qta, "costo_totale_satec": costo_unitario * qta})
+        prezzo_unitario = listino
+        costo_unitario = listino
 
-
-def disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try: luce = int(float(luce_mm))
-    except Exception: luce = 1600
-    try: altezza = int(float(altezza_mm))
-    except Exception: altezza = 2200
-    try: traversa = float(lunghezza_traversa)
-    except Exception: traversa = 0.0
-    due = "2" in str(ante)
-    if due:
-        ante_svg = """
-        <rect x="116" y="120" width="184" height="250" rx="8" fill="#F8FBFF" stroke="#0057D9" stroke-width="5"/>
-        <rect x="300" y="120" width="184" height="250" rx="8" fill="#F8FBFF" stroke="#0057D9" stroke-width="5"/>
-        <line x1="300" y1="120" x2="300" y2="370" stroke="#003C96" stroke-width="5"/>
-        <path d="M270 245 L230 245" stroke="#F5B301" stroke-width="9" stroke-linecap="round"/>
-        <path d="M330 245 L370 245" stroke="#F5B301" stroke-width="9" stroke-linecap="round"/>
-        """
-        titolo = "Schema porta scorrevole a 2 ante"
-    else:
-        ante_svg = """
-        <rect x="155" y="120" width="290" height="250" rx="8" fill="#F8FBFF" stroke="#0057D9" stroke-width="5"/>
-        <path d="M295 245 L370 245" stroke="#F5B301" stroke-width="9" stroke-linecap="round"/>
-        """
-        titolo = "Schema porta scorrevole a 1 anta"
-    return f"""
-    <!doctype html><html><head><meta charset="utf-8"><style>
-    body{{margin:0;font-family:Arial,Helvetica,sans-serif;background:transparent;}}
-    .wrap{{background:#fff;border:1px solid #C9DCF7;border-radius:18px;padding:18px;box-shadow:0 8px 22px rgba(0,87,217,.08);}}
-    .head{{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(90deg,#0057D9,#003C96);color:white;border-radius:14px;padding:14px 18px;margin-bottom:14px;}}
-    .title{{font-size:21px;font-weight:900;color:white;}}
-    .badge{{background:#F5B301;color:#111827;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:900;}}
-    .measures{{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}}
-    .m{{border:1px solid #C9DCF7;border-radius:12px;text-align:center;padding:10px;font-weight:800;color:#111827;background:#F4F8FF;}}
-    .m b{{display:block;color:#0057D9;font-size:18px;margin-top:4px;}}
-    </style></head><body><div class="wrap"><div class="head"><div class="title">{titolo}</div><div class="badge">EN16005</div></div>
-      <svg width="100%" height="335" viewBox="0 0 600 405"><rect x="72" y="72" width="456" height="40" rx="9" fill="#003C96"/><text x="300" y="98" text-anchor="middle" font-size="17" font-weight="900" fill="#FFFFFF">TRAVERSA AUTOMAZIONE</text><rect x="92" y="112" width="416" height="270" rx="10" fill="none" stroke="#111827" stroke-width="3"/>{ante_svg}<line x1="92" y1="392" x2="508" y2="392" stroke="#111827" stroke-width="3"/></svg>
-      <div class="measures"><div class="m">Luce<b>{luce} mm</b></div><div class="m">Altezza<b>{altezza} mm</b></div><div class="m">Traversa<b>{traversa:.2f} m</b></div></div></div></body></html>
-    """
-
-
+    articoli.append({
+        "codice": codice,
+        "descrizione": descrizione,
+        "descrizione_lunga": descrizione_lunga,
+        "quantita": quantita,
+        "listino_unitario": listino,
+        "costo_unitario_satec": costo_unitario,
+        "prezzo_unitario": prezzo_unitario,
+        "totale": prezzo_unitario * quantita,
+        "costo_totale_satec": costo_unitario * quantita
+    })
 
 # =========================
-# V503 - GRAFICA TECNICA DEFINITIVA SA-TEC
+# CSS
 # =========================
-def disegno_porta_v503(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
 
-    due_ante = "2" in str(ante or "")
-    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
-    titolo_schema = "502 - SCHEMA TECNICO PORTA SCORREVOLE A 2 ANTE" if due_ante else "501 - SCHEMA TECNICO PORTA SCORREVOLE A 1 ANTA"
-    totale_demo = "€ 2.356,80" if due_ante else "€ 1.981,11"
-    due_ante_js = "true" if due_ante else "false"
-    traversa_mm = int(traversa * 1000)
-
-    return f"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
+st.markdown("""
 <style>
-*{{box-sizing:border-box}}
-body{{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f8ff;color:#061b44}}
-.app{{width:100%;background:#f4f8ff;border-radius:22px;border:1px solid #d8e7fb;overflow:hidden;box-shadow:0 14px 36px rgba(0,42,110,.14)}}
-.top{{height:72px;background:#fff;border-bottom:1px solid #d8e7fb;display:flex;align-items:center;justify-content:space-between;padding:0 20px}}
-.t1{{font-size:24px;font-weight:1000;color:#061b44;line-height:1}} .t2{{font-size:15px;font-weight:800;color:#4d82d9;margin-top:5px}}
-.brand{{display:flex;gap:22px;align-items:center;font-weight:1000;color:#061b44}} .badge{{background:#0057d9;color:white;border-radius:8px;padding:8px 13px;font-size:13px}} .ses{{font-size:28px;letter-spacing:.4px}}
-.steps{{margin:14px 16px 0 16px;background:#fff;border:1px solid #e4ecf8;border-radius:15px;padding:13px;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}}
-.step{{display:flex;justify-content:center;align-items:center;gap:8px;font-size:13px;font-weight:1000;color:#061b44;border-right:1px solid #d8e7fb}}.step:last-child{{border:0}}.dot{{width:28px;height:28px;border-radius:50%;background:#eaf3ff;display:flex;align-items:center;justify-content:center}}.active .dot{{background:#0057d9;color:#fff}}.active{{color:#0057d9}}
-.grid{{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;padding:14px 16px 18px}}
-.card{{background:#fff;border:1px solid #d8e7fb;border-radius:16px;box-shadow:0 10px 26px rgba(0,42,110,.08);overflow:hidden}}
-.head{{padding:17px 18px 8px;color:#0047b8;font-size:18px;font-weight:1000}}
-.drow{{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:14px;padding:0 14px 12px}}
-.dbox{{background:#fff;border:1px solid #edf3fc;border-radius:14px;padding:8px;min-height:360px}} canvas{{width:100%;display:block}}
-#frontCanvas{{height:350px}} #sectionCanvas{{height:310px}}
-.sez{{border-left:1px solid #d8e7fb;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center}}.lab{{align-self:flex-start;background:#0057d9;color:#fff;border-radius:6px;padding:8px 11px;font-size:12px;font-weight:1000;margin-bottom:8px}}
-.metrics{{border-top:1px solid #d8e7fb;background:#fbfdff;display:grid;grid-template-columns:repeat(6,1fr)}}.met{{min-height:78px;padding:12px 7px;border-right:1px solid #d8e7fb;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center}}.met:last-child{{border:0}}.mi{{font-size:25px;color:#0057d9;font-weight:1000}}.mt{{font-size:11px;font-weight:900;color:#061b44;text-transform:uppercase}}.mv{{font-size:16px;font-weight:1000;color:#0057d9;margin-top:2px}}.mn{{font-size:10px;font-weight:800;color:#465b78}}
-.bens{{border-top:1px solid #d8e7fb;padding:13px 15px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px}}.ben{{font-size:11px;font-weight:800;color:#061b44;display:flex;gap:7px}}.ben b{{color:#0047b8;font-size:12px}}.bi{{font-size:18px;color:#0057d9;font-weight:1000}}
-.side{{display:flex;flex-direction:column;gap:13px}}.sh{{background:#0057d9;color:white;padding:13px 15px;font-size:15px;font-weight:1000}}.row{{display:grid;grid-template-columns:28px 1fr auto;gap:7px;align-items:center;padding:9px 12px;border-bottom:1px solid #e7eef8;font-size:12px;font-weight:800;color:#061b44}}.rv{{font-weight:1000;color:#071124;text-align:right;white-space:nowrap}}.ri{{color:#0057d9;text-align:center}}
-.price{{background:#fff;border:1px solid #d8e7fb;border-radius:14px;padding:24px 16px;text-align:center;box-shadow:0 10px 26px rgba(0,42,110,.08)}}.pt{{font-weight:1000;font-size:16px}}.pv{{font-weight:1000;font-size:34px;margin:10px 0 4px}}.pn{{font-size:12px;font-weight:800;color:#465b78}}
-.btn{{border-radius:10px;padding:14px;text-align:center;font-weight:1000;font-size:15px;color:white;box-shadow:0 8px 18px rgba(0,42,110,.12)}}.blue{{background:#003c96}}.orange{{background:#f58220}}
-</style>
-</head>
-<body>
-<div class="app">
- <div class="top">
-  <div><div class="t1">CONFIGURATORE PORTE AUTOMATICHE SCORREVOLI</div><div class="t2">Progetta la tua porta automatica in pochi passaggi</div></div>
-  <div class="brand"><div><span class="badge">EN16005</span> <span style="font-size:12px">Conforme alla norma europea</span></div><div class="ses">sesamo</div></div>
- </div>
- <div class="steps"><div class="step"><div class="dot">✓</div>TIPOLOGIA</div><div class="step active"><div class="dot">2</div>DIMENSIONI</div><div class="step"><div class="dot">3</div>ACCESSORI</div><div class="step"><div class="dot">4</div>FINITURE</div><div class="step"><div class="dot">5</div>RIEPILOGO</div></div>
- <div class="grid">
-  <div class="card">
-   <div class="head">{titolo_schema}</div>
-   <div class="drow"><div class="dbox"><canvas id="frontCanvas" width="920" height="440"></canvas></div><div class="sez"><div class="lab">SEZIONE TRAVERSA</div><canvas id="sectionCanvas" width="210" height="310"></canvas></div></div>
-   <div class="metrics">
-    <div class="met"><div class="mi">↔</div><div><div class="mt">Tipologia</div><div class="mv">{ante_numero}</div><div class="mn">Scorrevole</div></div></div>
-    <div class="met"><div class="mi">↕</div><div><div class="mt">Luce netta</div><div class="mv">{luce} mm</div><div class="mn">Passaggio utile</div></div></div>
-    <div class="met"><div class="mi">⤢</div><div><div class="mt">Altezza luce</div><div class="mv">{altezza} mm</div><div class="mn">Personalizzata</div></div></div>
-    <div class="met"><div class="mi">⟷</div><div><div class="mt">Traversa</div><div class="mv">{traversa_mm} mm</div><div class="mn">Lunghezza totale</div></div></div>
-    <div class="met"><div class="mi">▣</div><div><div class="mt">Portata</div><div class="mv">120 kg</div><div class="mn">Per anta</div></div></div>
-    <div class="met"><div class="mi">◴</div><div><div class="mt">Velocità</div><div class="mv">0,6 m/s</div><div class="mn">Regolabile</div></div></div>
-   </div>
-   <div class="bens"><div class="ben"><div class="bi">▣</div><div><b>Conformità EN16005</b><br>Sicurezza garantita</div></div><div class="ben"><div class="bi">◇</div><div><b>Qualità Sesamo</b><br>Componenti originali</div></div><div class="ben"><div class="bi">♙</div><div><b>Assistenza prioritaria</b><br>Intervento entro 48 ore</div></div><div class="ben"><div class="bi">⬟</div><div><b>Garanzia 24 mesi</b><br>Su tutti i componenti</div></div><div class="ben"><div class="bi">⚙</div><div><b>SA-TEC</b><br>Progettazione e posa</div></div></div>
-  </div>
-  <div class="side">
-   <div class="card"><div class="sh">RIEPILOGO CONFIGURAZIONE</div>
-    <div class="row"><div class="ri">↔</div><div>Tipologia</div><div class="rv">{ante_numero}</div></div><div class="row"><div class="ri">↕</div><div>Luce netta passaggio</div><div class="rv">{luce} mm</div></div><div class="row"><div class="ri">⤢</div><div>Altezza luce</div><div class="rv">{altezza} mm</div></div><div class="row"><div class="ri">⟷</div><div>Lunghezza traversa</div><div class="rv">{traversa_mm} mm</div></div><div class="row"><div class="ri">▣</div><div>Portata</div><div class="rv">120 kg</div></div><div class="row"><div class="ri">◴</div><div>Velocità</div><div class="rv">0,6 m/s</div></div><div class="row"><div class="ri">🔒</div><div>Sblocco</div><div class="rv">Interno a chiave</div></div><div class="row"><div class="ri">☷</div><div>Radar</div><div class="rv">2 sensori</div></div><div class="row"><div class="ri">✓</div><div>Normativa</div><div class="rv">EN16005</div></div>
-   </div>
-   <div class="price"><div class="pt">TOTALE PREVENTIVO</div><div class="pv">{totale_demo}</div><div class="pn">IVA ESCLUSA</div></div>
-   <div class="btn blue">▣ SALVA PREVENTIVO</div><div class="btn orange">▤ ESPORTA PDF</div>
-  </div>
- </div>
-</div>
-<script>
-const dueAnte={due_ante_js}, luce={luce}, altezza={altezza}, traversaMm={traversa_mm};
-function rr(c,x,y,w,h,r,f,s){{c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();if(f)c.fill();if(s)c.stroke();}}
-function line(c,x1,y1,x2,y2,col,w){{c.strokeStyle=col;c.lineWidth=w;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();}}
-function txt(c,t,x,y,s,col,a="center",w="900"){{c.font=w+" "+s+"px Arial";c.fillStyle=col;c.textAlign=a;c.fillText(t,x,y);}}
-function arrow(c,x1,y1,x2,y2,col){{line(c,x1,y1,x2,y2,col,7);let a=Math.atan2(y2-y1,x2-x1);c.fillStyle=col;c.beginPath();c.moveTo(x2,y2);c.lineTo(x2-16*Math.cos(a-Math.PI/6),y2-16*Math.sin(a-Math.PI/6));c.lineTo(x2-16*Math.cos(a+Math.PI/6),y2-16*Math.sin(a+Math.PI/6));c.closePath();c.fill();}}
-function glass(c,x,y,w,h){{let g=c.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,"rgba(255,255,255,.96)");g.addColorStop(.45,"rgba(205,238,255,.66)");g.addColorStop(1,"rgba(150,215,255,.75)");c.fillStyle=g;c.strokeStyle="#1d8bff";c.lineWidth=3;rr(c,x,y,w,h,4,1,1);line(c,x+25,y+12,x+w-35,y+h-38,"rgba(255,255,255,.8)",2);line(c,x+60,y+12,x+w-10,y+h-85,"rgba(255,255,255,.55)",2);}}
-function front(){{let c=document.getElementById("frontCanvas").getContext("2d");c.clearRect(0,0,920,440);for(let x=20;x<900;x+=35)line(c,x,20,x,420,"rgba(0,87,217,.035)",1);for(let y=20;y<420;y+=35)line(c,20,y,900,y,"rgba(0,87,217,.035)",1);let fx=135,fy=112,fw=610,fh=235,rx=92,ry=54,rw=700,rh=50;c.strokeStyle="#222";c.lineWidth=3;rr(c,fx,fy,fw,fh,5,0,1);let rg=c.createLinearGradient(rx,ry,rx,ry+rh);rg.addColorStop(0,"#eee");rg.addColorStop(.25,"#aaa");rg.addColorStop(.55,"#f6f6f6");rg.addColorStop(1,"#777");c.fillStyle=rg;c.strokeStyle="#222";c.lineWidth=2;rr(c,rx,ry,rw,rh,3,1,1);line(c,rx+20,ry+17,rx+rw-20,ry+17,"#252525",3);line(c,rx+20,ry+32,rx+rw-20,ry+32,"#555",2);txt(c,"sesamo",rx+55,ry+20,12,"#0057d9");txt(c,"SA-TEC",rx+55,ry+38,12,"#0057d9");function pul(x){{c.fillStyle="#111";c.beginPath();c.arc(x,ry+25,10,0,Math.PI*2);c.fill();c.fillStyle="#666";c.beginPath();c.arc(x,ry+25,4,0,Math.PI*2);c.fill();}}pul(250);pul(290);pul(515);pul(555);c.fillStyle="#111";rr(c,646,ry+8,62,34,4,1,0);c.fillStyle="#333";rr(c,710,ry+13,40,24,4,1,0);txt(c,"MOT",731,ry+30,10,"#fff");function tro(x){{c.fillStyle="#1a1a1a";rr(c,x,ry+40,44,11,3,1,0);line(c,x+10,ry+51,x+10,fy+13,"#222",2);line(c,x+34,ry+51,x+34,fy+13,"#222",2);}}if(dueAnte){{tro(285);tro(535);glass(c,195,125,245,210);glass(c,440,125,245,210);line(c,440,125,440,335,"#003c96",4);arrow(c,420,235,355,235,"#148c2e");arrow(c,460,235,525,235,"#148c2e");}}else{{tro(365);tro(565);glass(c,315,125,300,210);arrow(c,450,235,560,235,"#148c2e");}}txt(c,"APERTURA",465,265,13,"#148c2e");txt(c,"AUTOMATICA",465,282,13,"#148c2e");c.fillStyle="#d8d8d8";c.fillRect(fx-12,fy,12,fh);c.fillRect(fx+fw,fy,12,fh);c.fillRect(fx-35,fy+fh,fw+70,10);line(c,fx-45,fy+fh+14,fx+fw+45,fy+fh+14,"#9a9a9a",3);line(c,70,fy,70,fy+fh,"#003c96",2);line(c,60,fy,80,fy,"#003c96",2);line(c,60,fy+fh,80,fy+fh,"#003c96",2);txt(c,"ALTEZZA LUCE",62,230,11,"#003c96","right");txt(c,altezza+" mm",62,250,12,"#003c96","right","1000");line(c,835,fy-48,835,fy+fh,"#003c96",2);line(c,824,fy-48,846,fy-48,"#003c96",2);line(c,824,fy+fh,846,fy+fh,"#003c96",2);txt(c,"ALTEZZA TOTALE",850,230,11,"#003c96","left");txt(c,(altezza+100)+" mm",850,250,12,"#003c96","left","1000");line(c,fx+120,375,fx+fw-120,375,"#003c96",2);line(c,fx+120,366,fx+120,384,"#003c96",2);line(c,fx+fw-120,366,fx+fw-120,384,"#003c96",2);txt(c,"LUCE NETTA DI PASSAGGIO",440,370,11,"#003c96");txt(c,luce+" mm",440,393,13,"#003c96","center","1000");line(c,fx,415,fx+fw,415,"#003c96",2);line(c,fx,406,fx,424,"#003c96",2);line(c,fx+fw,406,fx+fw,424,"#003c96",2);txt(c,"LUNGHEZZA TRAVERSA",440,410,11,"#003c96");txt(c,traversaMm+" mm",440,433,13,"#003c96","center","1000");}}
-function section(){{let c=document.getElementById("sectionCanvas").getContext("2d");c.clearRect(0,0,210,310);txt(c,"140 mm",105,25,13,"#003c96");line(c,55,34,155,34,"#003c96",2);line(c,55,26,55,42,"#003c96",2);line(c,155,26,155,42,"#003c96",2);c.strokeStyle="#777";c.lineWidth=2;c.fillStyle="#f4f4f4";rr(c,65,58,80,95,8,1,1);c.fillStyle="#dadada";rr(c,75,68,60,75,5,1,1);c.fillStyle="#111";rr(c,86,78,38,55,6,1,0);c.fillStyle="#333";c.beginPath();c.arc(105,105,16,0,Math.PI*2);c.fill();c.fillStyle="#777";c.beginPath();c.arc(105,105,7,0,Math.PI*2);c.fill();let g=c.createLinearGradient(98,153,118,270);g.addColorStop(0,"rgba(205,238,255,.8)");g.addColorStop(1,"rgba(130,205,255,.65)");c.fillStyle=g;c.strokeStyle="#1d8bff";c.lineWidth=2;c.fillRect(99,153,12,105);c.strokeRect(99,153,12,105);txt(c,"160 mm",32,112,12,"#003c96");line(c,42,58,42,153,"#003c96",2);line(c,33,58,51,58,"#003c96",2);line(c,33,153,51,153,"#003c96",2);txt(c,"185 mm",174,120,12,"#003c96");line(c,165,58,165,173,"#003c96",2);line(c,156,58,174,58,"#003c96",2);line(c,156,173,174,173,"#003c96",2);txt(c,"10 mm",155,216,12,"#003c96","left");txt(c,"40 mm",105,282,12,"#003c96");line(c,85,268,125,268,"#003c96",2);line(c,85,260,85,276,"#003c96",2);line(c,125,260,125,276,"#003c96",2);}}
-front(); section();
-</script>
-</body>
-</html>
-"""
+.stApp {background:#f3f7fd;font-family:Arial,sans-serif;}
+.main .block-container {padding-top:0rem;max-width:1550px;}
+.header {background:linear-gradient(115deg,#fff 0%,#fff 28%,#073763 28%,#06499b 100%);border-bottom:5px solid #063b7a;padding:22px 32px;display:grid;grid-template-columns:28% 44% 28%;align-items:center;color:white;}
+.logo-satec {width:300px;}
+.header-title {text-align:center;}
+.header-title h1 {font-size:42px;margin:0;font-weight:900;line-height:1.05;}
+.header-title div {font-size:18px;margin-top:12px;font-weight:700;}
+.header-info {font-size:15px;line-height:1.45;text-align:left;font-weight:700;}
+.powercore {background:white;padding:18px 34px;display:grid;grid-template-columns:50% 50%;align-items:center;border-bottom:1px solid #bdd4ef;}
+.powercore-title {font-size:34px;font-weight:900;color:#111;}
+.powercore-title span {color:#ff7900;}
+.powercore-sub {font-size:17px;color:#111;margin-top:8px;}
+.sesamo-logo {height:115px;max-width:380px;object-fit:contain;}
+.card,.side-card {background:white;border:1px solid #bdd4ef;border-radius:14px;padding:16px;margin-bottom:16px;}
+.title-bar {display:inline-block;background:#06499b;color:white;padding:9px 16px;border-radius:8px;font-size:18px;font-weight:900;margin-bottom:16px;}
+.section-row {display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;}
+.section-box {background:#eef6ff;border-radius:12px;padding:16px;color:#06499b;font-weight:800;font-size:16px;}
+.section-box.green {background:#eefaf2;color:#0c7b3e;}
+div[data-testid="stNumberInput"] label {color:#111!important;font-size:15px!important;font-weight:800!important;}
+div[data-testid="stNumberInput"] input {border:2px solid #8998b0!important;border-radius:0!important;text-align:center!important;font-size:28px!important;font-weight:800!important;color:#06499b!important;height:54px!important;}
+div[data-testid="stTextInput"] input {background:#ffffff!important;color:#06499b!important;border:2px solid #8998b0!important;border-radius:6px!important;font-weight:800!important;}
+.measure-total {border:2px solid #bdd4ef;background:#f8fbff;border-radius:10px;padding:14px;display:grid;grid-template-columns:1fr 200px;align-items:center;color:#06499b;margin-top:10px;}
+.measure-total .big {font-size:30px;font-weight:900;text-align:center;}
+.measure-total .small {font-size:18px;font-weight:900;text-align:center;}
+.option-box {border:2px solid #06499b;border-radius:12px;padding:18px;margin-bottom:18px;background:white;}
+.option-title {font-size:20px;font-weight:900;color:#06499b;margin-bottom:12px;}
+.option-note {border:2px solid #06499b;border-radius:12px;padding:13px;background:#eef6ff;color:#06499b;font-size:15px;font-weight:800;line-height:1.45;margin-top:12px;}
+div[data-testid="stCheckbox"] {border:0;padding:0;margin:0;}
+div[data-testid="stCheckbox"] label {color:#06499b!important;font-size:18px!important;font-weight:900!important;}
+.price {text-align:center;color:#06499b;font-size:42px;font-weight:900;}
+.price-label {color:#06499b;font-size:18px;font-weight:900;text-align:center;}
+.vat-box {border:1px solid #bdd4ef;border-radius:10px;padding:14px;color:#06499b;font-size:17px;font-weight:800;background:#f8fbff;}
+.power-side-title {color:#06499b;font-size:18px;font-weight:900;margin-bottom:12px;}
+.power-side-text {font-size:15px;line-height:1.45;color:#111;}
+.power-side-list li {margin-bottom:10px;color:#111;}
+.desc-grid {display:grid;grid-template-columns:34% 33% 33%;gap:16px;color:#111;font-size:15px;}
+.desc-title {color:#06499b;font-size:22px;font-weight:900;margin-bottom:10px;}
+.footer {background:#06499b;color:white;padding:18px 34px;display:grid;grid-template-columns:1fr 1fr 1fr;font-size:16px;font-weight:700;margin-top:12px;}
+.stButton>button {background:#06499b;color:white;border-radius:8px;height:48px;font-size:16px;font-weight:900;border:none;}
+.stButton>button:hover {background:#073763;color:white;}
+.admin-box {background:#ffffff;border:2px solid #06499b;border-radius:14px;padding:18px;margin-bottom:18px;}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 14px;
+}
+th {
+    background: #06499b;
+    color: white;
+    padding: 8px;
+    text-align: left;
+}
+td {
+    border: 1px solid #bdd4ef;
+    padding: 8px;
+    color: #111;
+}
+tr:nth-child(even) {
+    background: #f3f7fd;
+}
 
 
+/* FIX SA-TEC: rettangoli blu e campi leggibili */
+.title-bar,
+.title-bar * {
+    background:#06499b!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
 
-# =========================
-# V504 - RENDER TECNICO DEFINITIVO SA-TEC
-# Anta più larga + sezione traversa rettangolare 115 x 155 mm, fissaggio 80 mm
-# =========================
-def disegno_porta_v504(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
+div[data-testid="stTextInput"] input {
+    background:#ffffff!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border:2px solid #8998b0!important;
+    border-radius:6px!important;
+    font-weight:800!important;
+}
 
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
+div[data-testid="stTextInput"] label,
+div[data-testid="stNumberInput"] label,
+div[data-testid="stCheckbox"] label {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:800!important;
+}
 
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
+.option-note,
+.option-note *,
+.section-box span,
+.power-side-text,
+.power-side-list li,
+.desc-grid,
+.desc-grid *,
+td {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+}
 
-    due_ante = "2" in str(ante or "")
-    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
-    titolo_schema = "SCHEMA TECNICO PORTA SCORREVOLE A 2 ANTE" if due_ante else "SCHEMA TECNICO PORTA SCORREVOLE A 1 ANTA"
-    due_ante_js = "true" if due_ante else "false"
+th {
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
 
-    return f"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-*{{box-sizing:border-box}}
-html,body{{
-    margin:0;
-    padding:0;
-    font-family:Arial, Helvetica, sans-serif;
-    background:#fff;
-    color:#071124;
-}}
-.v504-box{{
-    width:100%;
-    background:#fff;
-    border:1px solid #D8E7FB;
-    border-radius:18px;
-    overflow:hidden;
-    box-shadow:0 10px 26px rgba(0,42,110,.08);
-}}
-.v504-head{{
-    padding:14px 18px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}}
-.v504-title{{
-    color:#0047B8;
-    font-size:22px;
-    font-weight:1000;
-}}
-.v504-badge{{
-    background:#0057D9;
-    color:#fff;
-    padding:8px 14px;
-    border-radius:8px;
-    font-size:13px;
-    font-weight:1000;
-}}
-.v504-main{{
-    display:grid;
-    grid-template-columns:minmax(0,1fr) 280px;
-    gap:18px;
-    padding:0 18px 14px 18px;
-}}
-.v504-panel{{
-    background:#fff;
-    border:1px solid #EDF3FC;
-    border-radius:14px;
-    min-height:430px;
-    padding:6px;
-}}
-.v504-section{{
-    background:#fff;
-    border-left:1px solid #D8E7FB;
-    min-height:430px;
-    padding:6px;
-}}
-.v504-label{{
-    display:inline-block;
-    background:#0057D9;
-    color:#fff;
-    font-size:13px;
-    font-weight:1000;
-    padding:8px 12px;
-    border-radius:6px;
-    margin:0 0 8px 0;
-}}
-canvas{{
-    width:100%;
-    display:block;
-}}
-#frontCanvasV504{{
-    height:410px;
-}}
-#sectionCanvasV504{{
-    height:380px;
-}}
-.v504-metrics{{
-    border-top:1px solid #D8E7FB;
-    background:#FBFDFF;
-    display:grid;
-    grid-template-columns:repeat(6,1fr);
-}}
-.v504-metric{{
-    padding:12px 8px;
-    border-right:1px solid #D8E7FB;
-    min-height:72px;
+
+/* V26 - CAMPI MISURE INTERNI GIALLI */
+div[data-testid="stNumberInput"] input {
+    background:#fff3a3!important;
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    border:2px solid #06499b!important;
+    border-radius:8px!important;
+    text-align:center!important;
+    font-size:28px!important;
+    font-weight:900!important;
+    height:56px!important;
+}
+
+div[data-testid="stNumberInput"] label {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:900!important;
+}
+
+
+/* V29 - CHECKBOX ACCESSORI GIALLI */
+div[data-testid="stCheckbox"] input[type="checkbox"] {
+    accent-color:#ffd400!important;
+}
+
+div[data-testid="stCheckbox"] label {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:900!important;
+    font-size:18px!important;
+}
+
+div[data-testid="stCheckbox"] [data-testid="stMarkdownContainer"] p {
+    color:#111111!important;
+    -webkit-text-fill-color:#111111!important;
+    font-weight:900!important;
+}
+
+/* evidenzia meglio la zona dei checkbox */
+div[data-testid="stCheckbox"] {
+    background:#fff3a3!important;
+    border:2px solid #06499b!important;
+    border-radius:10px!important;
+    padding:10px 12px!important;
+    margin-bottom:10px!important;
+}
+
+
+/* V31 - Bottoni email stessa dimensione e colore */
+div[data-testid="stButton"] button {
+    background:#06499b!important;
+    color:#ffffff!important;
+    border:none!important;
+    border-radius:10px!important;
+    height:48px!important;
+    font-size:18px!important;
+    font-weight:900!important;
+    width:100%!important;
+}
+
+
+/* V35 - CARD PORTA CLICCABILI */
+.porta-card {
+    border:3px solid #bdd4ef;
+    background:#ffffff;
+    border-radius:16px;
+    padding:14px;
+    min-height:235px;
     text-align:center;
-    color:#06245C;
+    box-shadow:0 4px 12px rgba(6,73,155,0.10);
+    margin-bottom:8px;
+}
+
+.porta-card-attiva {
+    border:5px solid #06499b;
+    background:#fff3a3;
+    box-shadow:0 6px 18px rgba(6,73,155,0.25);
+}
+
+.porta-card-title {
+    color:#06499b;
+    font-size:19px;
     font-weight:900;
-}}
-.v504-metric:last-child{{border-right:0}}
-.v504-metric b{{
-    display:block;
-    color:#0057D9;
-    font-size:17px;
-    margin-top:4px;
-}}
-.v504-metric small{{
-    display:block;
-    color:#465B78;
-    font-size:10px;
-    margin-top:3px;
-}}
+    line-height:1.15;
+    margin-bottom:8px;
+}
+
+.porta-card-desc {
+    color:#111111;
+    font-size:14px;
+    font-weight:700;
+    line-height:1.35;
+    margin-top:6px;
+}
+
+.porta-btn button {
+    background:#06499b!important;
+    color:#ffffff!important;
+    border-radius:10px!important;
+    height:48px!important;
+    font-size:15px!important;
+    font-weight:900!important;
+    width:100%!important;
+}
+
+.porta-btn-attivo button {
+    background:#ffd400!important;
+    color:#111111!important;
+    border:3px solid #06499b!important;
+}
+
+
+/* V36 - pulsante card integrato */
+div[data-testid="stButton"] button[kind="secondary"] {
+    background:#06499b!important;
+    color:#ffffff!important;
+    border-radius:0 0 16px 16px!important;
+    min-height:54px!important;
+    font-size:17px!important;
+    font-weight:900!important;
+    border:3px solid #06499b!important;
+    margin-top:-12px!important;
+}
+
+div[data-testid="stButton"] button[kind="secondary"]:hover {
+    background:#ffd400!important;
+    color:#111111!important;
+    border:3px solid #06499b!important;
+}
+
+
+/* V37 - allineamento riquadri scelta automazione */
+.porta-card {
+    height:285px!important;
+    min-height:285px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:space-between!important;
+    align-items:center!important;
+    box-sizing:border-box!important;
+}
+
+.porta-card-title {
+    min-height:46px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+}
+
+.porta-card-desc {
+    min-height:54px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+    padding:0 6px!important;
+}
+
+.porta-card svg {
+    height:120px!important;
+    max-height:120px!important;
+}
+
+div[data-testid="stButton"] button[kind="secondary"] {
+    height:54px!important;
+    min-height:54px!important;
+    margin-top:-8px!important;
+}
+
 </style>
-</head>
-<body>
-<div class="v504-box">
-    <div class="v504-head">
-        <div class="v504-title">{titolo_schema}</div>
-        <div class="v504-badge">EN16005</div>
-    </div>
+""", unsafe_allow_html=True)
 
-    <div class="v504-main">
-        <div class="v504-panel">
-            <div class="v504-label">VISTA FRONTALE</div>
-            <canvas id="frontCanvasV504" width="980" height="430"></canvas>
-        </div>
-        <div class="v504-section">
-            <div class="v504-label">SEZIONE TRAVERSA</div>
-            <canvas id="sectionCanvasV504" width="300" height="390"></canvas>
-        </div>
-    </div>
+# =========================
+# HEADER
+# =========================
 
-    <div class="v504-metrics">
-        <div class="v504-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
-        <div class="v504-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
-        <div class="v504-metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div>
-        <div class="v504-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
-        <div class="v504-metric">Sezione<b>115 × 155</b><small>mm</small></div>
-        <div class="v504-metric">Fissaggio<b>80 mm</b><small>Interasse</small></div>
-    </div>
+logo_satec64 = img_to_base64(["logo_satec.jpg", "logo_satec.png", "/mnt/data/logo_satec.jpg", "/mnt/data/logo_satec.png"])
+logo_sesamo64 = img_to_base64(["SESAMO LOGO.png", "sesamo_logo.png", "logo_sesamo.png", "/mnt/data/SESAMO LOGO.png", "/mnt/data/sesamo_logo.png", "/mnt/data/logo_sesamo.png"])
+
+logo_satec_html = f'<img class="logo-satec" src="data:image/jpeg;base64,{logo_satec64}">' if logo_satec64 else "<h1 style='color:#06499b'>SA-TEC</h1>"
+sesamo_logo_html = f'<img class="sesamo-logo" src="data:image/png;base64,{logo_sesamo64}">' if logo_sesamo64 else """
+<div style="display:flex;align-items:center;justify-content:center;gap:18px;">
+<div style="background:#ff7900;color:white;font-size:44px;font-weight:900;padding:10px 18px;">▌</div>
+<div><div style="font-size:48px;font-weight:900;color:#000;line-height:1;">SESAMO</div>
+<div style="font-size:16px;font-weight:900;color:#000;letter-spacing:1px;">THE DOOR TECHNOLOGY</div></div>
+</div>"""
+
+st.markdown(f"""
+<div class="header">
+<div>{logo_satec_html}</div>
+<div class="header-title"><h1>CONFIGURATORE<br>PORTE AUTOMATICHE</h1><div>TECNOLOGIA, SICUREZZA E SOLUZIONI SU MISURA</div></div>
+<div class="header-info">SA-TEC S.R.L.s<br>Via L. Settembrini 84<br>88046 Lamezia Terme (CZ)<br>P.IVA 04009610793<br>☎ 0968-036797<br>✉ sacco.tecnologie@gmail.com<br>✉ sa-tec@pec.it</div>
 </div>
-
-<script>
-const dueAnte = {due_ante_js};
-const luce = {luce};
-const altezza = {altezza};
-const traversaMm = {int(traversa*1000)};
-
-function rr(ctx,x,y,w,h,r,fill,stroke){{
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.lineTo(x+w-r,y);
-    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-    ctx.lineTo(x+w,y+h-r);
-    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-    ctx.lineTo(x+r,y+h);
-    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-    ctx.lineTo(x,y+r);
-    ctx.quadraticCurveTo(x,y,x+r,y);
-    ctx.closePath();
-    if(fill) ctx.fill();
-    if(stroke) ctx.stroke();
-}}
-function line(ctx,x1,y1,x2,y2,c,w){{
-    ctx.strokeStyle=c; ctx.lineWidth=w; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-}}
-function txt(ctx,t,x,y,s,c,a="center",w="900"){{
-    ctx.font=w+" "+s+"px Arial"; ctx.fillStyle=c; ctx.textAlign=a; ctx.fillText(t,x,y);
-}}
-function arrow(ctx,x1,y1,x2,y2,c){{
-    line(ctx,x1,y1,x2,y2,c,7);
-    const a=Math.atan2(y2-y1,x2-x1);
-    ctx.fillStyle=c;
-    ctx.beginPath();
-    ctx.moveTo(x2,y2);
-    ctx.lineTo(x2-16*Math.cos(a-Math.PI/6),y2-16*Math.sin(a-Math.PI/6));
-    ctx.lineTo(x2-16*Math.cos(a+Math.PI/6),y2-16*Math.sin(a+Math.PI/6));
-    ctx.closePath(); ctx.fill();
-}}
-function glass(ctx,x,y,w,h){{
-    const g=ctx.createLinearGradient(x,y,x+w,y+h);
-    g.addColorStop(0,"rgba(255,255,255,.96)");
-    g.addColorStop(.45,"rgba(205,238,255,.62)");
-    g.addColorStop(1,"rgba(145,215,255,.74)");
-    ctx.fillStyle=g; ctx.strokeStyle="#1D8BFF"; ctx.lineWidth=3;
-    rr(ctx,x,y,w,h,4,true,true);
-    line(ctx,x+30,y+12,x+w-38,y+h-36,"rgba(255,255,255,.82)",2);
-    line(ctx,x+75,y+12,x+w-12,y+h-90,"rgba(255,255,255,.55)",2);
-}}
-function drawFront(){{
-    const c=document.getElementById("frontCanvasV504");
-    const ctx=c.getContext("2d");
-    ctx.clearRect(0,0,c.width,c.height);
-
-    const fx=110, fy=112, fw=735, fh=235;
-    const railX=70, railY=55, railW=810, railH=50;
-
-    // traversa lunga e rettangolare
-    const rg=ctx.createLinearGradient(railX,railY,railX,railY+railH);
-    rg.addColorStop(0,"#eeeeee");
-    rg.addColorStop(.28,"#b9b9b9");
-    rg.addColorStop(.58,"#f7f7f7");
-    rg.addColorStop(1,"#8c8c8c");
-    ctx.fillStyle=rg; ctx.strokeStyle="#222"; ctx.lineWidth=2;
-    rr(ctx,railX,railY,railW,railH,3,true,true);
-
-    line(ctx,railX+22,railY+17,railX+railW-22,railY+17,"#222",3);
-    line(ctx,railX+22,railY+33,railX+railW-22,railY+33,"#555",2);
-    txt(ctx,"sesamo",railX+70,railY+20,12,"#0057D9","center","900");
-    txt(ctx,"SA-TEC",railX+70,railY+39,13,"#0057D9","center","1000");
-
-    // motore
-    ctx.fillStyle="#111"; rr(ctx,railX+railW-135,railY+8,70,34,4,true,false);
-    ctx.fillStyle="#333"; rr(ctx,railX+railW-66,railY+13,36,24,4,true,false);
-    txt(ctx,"MOT",railX+railW-48,railY+30,10,"#FFF");
-
-    // pulegge / carrelli
-    function pulley(x){{
-        ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(x,railY+25,10,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle="#777"; ctx.beginPath(); ctx.arc(x,railY+25,4,0,Math.PI*2); ctx.fill();
-    }}
-    [250,290,500,540,680].forEach(pulley);
-
-    function trolley(x){{
-        ctx.fillStyle="#222"; rr(ctx,x,railY+42,48,11,3,true,false);
-        line(ctx,x+10,railY+53,x+10,fy+14,"#222",2);
-        line(ctx,x+38,railY+53,x+38,fy+14,"#222",2);
-    }}
-
-    // telaio e ante più larghe
-    ctx.strokeStyle="#222"; ctx.lineWidth=3; rr(ctx,fx,fy,fw,fh,5,false,true);
-
-    if(dueAnte){{
-        trolley(300); trolley(610);
-        glass(ctx,170,125,335,210);
-        glass(ctx,505,125,335,210);
-        line(ctx,505,125,505,335,"#003C96",4);
-        arrow(ctx,485,235,410,235,"#148C2E");
-        arrow(ctx,525,235,600,235,"#148C2E");
-        txt(ctx,"APERTURA",505,266,13,"#148C2E");
-        txt(ctx,"AUTOMATICA",505,283,13,"#148C2E");
-    }} else {{
-        trolley(390); trolley(650);
-        glass(ctx,285,125,410,210);
-        arrow(ctx,470,235,625,235,"#148C2E");
-        txt(ctx,"APERTURA",505,266,13,"#148C2E");
-        txt(ctx,"AUTOMATICA",505,283,13,"#148C2E");
-    }}
-
-    // montanti e pavimento
-    ctx.fillStyle="#D8D8D8";
-    ctx.fillRect(fx-12,fy,12,fh);
-    ctx.fillRect(fx+fw,fy,12,fh);
-    ctx.fillRect(fx-40,fy+fh,fw+80,10);
-    line(ctx,fx-50,fy+fh+14,fx+fw+50,fy+fh+14,"#9A9A9A",3);
-
-    // quote verticali
-    line(ctx,55,fy,55,fy+fh,"#003C96",2);
-    line(ctx,45,fy,65,fy,"#003C96",2);
-    line(ctx,45,fy+fh,65,fy+fh,"#003C96",2);
-    txt(ctx,"ALTEZZA LUCE",47,225,11,"#003C96","right");
-    txt(ctx,altezza+" mm",47,245,12,"#003C96","right","1000");
-
-    line(ctx,920,fy-48,920,fy+fh,"#003C96",2);
-    line(ctx,909,fy-48,931,fy-48,"#003C96",2);
-    line(ctx,909,fy+fh,931,fy+fh,"#003C96",2);
-    txt(ctx,"ALTEZZA TOTALE",935,225,11,"#003C96","left");
-    txt(ctx,(altezza+100)+" mm",935,245,12,"#003C96","left","1000");
-
-    // quote orizzontali
-    line(ctx,fx+160,378,fx+fw-160,378,"#003C96",2);
-    line(ctx,fx+160,368,fx+160,388,"#003C96",2);
-    line(ctx,fx+fw-160,368,fx+fw-160,388,"#003C96",2);
-    txt(ctx,"LUCE NETTA DI PASSAGGIO",505,372,11,"#003C96");
-    txt(ctx,luce+" mm",505,398,13,"#003C96","center","1000");
-
-    line(ctx,fx,416,fx+fw,416,"#003C96",2);
-    line(ctx,fx,406,fx,426,"#003C96",2);
-    line(ctx,fx+fw,406,fx+fw,426,"#003C96",2);
-    txt(ctx,"LUNGHEZZA TRAVERSA",505,410,11,"#003C96");
-    txt(ctx,traversaMm+" mm",505,432,13,"#003C96","center","1000");
-}}
-function drawSection(){{
-    const c=document.getElementById("sectionCanvasV504");
-    const ctx=c.getContext("2d");
-    ctx.clearRect(0,0,c.width,c.height);
-
-    // quote 115 x 155 + fissaggio 80
-    txt(ctx,"115 mm",150,33,16,"#003C96","center","1000");
-    line(ctx,88,45,212,45,"#003C96",2);
-    line(ctx,88,34,88,56,"#003C96",2);
-    line(ctx,212,34,212,56,"#003C96",2);
-
-    // corpo traversa rettangolare
-    const x=92, y=70, w=116, h=155;
-    ctx.fillStyle="#F7F7F7";
-    ctx.strokeStyle="#111";
-    ctx.lineWidth=2.5;
-    rr(ctx,x,y,w,h,8,true,true);
-
-    // profilo interno tipo estruso
-    ctx.strokeStyle="#444";
-    ctx.lineWidth=2;
-    rr(ctx,x+10,y+10,w-20,h-20,5,false,true);
-    line(ctx,x+10,y+45,x+w-10,y+45,"#666",2);
-    line(ctx,x+10,y+108,x+w-10,y+108,"#666",2);
-    line(ctx,x+26,y+10,x+26,y+h-10,"#666",1.6);
-    line(ctx,x+w-26,y+10,x+w-26,y+h-10,"#666",1.6);
-
-    // fissaggio 80 mm
-    ctx.fillStyle="#DADADA";
-    ctx.strokeStyle="#111";
-    rr(ctx,x+18,y+18,80,18,3,true,true);
-    txt(ctx,"fiss. 80",x+58,y+31,9,"#111","center","900");
-
-    // carrello / ruota
-    ctx.fillStyle="#111";
-    rr(ctx,x+36,y+58,48,42,6,true,false);
-    ctx.fillStyle="#333";
-    ctx.beginPath(); ctx.arc(x+60,y+79,18,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle="#8A8A8A";
-    ctx.beginPath(); ctx.arc(x+60,y+79,7,0,Math.PI*2); ctx.fill();
-
-    // supporto anta
-    ctx.fillStyle="#111";
-    rr(ctx,x+48,y+105,24,42,4,true,false);
-    ctx.fillStyle="#1D8BFF";
-    ctx.globalAlpha=.22;
-    ctx.fillRect(x+50,y+150,20,110);
-    ctx.globalAlpha=1;
-    ctx.strokeStyle="#1D8BFF";
-    ctx.strokeRect(x+50,y+150,20,110);
-
-    // quota altezza 155
-    line(ctx,235,y,235,y+h,"#003C96",2);
-    line(ctx,224,y,246,y,"#003C96",2);
-    line(ctx,224,y+h,246,y+h,"#003C96",2);
-    txt(ctx,"155 mm",254,y+83,16,"#003C96","left","1000");
-
-    // quota lato sinistra 155
-    line(ctx,65,y,65,y+h,"#003C96",2);
-    line(ctx,54,y,76,y,"#003C96",2);
-    line(ctx,54,y+h,76,y+h,"#003C96",2);
-    ctx.save();
-    ctx.translate(36,y+88);
-    ctx.rotate(-Math.PI/2);
-    txt(ctx,"155 mm",0,0,15,"#003C96","center","1000");
-    ctx.restore();
-
-    // quota vetro 40
-    txt(ctx,"40 mm",150,352,16,"#003C96","center","1000");
-    line(ctx,130,332,170,332,"#003C96",2);
-    line(ctx,130,322,130,342,"#003C96",2);
-    line(ctx,170,322,170,342,"#003C96",2);
-}}
-drawFront();
-drawSection();
-</script>
-</body>
-</html>
-"""
-
-
-
-
-# =========================
-# V505 - RENDER DEFINITIVO SOLO AUTOMAZIONE
-# Tolta sezione traversa. Disegno automazione/porta più largo e pulito.
-# =========================
-def disegno_porta_v505(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
-
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
-
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
-
-    due_ante = "2" in str(ante or "")
-    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
-    titolo_schema = "SCHEMA TECNICO AUTOMAZIONE SCORREVOLE A 2 ANTE" if due_ante else "SCHEMA TECNICO AUTOMAZIONE SCORREVOLE A 1 ANTA"
-    due_ante_js = "true" if due_ante else "false"
-
-    return f"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-*{{box-sizing:border-box}}
-html,body{{
-    margin:0;
-    padding:0;
-    font-family:Arial, Helvetica, sans-serif;
-    background:#fff;
-    color:#071124;
-}}
-.v505-box{{
-    width:100%;
-    background:#fff;
-    border:1px solid #D8E7FB;
-    border-radius:18px;
-    overflow:hidden;
-    box-shadow:0 10px 26px rgba(0,42,110,.08);
-}}
-.v505-head{{
-    padding:14px 18px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}}
-.v505-title{{
-    color:#0047B8;
-    font-size:22px;
-    font-weight:1000;
-}}
-.v505-badge{{
-    background:#0057D9;
-    color:#fff;
-    padding:8px 14px;
-    border-radius:8px;
-    font-size:13px;
-    font-weight:1000;
-}}
-.v505-panel{{
-    background:#fff;
-    border-top:1px solid #EDF3FC;
-    padding:10px 18px 14px 18px;
-}}
-.v505-label{{
-    display:inline-block;
-    background:#0057D9;
-    color:#fff;
-    font-size:13px;
-    font-weight:1000;
-    padding:8px 12px;
-    border-radius:6px;
-    margin:0 0 8px 0;
-}}
-canvas{{
-    width:100%;
-    display:block;
-}}
-#frontCanvasV505{{
-    height:455px;
-    border:1px solid #EDF3FC;
-    border-radius:14px;
-    background:#fff;
-}}
-.v505-metrics{{
-    border-top:1px solid #D8E7FB;
-    background:#FBFDFF;
-    display:grid;
-    grid-template-columns:repeat(6,1fr);
-}}
-.v505-metric{{
-    padding:12px 8px;
-    border-right:1px solid #D8E7FB;
-    min-height:72px;
-    text-align:center;
-    color:#06245C;
-    font-weight:900;
-}}
-.v505-metric:last-child{{border-right:0}}
-.v505-metric b{{
-    display:block;
-    color:#0057D9;
-    font-size:17px;
-    margin-top:4px;
-}}
-.v505-metric small{{
-    display:block;
-    color:#465B78;
-    font-size:10px;
-    margin-top:3px;
-}}
-</style>
-</head>
-<body>
-<div class="v505-box">
-    <div class="v505-head">
-        <div class="v505-title">{titolo_schema}</div>
-        <div class="v505-badge">EN16005</div>
-    </div>
-
-    <div class="v505-panel">
-        <div class="v505-label">VISTA FRONTALE AUTOMAZIONE</div>
-        <canvas id="frontCanvasV505" width="1180" height="455"></canvas>
-    </div>
-
-    <div class="v505-metrics">
-        <div class="v505-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
-        <div class="v505-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
-        <div class="v505-metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div>
-        <div class="v505-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
-        <div class="v505-metric">Normativa<b>EN16005</b><small>Sicurezza</small></div>
-        <div class="v505-metric">Sistema<b>PW100</b><small>Sesamo</small></div>
-    </div>
+<div class="powercore">
+<div><div class="powercore-title">SESAMO <span>POWERCORE</span> PW100</div>
+<div class="powercore-sub">Automazione lineare per porte scorrevoli automatiche,<br>affidabile, sicura e compatibile con la normativa EN16005.</div></div>
+<div style="text-align:center;">{sesamo_logo_html}</div>
 </div>
-
-<script>
-const dueAnte = {due_ante_js};
-const luce = {luce};
-const altezza = {altezza};
-const traversaMm = {int(traversa*1000)};
-
-function rr(ctx,x,y,w,h,r,fill,stroke){{
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.lineTo(x+w-r,y);
-    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-    ctx.lineTo(x+w,y+h-r);
-    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-    ctx.lineTo(x+r,y+h);
-    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-    ctx.lineTo(x,y+r);
-    ctx.quadraticCurveTo(x,y,x+r,y);
-    ctx.closePath();
-    if(fill) ctx.fill();
-    if(stroke) ctx.stroke();
-}}
-function line(ctx,x1,y1,x2,y2,c,w){{
-    ctx.strokeStyle=c; ctx.lineWidth=w; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-}}
-function txt(ctx,t,x,y,s,c,a="center",w="900"){{
-    ctx.font=w+" "+s+"px Arial"; ctx.fillStyle=c; ctx.textAlign=a; ctx.fillText(t,x,y);
-}}
-function arrow(ctx,x1,y1,x2,y2,c){{
-    line(ctx,x1,y1,x2,y2,c,7);
-    const a=Math.atan2(y2-y1,x2-x1);
-    ctx.fillStyle=c;
-    ctx.beginPath();
-    ctx.moveTo(x2,y2);
-    ctx.lineTo(x2-16*Math.cos(a-Math.PI/6),y2-16*Math.sin(a-Math.PI/6));
-    ctx.lineTo(x2-16*Math.cos(a+Math.PI/6),y2-16*Math.sin(a+Math.PI/6));
-    ctx.closePath(); ctx.fill();
-}}
-function glass(ctx,x,y,w,h){{
-    const g=ctx.createLinearGradient(x,y,x+w,y+h);
-    g.addColorStop(0,"rgba(255,255,255,.96)");
-    g.addColorStop(.45,"rgba(205,238,255,.62)");
-    g.addColorStop(1,"rgba(145,215,255,.74)");
-    ctx.fillStyle=g; ctx.strokeStyle="#1D8BFF"; ctx.lineWidth=3;
-    rr(ctx,x,y,w,h,4,true,true);
-    line(ctx,x+30,y+12,x+w-38,y+h-36,"rgba(255,255,255,.82)",2);
-    line(ctx,x+75,y+12,x+w-12,y+h-90,"rgba(255,255,255,.55)",2);
-}}
-function drawFront(){{
-    const c=document.getElementById("frontCanvasV505");
-    const ctx=c.getContext("2d");
-    ctx.clearRect(0,0,c.width,c.height);
-
-    const fx=120, fy=118, fw=905, fh=235;
-    const railX=80, railY=56, railW=985, railH=52;
-
-    // traversa lunga e rettangolare automazione
-    const rg=ctx.createLinearGradient(railX,railY,railX,railY+railH);
-    rg.addColorStop(0,"#eeeeee");
-    rg.addColorStop(.28,"#b9b9b9");
-    rg.addColorStop(.58,"#f7f7f7");
-    rg.addColorStop(1,"#8c8c8c");
-    ctx.fillStyle=rg; ctx.strokeStyle="#222"; ctx.lineWidth=2;
-    rr(ctx,railX,railY,railW,railH,3,true,true);
-
-    // dettagli interni
-    line(ctx,railX+22,railY+17,railX+railW-22,railY+17,"#222",3);
-    line(ctx,railX+22,railY+34,railX+railW-22,railY+34,"#555",2);
-    txt(ctx,"sesamo",railX+72,railY+21,12,"#0057D9","center","900");
-    txt(ctx,"SA-TEC",railX+72,railY+40,13,"#0057D9","center","1000");
-
-    // motore
-    ctx.fillStyle="#111"; rr(ctx,railX+railW-160,railY+8,84,36,4,true,false);
-    ctx.fillStyle="#333"; rr(ctx,railX+railW-76,railY+13,42,26,4,true,false);
-    txt(ctx,"MOT",railX+railW-55,railY+31,10,"#FFF");
-
-    // pulegge e carrelli
-    function pulley(x){{
-        ctx.fillStyle="#111"; ctx.beginPath(); ctx.arc(x,railY+26,10,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle="#777"; ctx.beginPath(); ctx.arc(x,railY+26,4,0,Math.PI*2); ctx.fill();
-    }}
-    [275,320,545,590,760,805].forEach(pulley);
-
-    function trolley(x){{
-        ctx.fillStyle="#222"; rr(ctx,x,railY+44,52,11,3,true,false);
-        line(ctx,x+11,railY+55,x+11,fy+14,"#222",2);
-        line(ctx,x+41,railY+55,x+41,fy+14,"#222",2);
-    }}
-
-    // telaio largo e ante larghe
-    ctx.strokeStyle="#222"; ctx.lineWidth=3; rr(ctx,fx,fy,fw,fh,5,false,true);
-
-    if(dueAnte){{
-        trolley(355); trolley(700);
-        glass(ctx,190,132,415,205);
-        glass(ctx,605,132,415,205);
-        line(ctx,605,132,605,337,"#003C96",4);
-        arrow(ctx,585,238,500,238,"#148C2E");
-        arrow(ctx,625,238,710,238,"#148C2E");
-        txt(ctx,"APERTURA",605,270,13,"#148C2E");
-        txt(ctx,"AUTOMATICA",605,287,13,"#148C2E");
-    }} else {{
-        trolley(450); trolley(735);
-        glass(ctx,330,132,520,205);
-        arrow(ctx,565,238,735,238,"#148C2E");
-        txt(ctx,"APERTURA",610,270,13,"#148C2E");
-        txt(ctx,"AUTOMATICA",610,287,13,"#148C2E");
-    }}
-
-    // montanti e pavimento
-    ctx.fillStyle="#D8D8D8";
-    ctx.fillRect(fx-12,fy,12,fh);
-    ctx.fillRect(fx+fw,fy,12,fh);
-    ctx.fillRect(fx-45,fy+fh,fw+90,10);
-    line(ctx,fx-55,fy+fh+14,fx+fw+55,fy+fh+14,"#9A9A9A",3);
-
-    // quote verticali
-    line(ctx,58,fy,58,fy+fh,"#003C96",2);
-    line(ctx,48,fy,68,fy,"#003C96",2);
-    line(ctx,48,fy+fh,68,fy+fh,"#003C96",2);
-    txt(ctx,"ALTEZZA LUCE",50,225,11,"#003C96","right");
-    txt(ctx,altezza+" mm",50,245,12,"#003C96","right","1000");
-
-    line(ctx,1110,fy-50,1110,fy+fh,"#003C96",2);
-    line(ctx,1099,fy-50,1121,fy-50,"#003C96",2);
-    line(ctx,1099,fy+fh,1121,fy+fh,"#003C96",2);
-    txt(ctx,"ALTEZZA TOTALE",1126,225,11,"#003C96","left");
-    txt(ctx,(altezza+100)+" mm",1126,245,12,"#003C96","left","1000");
-
-    // quote orizzontali
-    line(ctx,fx+220,385,fx+fw-220,385,"#003C96",2);
-    line(ctx,fx+220,375,fx+220,395,"#003C96",2);
-    line(ctx,fx+fw-220,375,fx+fw-220,395,"#003C96",2);
-    txt(ctx,"LUCE NETTA DI PASSAGGIO",590,379,11,"#003C96");
-    txt(ctx,luce+" mm",590,406,13,"#003C96","center","1000");
-
-    line(ctx,fx,428,fx+fw,428,"#003C96",2);
-    line(ctx,fx,418,fx,438,"#003C96",2);
-    line(ctx,fx+fw,418,fx+fw,438,"#003C96",2);
-    txt(ctx,"LUNGHEZZA TRAVERSA",590,422,11,"#003C96");
-    txt(ctx,traversaMm+" mm",590,448,13,"#003C96","center","1000");
-}}
-drawFront();
-</script>
-</body>
-</html>
-"""
-
-
-
-
-# =========================
-# V600 - HEADER DEFINITIVO SA-TEC
-# =========================
-def v600_style():
-    st.markdown("""
-    <style>
-    .stApp {
-        background:linear-gradient(180deg,#F3F8FF 0%,#FFFFFF 70%)!important;
-    }
-    .block-container {
-        padding-top:0.8rem!important;
-    }
-    .v600-main-header {
-        background:linear-gradient(90deg,#002B67 0%,#0057D9 65%,#003C96 100%);
-        border-radius:24px;
-        padding:22px 26px;
-        margin:8px 0 20px 0;
-        box-shadow:0 14px 34px rgba(0,43,103,.25);
-        display:grid;
-        grid-template-columns:230px minmax(0,1fr) 330px;
-        gap:26px;
-        align-items:center;
-        border:1px solid rgba(255,255,255,.28);
-    }
-    .v600-logo-card {
-        background:#FFFFFF;
-        border:4px solid rgba(255,255,255,.92);
-        border-radius:22px;
-        min-height:132px;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        padding:14px;
-        box-shadow:0 10px 26px rgba(0,0,0,.16);
-        overflow:hidden;
-    }
-    .v600-logo-img {
-        max-width:190px;
-        max-height:105px;
-        object-fit:contain;
-        display:block;
-    }
-    .v600-logo-fallback {
-        color:#0057D9;
-        font-size:42px;
-        font-weight:1000;
-    }
-    .v600-title-area {
-        border-left:1px solid rgba(255,255,255,.45);
-        padding-left:26px;
-    }
-    .v600-title-main {
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-        font-size:42px;
-        line-height:1.02;
-        font-weight:1000;
-        letter-spacing:.4px;
-    }
-    .v600-title-main span {
-        color:#F5B301!important;
-        -webkit-text-fill-color:#F5B301!important;
-    }
-    .v600-title-sub {
-        color:#EAF3FF!important;
-        -webkit-text-fill-color:#EAF3FF!important;
-        font-size:17px;
-        font-weight:900;
-        margin-top:12px;
-    }
-    .v600-info-card {
-        background:rgba(255,255,255,.10);
-        border:1px solid rgba(255,255,255,.35);
-        border-radius:18px;
-        padding:16px 18px;
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-        font-size:14px;
-        line-height:1.55;
-        font-weight:900;
-    }
-    .v600-info-card * {
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-    }
-    section[data-testid="stSidebar"] {
-        background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;
-        border-right:5px solid #F5B301!important;
-    }
-    section[data-testid="stSidebar"] h1,
-    section[data-testid="stSidebar"] h2,
-    section[data-testid="stSidebar"] h3,
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] span,
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] div {
-        color:#FFFFFF!important;
-        -webkit-text-fill-color:#FFFFFF!important;
-    }
-    section[data-testid="stSidebar"] input,
-    section[data-testid="stSidebar"] textarea,
-    section[data-testid="stSidebar"] [data-baseweb="input"],
-    section[data-testid="stSidebar"] [data-baseweb="input"] *,
-    section[data-testid="stSidebar"] [data-baseweb="select"],
-    section[data-testid="stSidebar"] [data-baseweb="select"] * {
-        background:#FFFFFF!important;
-        color:#071124!important;
-        -webkit-text-fill-color:#071124!important;
-        font-weight:900!important;
-    }
-    .stButton button,
-    .stDownloadButton button {
-        background:#FFFFFF!important;
-        color:#0057D9!important;
-        -webkit-text-fill-color:#0057D9!important;
-        border:2px solid #0057D9!important;
-        border-radius:14px!important;
-        min-height:48px!important;
-        font-size:15px!important;
-        font-weight:1000!important;
-        box-shadow:0 6px 15px rgba(0,87,217,.12)!important;
-    }
-    .stButton button:hover,
-    .stDownloadButton button:hover {
-        background:#F5B301!important;
-        color:#111111!important;
-        -webkit-text-fill-color:#111111!important;
-        border-color:#F5B301!important;
-    }
-    [data-testid="stCheckbox"] label {
-        background:#FFFFFF!important;
-        border:2px solid #C9DCF7!important;
-        border-radius:14px!important;
-        padding:10px 12px!important;
-        box-shadow:0 4px 12px rgba(0,87,217,.06)!important;
-        transition:all .18s ease!important;
-        color:#071124!important;
-        -webkit-text-fill-color:#071124!important;
-        font-weight:900!important;
-    }
-    [data-testid="stCheckbox"] label:hover {
-        border-color:#0057D9!important;
-        background:#F4F8FF!important;
-    }
-    [data-testid="stCheckbox"] label:has(input:checked) {
-        background:#EAF3FF!important;
-        border-color:#0057D9!important;
-        box-shadow:0 0 0 3px rgba(0,87,217,.16),0 8px 18px rgba(0,87,217,.12)!important;
-    }
-    @media(max-width:1100px) {
-        .v600-main-header {
-            grid-template-columns:1fr;
-            text-align:center;
-        }
-        .v600-title-area {
-            border-left:0;
-            padding-left:0;
-        }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-def v600_header():
-    st.markdown("""
-    <div class="v600-main-header">
-        <div class="v600-logo-card">
-            <img src="data:image/png;base64,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" class="v600-logo-img">
-        </div>
-        <div class="v600-title-area">
-            <div class="v600-title-main">
-                CONFIGURATORE<br>
-                <span>PORTE AUTOMATICHE</span>
-            </div>
-            <div class="v600-title-sub">
-                Tecnologia, sicurezza e soluzioni su misura per ingressi automatici
-            </div>
-        </div>
-        <div class="v600-info-card">
-            <b>SA-TEC S.R.L.s</b><br>
-            Via L. Settembrini 84<br>
-            88046 Lamezia Terme (CZ)<br>
-            ☎ 0968-036797<br>
-            ✉ sacco.tecnologie@gmail.com<br>
-            PEC sa-tec@pec.it
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-
-
-# =========================
-# V700 - HEADER E RENDER DEFINITIVO SA-TEC
-# =========================
-def v700_style():
-    st.markdown("""
-    <style>
-    .stApp{background:linear-gradient(180deg,#F3F8FF 0%,#FFFFFF 72%)!important;}
-    .block-container{padding-top:.6rem!important;max-width:1550px!important;}
-    .v700-header{background:#FFFFFF;border:1px solid #C9DCF7;border-radius:20px;overflow:hidden;box-shadow:0 10px 26px rgba(0,43,103,.10);margin:6px 0 12px 0;}
-    .v700-header-top{display:grid;grid-template-columns:190px minmax(0,1fr) 330px;align-items:center;min-height:128px;background:#FFFFFF;}
-    .v700-logo-box{height:128px;border-right:1px solid #D8E7FB;display:flex;align-items:center;justify-content:center;background:#FFFFFF;padding:10px;}
-    .v700-logo-img{max-width:145px;max-height:105px;object-fit:contain;}
-    .v700-logo-fallback{color:#0057D9;font-size:34px;font-weight:1000;}
-    .v700-title-box{padding:18px 26px;}
-    .v700-title{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:42px;line-height:1;font-weight:1000;letter-spacing:.3px;}
-    .v700-subtitle{color:#475569!important;-webkit-text-fill-color:#475569!important;font-size:17px;font-weight:900;margin-top:10px;letter-spacing:.4px;text-transform:uppercase;}
-    .v700-company{border-left:1px solid #D8E7FB;padding:16px 22px;color:#061A40!important;-webkit-text-fill-color:#061A40!important;font-size:14px;line-height:1.55;font-weight:900;}
-    .v700-company b{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:15px;}
-    .v700-nav{background:linear-gradient(90deg,#003C96,#0057D9);min-height:48px;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;color:#FFFFFF!important;}
-    .v700-nav div{text-align:center;font-size:14px;font-weight:1000;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-right:1px solid rgba(255,255,255,.22);}
-    .v700-nav div:last-child{border-right:0;}
-    section[data-testid="stSidebar"]{background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;border-right:5px solid #F5B301!important;}
-    section[data-testid="stSidebar"] h1,section[data-testid="stSidebar"] h2,section[data-testid="stSidebar"] h3,section[data-testid="stSidebar"] p,section[data-testid="stSidebar"] span,section[data-testid="stSidebar"] label,section[data-testid="stSidebar"] div{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;}
-    section[data-testid="stSidebar"] input,section[data-testid="stSidebar"] textarea,section[data-testid="stSidebar"] [data-baseweb="input"],section[data-testid="stSidebar"] [data-baseweb="input"] *,section[data-testid="stSidebar"] [data-baseweb="select"],section[data-testid="stSidebar"] [data-baseweb="select"] *{background:#FFFFFF!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
-    .stButton button,.stDownloadButton button{background:#FFFFFF!important;color:#0057D9!important;-webkit-text-fill-color:#0057D9!important;border:2px solid #0057D9!important;border-radius:14px!important;min-height:48px!important;font-size:15px!important;font-weight:1000!important;box-shadow:0 6px 15px rgba(0,87,217,.12)!important;}
-    .stButton button:hover,.stDownloadButton button:hover{background:#F5B301!important;color:#111111!important;-webkit-text-fill-color:#111111!important;border-color:#F5B301!important;}
-    [data-testid="stCheckbox"] label{background:#FFFFFF!important;border:2px solid #C9DCF7!important;border-radius:14px!important;padding:10px 12px!important;box-shadow:0 4px 12px rgba(0,87,217,.06)!important;transition:all .18s ease!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
-    [data-testid="stCheckbox"] label:hover{border-color:#0057D9!important;background:#F4F8FF!important;}
-    [data-testid="stCheckbox"] label:has(input:checked){background:#EAF3FF!important;border-color:#0057D9!important;box-shadow:0 0 0 3px rgba(0,87,217,.16),0 8px 18px rgba(0,87,217,.12)!important;}
-    @media(max-width:1100px){.v700-header-top{grid-template-columns:1fr;text-align:center;}.v700-company,.v700-logo-box{border-left:0;border-right:0;border-top:1px solid #D8E7FB;}.v700-nav{grid-template-columns:repeat(2,1fr);}}
-    </style>
-    """, unsafe_allow_html=True)
-
-def v700_header():
-    st.markdown("""
-    <div class="v700-header">
-        <div class="v700-header-top">
-            <div class="v700-logo-box"><img src="data:image/png;base64,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" class="v700-logo-img"></div>
-            <div class="v700-title-box">
-                <div class="v700-title">SA-TEC - CONFIGURATORE PORTE AUTOMATICHE</div>
-                <div class="v700-subtitle">Tecnologia, sicurezza e soluzioni su misura</div>
-            </div>
-            <div class="v700-company">
-                <b>SA-TEC S.R.L.s</b><br>
-                📍 Via L. Settembrini 84<br>
-                88046 Lamezia Terme (CZ)<br>
-                ☎ 0968-036797<br>
-                ✉ sacco.tecnologie@gmail.com
-            </div>
-        </div>
-        <div class="v700-nav">
-            <div>⌂ HOME</div><div>⚙ CONFIGURATORE</div><div>▤ CATALOGO</div><div>▥ CODICI</div><div>☏ ASSISTENZA</div><div>⚙ IMPOSTAZIONI</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-def disegno_porta_v700(ante, luce_mm, altezza_mm, lunghezza_traversa, elettro=False, radar=False, allaccio=False):
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
-
-    due_ante = "2" in str(ante or "")
-    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
-    titolo_schema = "SCHEMA TECNICO PORTA SCORREVOLE A 2 ANTE" if due_ante else "SCHEMA TECNICO PORTA SCORREVOLE A 1 ANTA"
-    due_ante_js = "true" if due_ante else "false"
-
-    return f"""
-<!doctype html>
-<html>
-<head><meta charset="utf-8">
-<style>
-*{{box-sizing:border-box}}html,body{{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#fff;color:#061A40}}
-.v700-wrap{{width:100%;background:#fff;border:1px solid #D8E7FB;border-radius:18px;overflow:hidden;box-shadow:0 10px 26px rgba(0,42,110,.08)}}
-.v700-body{{display:grid;grid-template-columns:minmax(0,1fr) 365px;gap:16px;padding:16px}}
-.v700-left,.v700-right{{background:#fff;border:1px solid #D8E7FB;border-radius:14px;overflow:hidden}}
-.v700-left-head{{padding:14px 18px 8px 18px}}.v700-title2{{color:#0047B8;font-size:21px;font-weight:1000}}
-.v700-tag{{display:inline-block;margin-top:10px;background:#0057D9;color:#fff;font-size:13px;font-weight:1000;border-radius:7px;padding:8px 12px}}
-#doorCanvasV700{{width:100%;height:500px;display:block}}
-.v700-access-head{{background:#0057D9;color:white;padding:13px 15px;font-size:16px;font-weight:1000}}
-.v700-acc-card{{margin:10px;border:2px solid #D8E7FB;border-radius:12px;padding:10px;min-height:128px;display:grid;grid-template-columns:105px 1fr 28px;gap:10px;align-items:center;background:#fff}}
-.v700-acc-card.active{{border-color:#0057D9;background:#EAF3FF;box-shadow:0 0 0 3px rgba(0,87,217,.13)}}
-.v700-acc-img{{width:96px;height:96px}}.v700-acc-title{{color:#0047B8;font-size:15px;font-weight:1000;margin-bottom:7px}}
-.v700-acc-text{{color:#071124;font-size:12px;line-height:1.45;font-weight:800}}
-.v700-check{{width:24px;height:24px;border-radius:6px;border:2px solid #0057D9;display:flex;align-items:center;justify-content:center;color:#0057D9;font-weight:1000}}
-.v700-acc-card.active .v700-check{{background:#0057D9;color:white}}
-.v700-metrics{{border-top:1px solid #D8E7FB;background:#FBFDFF;display:grid;grid-template-columns:repeat(6,1fr)}}
-.v700-metric{{padding:12px 8px;border-right:1px solid #D8E7FB;min-height:76px;text-align:center;color:#06245C;font-weight:900}}
-.v700-metric:last-child{{border-right:0}}.v700-metric b{{display:block;color:#0057D9;font-size:17px;margin-top:4px}}.v700-metric small{{display:block;color:#465B78;font-size:10px;margin-top:3px}}
-</style></head>
-<body>
-<div class="v700-wrap">
-  <div class="v700-body">
-    <div class="v700-left">
-      <div class="v700-left-head"><div class="v700-title2">V700 - {titolo_schema}</div><div class="v700-tag">AUTOMAZIONE</div></div>
-      <canvas id="doorCanvasV700" width="1000" height="500"></canvas>
-    </div>
-    <div class="v700-right">
-      <div class="v700-access-head">ACCESSORI E SERVIZI</div>
-      <div class="v700-acc-card {'active' if elettro else ''}"><canvas class="v700-acc-img" id="elettroIcon" width="96" height="96"></canvas><div><div class="v700-acc-title">ELETTROBLOCCO</div><div class="v700-acc-text">Accessorio per blocco anta in chiusura. Si inserisce automaticamente nel preventivo.</div></div><div class="v700-check">{'✓' if elettro else ''}</div></div>
-      <div class="v700-acc-card {'active' if radar else ''}"><canvas class="v700-acc-img" id="radarIcon" width="96" height="96"></canvas><div><div class="v700-acc-title">RADAR SICUREZZA LATERALE</div><div class="v700-acc-text">Previene schiacciamento e impatto. Conforme EN16005.</div></div><div class="v700-check">{'✓' if radar else ''}</div></div>
-      <div class="v700-acc-card {'active' if allaccio else ''}"><canvas class="v700-acc-img" id="serviceIcon" width="96" height="96"></canvas><div><div class="v700-acc-title">ALLACCIO E COLLAUDO SA-TEC</div><div class="v700-acc-text">Cacciavite, collaudo e certificazione. Logo EN16005 incluso.</div></div><div class="v700-check">{'✓' if allaccio else ''}</div></div>
-    </div>
-  </div>
-  <div class="v700-metrics">
-    <div class="v700-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div><div class="v700-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div><div class="v700-metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div><div class="v700-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div><div class="v700-metric">Portata<b>120 kg</b><small>Per anta</small></div><div class="v700-metric">Velocità<b>0,6 m/s</b><small>Regolabile</small></div>
-  </div>
-</div>
-<script>
-const dueAnte={due_ante_js}; const luce={luce}; const altezza={altezza}; const traversaMm={int(traversa*1000)};
-function rr(ctx,x,y,w,h,r,fill,stroke){{ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();if(fill)ctx.fill();if(stroke)ctx.stroke();}}
-function line(ctx,x1,y1,x2,y2,c,w){{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}}
-function txt(ctx,t,x,y,s,c,a="center",w="900"){{ctx.font=w+" "+s+"px Arial";ctx.fillStyle=c;ctx.textAlign=a;ctx.fillText(t,x,y);}}
-function arrow(ctx,x1,y1,x2,y2,c){{line(ctx,x1,y1,x2,y2,c,7);let a=Math.atan2(y2-y1,x2-x1);ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-16*Math.cos(a-Math.PI/6),y2-16*Math.sin(a-Math.PI/6));ctx.lineTo(x2-16*Math.cos(a+Math.PI/6),y2-16*Math.sin(a+Math.PI/6));ctx.closePath();ctx.fill();}}
-function glass(ctx,x,y,w,h){{let g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,"rgba(255,255,255,.96)");g.addColorStop(.45,"rgba(205,238,255,.62)");g.addColorStop(1,"rgba(145,215,255,.74)");ctx.fillStyle=g;ctx.strokeStyle="#1D8BFF";ctx.lineWidth=3;rr(ctx,x,y,w,h,4,true,true);line(ctx,x+30,y+12,x+w-38,y+h-36,"rgba(255,255,255,.82)",2);line(ctx,x+75,y+12,x+w-12,y+h-90,"rgba(255,255,255,.55)",2);}}
-function drawDoor(){{const c=document.getElementById("doorCanvasV700"),ctx=c.getContext("2d");ctx.clearRect(0,0,1000,500);const fx=105,fy=135,fw=790,fh=245,railX=75,railY=62,railW=850,railH=58;let rg=ctx.createLinearGradient(railX,railY,railX,railY+railH);rg.addColorStop(0,"#eeeeee");rg.addColorStop(.28,"#b9b9b9");rg.addColorStop(.58,"#f7f7f7");rg.addColorStop(1,"#8c8c8c");ctx.fillStyle=rg;ctx.strokeStyle="#222";ctx.lineWidth=2;rr(ctx,railX,railY,railW,railH,3,true,true);line(ctx,railX+22,railY+19,railX+railW-22,railY+19,"#222",3);line(ctx,railX+22,railY+38,railX+railW-22,railY+38,"#555",2);txt(ctx,"sesamo",railX+70,railY+24,12,"#0057D9","center","900");txt(ctx,"SA-TEC",railX+70,railY+44,14,"#0057D9","center","1000");ctx.fillStyle="#111";rr(ctx,railX+railW-150,railY+10,88,38,4,true,false);ctx.fillStyle="#333";rr(ctx,railX+railW-62,railY+16,38,25,4,true,false);txt(ctx,"MOT",railX+railW-43,railY+33,10,"#FFF");function pulley(x){{ctx.fillStyle="#111";ctx.beginPath();ctx.arc(x,railY+29,10,0,Math.PI*2);ctx.fill();ctx.fillStyle="#777";ctx.beginPath();ctx.arc(x,railY+29,4,0,Math.PI*2);ctx.fill();}}[250,300,470,520,680,730].forEach(pulley);function trolley(x){{ctx.fillStyle="#222";rr(ctx,x,railY+49,52,12,3,true,false);line(ctx,x+11,railY+61,x+11,fy+12,"#222",2);line(ctx,x+41,railY+61,x+41,fy+12,"#222",2);}}ctx.strokeStyle="#222";ctx.lineWidth=3;rr(ctx,fx,fy,fw,fh,5,false,true);if(dueAnte){{trolley(310);trolley(625);glass(ctx,165,150,365,218);glass(ctx,530,150,365,218);line(ctx,530,150,530,368,"#003C96",4);arrow(ctx,510,255,430,255,"#148C2E");arrow(ctx,550,255,630,255,"#148C2E");}}else{{trolley(400);trolley(650);glass(ctx,290,150,450,218);arrow(ctx,500,255,660,255,"#148C2E");}}txt(ctx,"APERTURA",520,292,14,"#148C2E");txt(ctx,"AUTOMATICA",520,312,14,"#148C2E");ctx.fillStyle="#D8D8D8";ctx.fillRect(fx-12,fy,12,fh);ctx.fillRect(fx+fw,fy,12,fh);ctx.fillRect(fx-45,fy+fh,fw+90,10);line(ctx,fx-55,fy+fh+14,fx+fw+55,fy+fh+14,"#9A9A9A",3);line(ctx,42,fy,42,fy+fh,"#003C96",2);line(ctx,32,fy,52,fy,"#003C96",2);line(ctx,32,fy+fh,52,fy+fh,"#003C96",2);txt(ctx,"ALTEZZA LUCE",38,255,12,"#003C96","right");txt(ctx,altezza+" mm",38,278,13,"#003C96","right","1000");line(ctx,945,fy-55,945,fy+fh,"#003C96",2);line(ctx,934,fy-55,956,fy-55,"#003C96",2);line(ctx,934,fy+fh,956,fy+fh,"#003C96",2);txt(ctx,"ALTEZZA TOTALE",960,255,12,"#003C96","left");txt(ctx,(altezza+100)+" mm",960,278,13,"#003C96","left","1000");line(ctx,fx+205,415,fx+fw-205,415,"#003C96",2);line(ctx,fx+205,405,fx+205,425,"#003C96",2);line(ctx,fx+fw-205,405,fx+fw-205,425,"#003C96",2);txt(ctx,"LUCE NETTA DI PASSAGGIO",500,409,12,"#003C96");txt(ctx,luce+" mm",500,438,14,"#003C96","center","1000");line(ctx,fx,468,fx+fw,468,"#003C96",2);line(ctx,fx,458,fx,478,"#003C96",2);line(ctx,fx+fw,458,fx+fw,478,"#003C96",2);txt(ctx,"LUNGHEZZA TRAVERSA",500,462,12,"#003C96");txt(ctx,traversaMm+" mm",500,491,14,"#003C96","center","1000");}}
-function drawElettro(){{let c=document.getElementById("elettroIcon"),ctx=c.getContext("2d");ctx.clearRect(0,0,96,96);ctx.fillStyle="#111";rr(ctx,10,25,22,52,4,true,false);ctx.fillStyle="#b7b7b7";ctx.strokeStyle="#555";ctx.lineWidth=2;rr(ctx,38,30,38,32,4,true,true);ctx.fillStyle="#333";ctx.fillRect(50,42,12,8);ctx.fillStyle="#777";[20,62,80].forEach((x,i)=>{{ctx.beginPath();ctx.arc(x,14+i*8,4,0,Math.PI*2);ctx.fill();}});ctx.strokeStyle="#111";line(ctx,60,64,90,78,"#111",3);}}
-function drawRadar(){{let c=document.getElementById("radarIcon"),ctx=c.getContext("2d");ctx.clearRect(0,0,96,96);let g=ctx.createLinearGradient(18,30,78,68);g.addColorStop(0,"#111");g.addColorStop(.6,"#333");g.addColorStop(1,"#050505");ctx.fillStyle=g;ctx.strokeStyle="#111";ctx.lineWidth=2;rr(ctx,12,30,72,32,8,true,true);ctx.fillStyle="#cc0000";ctx.beginPath();ctx.arc(35,50,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(48,50,3,0,Math.PI*2);ctx.fill();}}
-function drawService(){{let c=document.getElementById("serviceIcon"),ctx=c.getContext("2d");ctx.clearRect(0,0,96,96);ctx.strokeStyle="#222";ctx.lineWidth=4;line(ctx,12,72,60,34,"#222",4);ctx.fillStyle="#0A5FD9";rr(ctx,52,28,34,15,8,true,false);ctx.fillStyle="#111";rr(ctx,62,22,15,26,7,true,false);txt(ctx,"EN",48,82,16,"#0057D9","center","1000");txt(ctx,"16005",52,94,12,"#0057D9","center","1000");}}
-drawDoor();drawElettro();drawRadar();drawService();
-</script>
-</body></html>
-"""
-
-
-
-
-
-# =========================
-# V701 - RENDER SOLO AUTOMAZIONE PROPORZIONATO
-# Accessori rimossi dal disegno: rimangono cliccabili nelle checkbox Streamlit.
-# =========================
-def disegno_porta_v701(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
-
-    due_ante = "2" in str(ante or "")
-    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
-    titolo_schema = "SCHEMA TECNICO PORTA SCORREVOLE A 2 ANTE" if due_ante else "SCHEMA TECNICO PORTA SCORREVOLE A 1 ANTA"
-    due_ante_js = "true" if due_ante else "false"
-
-    return f"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-*{{box-sizing:border-box}}
-html,body{{
-    margin:0;
-    padding:0;
-    font-family:Arial,Helvetica,sans-serif;
-    background:#fff;
-    color:#061A40;
-}}
-.v701-wrap{{
-    width:100%;
-    background:#fff;
-    border:1px solid #D8E7FB;
-    border-radius:18px;
-    overflow:hidden;
-    box-shadow:0 10px 26px rgba(0,42,110,.08);
-}}
-.v701-head{{
-    padding:16px 20px 8px 20px;
-}}
-.v701-title{{
-    color:#0047B8;
-    font-size:23px;
-    font-weight:1000;
-    line-height:1.12;
-}}
-.v701-tag{{
-    display:inline-block;
-    margin-top:10px;
-    background:#0057D9;
-    color:#fff;
-    font-size:13px;
-    font-weight:1000;
-    border-radius:7px;
-    padding:8px 12px;
-}}
-.v701-canvas-box{{
-    padding:4px 14px 0 14px;
-}}
-#doorCanvasV701{{
-    width:100%;
-    height:520px;
-    display:block;
-    background:#fff;
-    border:1px solid #EDF3FC;
-    border-radius:14px;
-}}
-.v701-metrics{{
-    border-top:1px solid #D8E7FB;
-    background:#FBFDFF;
-    display:grid;
-    grid-template-columns:repeat(6,1fr);
-}}
-.v701-metric{{
-    padding:13px 8px;
-    border-right:1px solid #D8E7FB;
-    min-height:78px;
-    text-align:center;
-    color:#06245C;
-    font-weight:900;
-}}
-.v701-metric:last-child{{border-right:0}}
-.v701-metric b{{
-    display:block;
-    color:#0057D9;
-    font-size:18px;
-    margin-top:4px;
-}}
-.v701-metric small{{
-    display:block;
-    color:#465B78;
-    font-size:10px;
-    margin-top:3px;
-}}
-</style>
-</head>
-<body>
-<div class="v701-wrap">
-  <div class="v701-head">
-    <div class="v701-title">V701 - {titolo_schema}</div>
-    <div class="v701-tag">AUTOMAZIONE</div>
-  </div>
-
-  <div class="v701-canvas-box">
-    <canvas id="doorCanvasV701" width="1280" height="520"></canvas>
-  </div>
-
-  <div class="v701-metrics">
-    <div class="v701-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
-    <div class="v701-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
-    <div class="v701-metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div>
-    <div class="v701-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
-    <div class="v701-metric">Portata<b>120 kg</b><small>Per anta</small></div>
-    <div class="v701-metric">Velocità<b>0,6 m/s</b><small>Regolabile</small></div>
-  </div>
-</div>
-
-<script>
-const dueAnte = {due_ante_js};
-const luce = {luce};
-const altezza = {altezza};
-const traversaMm = {int(traversa*1000)};
-
-function rr(ctx,x,y,w,h,r,fill,stroke){{
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.lineTo(x+w-r,y);
-    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-    ctx.lineTo(x+w,y+h-r);
-    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-    ctx.lineTo(x+r,y+h);
-    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-    ctx.lineTo(x,y+r);
-    ctx.quadraticCurveTo(x,y,x+r,y);
-    ctx.closePath();
-    if(fill) ctx.fill();
-    if(stroke) ctx.stroke();
-}}
-function line(ctx,x1,y1,x2,y2,c,w){{
-    ctx.strokeStyle=c;
-    ctx.lineWidth=w;
-    ctx.beginPath();
-    ctx.moveTo(x1,y1);
-    ctx.lineTo(x2,y2);
-    ctx.stroke();
-}}
-function txt(ctx,t,x,y,s,c,a="center",w="900"){{
-    ctx.font=w+" "+s+"px Arial";
-    ctx.fillStyle=c;
-    ctx.textAlign=a;
-    ctx.fillText(t,x,y);
-}}
-function arrow(ctx,x1,y1,x2,y2,c){{
-    line(ctx,x1,y1,x2,y2,c,8);
-    const a=Math.atan2(y2-y1,x2-x1);
-    ctx.fillStyle=c;
-    ctx.beginPath();
-    ctx.moveTo(x2,y2);
-    ctx.lineTo(x2-18*Math.cos(a-Math.PI/6),y2-18*Math.sin(a-Math.PI/6));
-    ctx.lineTo(x2-18*Math.cos(a+Math.PI/6),y2-18*Math.sin(a+Math.PI/6));
-    ctx.closePath();
-    ctx.fill();
-}}
-function glass(ctx,x,y,w,h){{
-    const g=ctx.createLinearGradient(x,y,x+w,y+h);
-    g.addColorStop(0,"rgba(255,255,255,.96)");
-    g.addColorStop(.42,"rgba(210,240,255,.66)");
-    g.addColorStop(1,"rgba(145,215,255,.76)");
-    ctx.fillStyle=g;
-    ctx.strokeStyle="#1D8BFF";
-    ctx.lineWidth=3;
-    rr(ctx,x,y,w,h,4,true,true);
-
-    line(ctx,x+35,y+16,x+w-42,y+h-42,"rgba(255,255,255,.82)",3);
-    line(ctx,x+88,y+16,x+w-15,y+h-105,"rgba(255,255,255,.55)",2);
-}}
-function bolt(ctx,x,y){{
-    ctx.fillStyle="#2A2A2A";
-    ctx.beginPath();
-    ctx.arc(x,y,4,0,Math.PI*2);
-    ctx.fill();
-    ctx.fillStyle="#A0A0A0";
-    ctx.beginPath();
-    ctx.arc(x,y,1.8,0,Math.PI*2);
-    ctx.fill();
-}}
-function drawDoor(){{
-    const c=document.getElementById("doorCanvasV701");
-    const ctx=c.getContext("2d");
-    ctx.clearRect(0,0,1280,520);
-
-    // proporzioni più realistiche e larghe
-    const fx=150, fy=138, fw=955, fh=245;
-    const railX=105, railY=56, railW=1045, railH=62;
-
-    // sfondo tecnico pulito
-    for(let x=40;x<1240;x+=45) line(ctx,x,35,x,500,"rgba(0,87,217,.025)",1);
-    for(let y=40;y<500;y+=45) line(ctx,35,y,1245,y,"rgba(0,87,217,.025)",1);
-
-    // ombra traversa
-    ctx.shadowColor="rgba(0,0,0,.20)";
-    ctx.shadowBlur=12;
-    ctx.shadowOffsetY=5;
-
-    // traversa più definita
-    const rg=ctx.createLinearGradient(railX,railY,railX,railY+railH);
-    rg.addColorStop(0,"#F3F3F3");
-    rg.addColorStop(.18,"#AFAFAF");
-    rg.addColorStop(.45,"#F9F9F9");
-    rg.addColorStop(.72,"#B8B8B8");
-    rg.addColorStop(1,"#6F6F6F");
-    ctx.fillStyle=rg;
-    ctx.strokeStyle="#222";
-    ctx.lineWidth=2.5;
-    rr(ctx,railX,railY,railW,railH,3,true,true);
-    ctx.shadowBlur=0;
-    ctx.shadowOffsetY=0;
-
-    // coperchio / binari interni
-    line(ctx,railX+28,railY+19,railX+railW-28,railY+19,"#202020",3);
-    line(ctx,railX+28,railY+39,railX+railW-28,railY+39,"#555",2);
-    line(ctx,railX+28,railY+51,railX+railW-28,railY+51,"#222",1.5);
-
-    txt(ctx,"sesamo",railX+82,railY+24,13,"#0057D9","center","900");
-    txt(ctx,"SA-TEC",railX+82,railY+47,16,"#0057D9","center","1000");
-
-    // motore più definito
-    ctx.fillStyle="#111";
-    rr(ctx,railX+railW-180,railY+11,105,40,5,true,false);
-    const mg=ctx.createLinearGradient(railX+railW-175,railY+13,railX+railW-80,railY+50);
-    mg.addColorStop(0,"#252525");
-    mg.addColorStop(1,"#050505");
-    ctx.fillStyle=mg;
-    rr(ctx,railX+railW-174,railY+14,92,34,5,true,false);
-    ctx.fillStyle="#333";
-    rr(ctx,railX+railW-76,railY+19,44,25,4,true,false);
-    txt(ctx,"MOT",railX+railW-54,railY+36,10,"#FFF");
-
-    // pulegge, staffe e carrelli
-    function pulley(x){{
-        ctx.fillStyle="#111";
-        ctx.beginPath();
-        ctx.arc(x,railY+31,10,0,Math.PI*2);
-        ctx.fill();
-        ctx.fillStyle="#777";
-        ctx.beginPath();
-        ctx.arc(x,railY+31,4,0,Math.PI*2);
-        ctx.fill();
-    }}
-    [285,335,540,590,760,810,930].forEach(pulley);
-
-    function bracket(x){{
-        ctx.fillStyle="#EAEAEA";
-        ctx.strokeStyle="#333";
-        ctx.lineWidth=1.5;
-        rr(ctx,x,railY+32,34,22,3,true,true);
-        bolt(ctx,x+8,railY+39);
-        bolt(ctx,x+26,railY+39);
-        line(ctx,x+17,railY+54,x+17,fy+12,"#333",2);
-    }}
-    [255,420,610,785].forEach(bracket);
-
-    function trolley(x){{
-        ctx.fillStyle="#222";
-        rr(ctx,x,railY+55,58,13,3,true,false);
-        line(ctx,x+13,railY+68,x+13,fy+14,"#222",2.5);
-        line(ctx,x+45,railY+68,x+45,fy+14,"#222",2.5);
-    }}
-
-    // telaio vano
-    ctx.strokeStyle="#222";
-    ctx.lineWidth=3;
-    rr(ctx,fx,fy,fw,fh,5,false,true);
-
-    if(dueAnte){{
-        trolley(420);
-        trolley(735);
-        glass(ctx,215,154,445,214);
-        glass(ctx,660,154,445,214);
-        line(ctx,660,154,660,368,"#003C96",4);
-        arrow(ctx,640,260,545,260,"#148C2E");
-        arrow(ctx,680,260,775,260,"#148C2E");
-    }} else {{
-        trolley(505);
-        trolley(790);
-        glass(ctx,390,154,540,214);
-        arrow(ctx,635,260,820,260,"#148C2E");
-    }}
-
-    txt(ctx,"APERTURA",660,297,15,"#148C2E");
-    txt(ctx,"AUTOMATICA",660,318,15,"#148C2E");
-
-    // montanti e base
-    ctx.fillStyle="#D8D8D8";
-    ctx.fillRect(fx-13,fy,13,fh);
-    ctx.fillRect(fx+fw,fy,13,fh);
-    ctx.fillRect(fx-50,fy+fh,fw+100,11);
-    line(ctx,fx-65,fy+fh+16,fx+fw+65,fy+fh+16,"#9A9A9A",3);
-
-    // quote altezza
-    line(ctx,70,fy,70,fy+fh,"#003C96",2);
-    line(ctx,58,fy,82,fy,"#003C96",2);
-    line(ctx,58,fy+fh,82,fy+fh,"#003C96",2);
-    txt(ctx,"ALTEZZA LUCE",62,255,13,"#003C96","right");
-    txt(ctx,altezza+" mm",62,280,15,"#003C96","right","1000");
-
-    line(ctx,1190,fy-58,1190,fy+fh,"#003C96",2);
-    line(ctx,1178,fy-58,1202,fy-58,"#003C96",2);
-    line(ctx,1178,fy+fh,1202,fy+fh,"#003C96",2);
-    txt(ctx,"ALTEZZA TOTALE",1206,255,13,"#003C96","left");
-    txt(ctx,(altezza+100)+" mm",1206,280,15,"#003C96","left","1000");
-
-    // quote orizzontali
-    line(ctx,fx+260,426,fx+fw-260,426,"#003C96",2);
-    line(ctx,fx+260,415,fx+260,437,"#003C96",2);
-    line(ctx,fx+fw-260,415,fx+fw-260,437,"#003C96",2);
-    txt(ctx,"LUCE NETTA DI PASSAGGIO",640,421,13,"#003C96");
-    txt(ctx,luce+" mm",640,451,16,"#003C96","center","1000");
-
-    line(ctx,fx,482,fx+fw,482,"#003C96",2);
-    line(ctx,fx,471,fx,493,"#003C96",2);
-    line(ctx,fx+fw,471,fx+fw,493,"#003C96",2);
-    txt(ctx,"LUNGHEZZA TRAVERSA",640,477,13,"#003C96");
-    txt(ctx,traversaMm+" mm",640,506,16,"#003C96","center","1000");
-}}
-drawDoor();
-</script>
-</body>
-</html>
-"""
-
-
-
-
-
-# =========================
-# V800 - HEADER E RENDER CATALOGO SESAMO / SA-TEC
-# =========================
-def v800_style():
-    st.markdown("""
-    <style>
-    .stApp{background:linear-gradient(180deg,#F3F8FF 0%,#FFFFFF 72%)!important;}
-    .block-container{padding-top:.6rem!important;max-width:1550px!important;}
-    .v800-header{background:#FFFFFF;border:1px solid #C9DCF7;border-radius:20px;overflow:hidden;box-shadow:0 10px 26px rgba(0,43,103,.10);margin:6px 0 12px 0;}
-    .v800-header-top{display:grid;grid-template-columns:190px minmax(0,1fr) 330px;align-items:center;min-height:128px;background:#FFFFFF;}
-    .v800-logo-box{height:128px;border-right:1px solid #D8E7FB;display:flex;align-items:center;justify-content:center;background:#FFFFFF;padding:10px;}
-    .v800-logo-img{max-width:145px;max-height:105px;object-fit:contain;}
-    .v800-logo-fallback{color:#0057D9;font-size:34px;font-weight:1000;}
-    .v800-title-box{padding:18px 26px;}
-    .v800-title{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:42px;line-height:1;font-weight:1000;letter-spacing:.3px;}
-    .v800-subtitle{color:#475569!important;-webkit-text-fill-color:#475569!important;font-size:17px;font-weight:900;margin-top:10px;letter-spacing:.4px;text-transform:uppercase;}
-    .v800-company{border-left:1px solid #D8E7FB;padding:16px 22px;color:#061A40!important;-webkit-text-fill-color:#061A40!important;font-size:14px;line-height:1.55;font-weight:900;}
-    .v800-company b{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:15px;}
-    .v800-nav{background:linear-gradient(90deg,#003C96,#0057D9);min-height:48px;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;color:#FFFFFF!important;}
-    .v800-nav div{text-align:center;font-size:14px;font-weight:1000;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-right:1px solid rgba(255,255,255,.22);}
-    .v800-nav div:last-child{border-right:0;}
-    section[data-testid="stSidebar"]{background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;border-right:5px solid #F5B301!important;}
-    section[data-testid="stSidebar"] h1,section[data-testid="stSidebar"] h2,section[data-testid="stSidebar"] h3,section[data-testid="stSidebar"] p,section[data-testid="stSidebar"] span,section[data-testid="stSidebar"] label,section[data-testid="stSidebar"] div{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;}
-    section[data-testid="stSidebar"] input,section[data-testid="stSidebar"] textarea,section[data-testid="stSidebar"] [data-baseweb="input"],section[data-testid="stSidebar"] [data-baseweb="input"] *,section[data-testid="stSidebar"] [data-baseweb="select"],section[data-testid="stSidebar"] [data-baseweb="select"] *{background:#FFFFFF!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
-    .stButton button,.stDownloadButton button{background:#FFFFFF!important;color:#0057D9!important;-webkit-text-fill-color:#0057D9!important;border:2px solid #0057D9!important;border-radius:14px!important;min-height:48px!important;font-size:15px!important;font-weight:1000!important;box-shadow:0 6px 15px rgba(0,87,217,.12)!important;}
-    .stButton button:hover,.stDownloadButton button:hover{background:#F5B301!important;color:#111111!important;-webkit-text-fill-color:#111111!important;border-color:#F5B301!important;}
-    [data-testid="stCheckbox"] label{background:#FFFFFF!important;border:2px solid #C9DCF7!important;border-radius:14px!important;padding:10px 12px!important;box-shadow:0 4px 12px rgba(0,87,217,.06)!important;transition:all .18s ease!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
-    [data-testid="stCheckbox"] label:hover{border-color:#0057D9!important;background:#F4F8FF!important;}
-    [data-testid="stCheckbox"] label:has(input:checked){background:#EAF3FF!important;border-color:#0057D9!important;box-shadow:0 0 0 3px rgba(0,87,217,.16),0 8px 18px rgba(0,87,217,.12)!important;}
-    </style>
-    """, unsafe_allow_html=True)
-
-def v800_header():
-    st.markdown("""
-    <div class="v800-header">
-        <div class="v800-header-top">
-            <div class="v800-logo-box"><img src="data:image/png;base64,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" class="v800-logo-img"></div>
-            <div class="v800-title-box">
-                <div class="v800-title">SA-TEC - CONFIGURATORE PORTE AUTOMATICHE</div>
-                <div class="v800-subtitle">Tecnologia, sicurezza e soluzioni su misura</div>
-            </div>
-            <div class="v800-company">
-                <b>SA-TEC S.R.L.s</b><br>
-                📍 Via L. Settembrini 84<br>
-                88046 Lamezia Terme (CZ)<br>
-                ☎ 0968-036797<br>
-                ✉ sacco.tecnologie@gmail.com
-            </div>
-        </div>
-        <div class="v800-nav">
-            <div>⌂ HOME</div><div>⚙ CONFIGURATORE</div><div>▤ CATALOGO</div><div>▥ CODICI</div><div>☏ ASSISTENZA</div><div>⚙ IMPOSTAZIONI</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-def disegno_porta_v800(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
-
-    due_ante = "2" in str(ante or "")
-    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
-    titolo_schema = "SCORREVOLE AUTOMATICA A 2 ANTE" if due_ante else "SCORREVOLE AUTOMATICA A 1 ANTA"
-    due_ante_js = "true" if due_ante else "false"
-
-    return f"""
-<!doctype html>
-<html><head><meta charset="utf-8">
-<style>
-*{{box-sizing:border-box}}html,body{{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#fff;color:#061A40}}
-.v800-wrap{{width:100%;background:#fff;border:1px solid #D8E7FB;border-radius:18px;overflow:hidden;box-shadow:0 10px 26px rgba(0,42,110,.08)}}
-.v800-head{{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px 8px 22px}}
-.v800-title-local{{color:#0047B8;font-size:24px;font-weight:1000;line-height:1.12}}
-.v800-sub-local{{color:#64748B;font-size:13px;font-weight:900;margin-top:6px;text-transform:uppercase;letter-spacing:.4px}}
-.v800-brand{{text-align:right;color:#0047B8;font-size:30px;font-weight:1000;line-height:1}}
-.v800-brand small{{display:block;color:#475569;font-size:11px;letter-spacing:1.2px;margin-top:4px}}
-.v800-canvas-box{{padding:4px 18px 0 18px}}
-#doorCanvasV800{{width:100%;height:545px;display:block;background:#fff;border:1px solid #EDF3FC;border-radius:14px}}
-.v800-metrics{{border-top:1px solid #D8E7FB;background:#FBFDFF;display:grid;grid-template-columns:repeat(6,1fr)}}
-.v800-metric{{padding:13px 8px;border-right:1px solid #D8E7FB;min-height:78px;text-align:center;color:#06245C;font-weight:900}}
-.v800-metric:last-child{{border-right:0}}.v800-metric b{{display:block;color:#0057D9;font-size:18px;margin-top:4px}}.v800-metric small{{display:block;color:#465B78;font-size:10px;margin-top:3px}}
-</style></head>
-<body>
-<div class="v800-wrap">
-  <div class="v800-head">
-    <div><div class="v800-title-local">V800 - SCHEMA TECNICO PORTA {titolo_schema}</div><div class="v800-sub-local">SESAMO POWERCORE PW100 · SA-TEC · Disegno tecnico proporzionato</div></div>
-    <div class="v800-brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div>
-  </div>
-  <div class="v800-canvas-box"><canvas id="doorCanvasV800" width="1360" height="545"></canvas></div>
-  <div class="v800-metrics">
-    <div class="v800-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
-    <div class="v800-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
-    <div class="v800-metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div>
-    <div class="v800-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
-    <div class="v800-metric">Portata<b>120 kg</b><small>Per anta</small></div>
-    <div class="v800-metric">Velocità<b>0,6 m/s</b><small>Regolabile</small></div>
-  </div>
-</div>
-<script>
-const dueAnte={due_ante_js}; const luce={luce}; const altezza={altezza}; const traversaMm={int(traversa*1000)};
-function rr(ctx,x,y,w,h,r,fill,stroke){{ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();if(fill)ctx.fill();if(stroke)ctx.stroke();}}
-function line(ctx,x1,y1,x2,y2,c,w){{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}}
-function txt(ctx,t,x,y,s,c,a="center",w="900"){{ctx.font=w+" "+s+"px Arial";ctx.fillStyle=c;ctx.textAlign=a;ctx.fillText(t,x,y);}}
-function arrow(ctx,x1,y1,x2,y2,c){{line(ctx,x1,y1,x2,y2,c,8);const a=Math.atan2(y2-y1,x2-x1);ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-19*Math.cos(a-Math.PI/6),y2-19*Math.sin(a-Math.PI/6));ctx.lineTo(x2-19*Math.cos(a+Math.PI/6),y2-19*Math.sin(a+Math.PI/6));ctx.closePath();ctx.fill();}}
-function glass(ctx,x,y,w,h){{const g=ctx.createLinearGradient(x,y,x+w,y+h);g.addColorStop(0,"rgba(255,255,255,.98)");g.addColorStop(.35,"rgba(220,244,255,.72)");g.addColorStop(1,"rgba(145,215,255,.78)");ctx.fillStyle=g;ctx.strokeStyle="#0C82F5";ctx.lineWidth=3;rr(ctx,x,y,w,h,2,true,true);line(ctx,x+34,y+16,x+w-42,y+h-42,"rgba(255,255,255,.86)",3);line(ctx,x+90,y+16,x+w-16,y+h-112,"rgba(255,255,255,.58)",2);}}
-function bolt(ctx,x,y){{ctx.fillStyle="#292929";ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();ctx.fillStyle="#A0A0A0";ctx.beginPath();ctx.arc(x,y,1.7,0,Math.PI*2);ctx.fill();}}
-function drawDoor(){{
- const c=document.getElementById("doorCanvasV800"),ctx=c.getContext("2d");ctx.clearRect(0,0,1360,545);
- const railX=130,railY=58,railW=1100,railH=70,fx=185,fy=160,fw=990,fh=245;
- for(let x=50;x<1310;x+=50)line(ctx,x,35,x,520,"rgba(0,87,217,.018)",1);
- for(let y=40;y<525;y+=50)line(ctx,45,y,1315,y,"rgba(0,87,217,.018)",1);
- ctx.shadowColor="rgba(0,0,0,.20)";ctx.shadowBlur=13;ctx.shadowOffsetY=6;
- const rg=ctx.createLinearGradient(railX,railY,railX,railY+railH);rg.addColorStop(0,"#FAFAFA");rg.addColorStop(.11,"#D8D8D8");rg.addColorStop(.28,"#A2A2A2");rg.addColorStop(.48,"#F6F6F6");rg.addColorStop(.70,"#BDBDBD");rg.addColorStop(1,"#727272");
- ctx.fillStyle=rg;ctx.strokeStyle="#202020";ctx.lineWidth=2.4;rr(ctx,railX,railY,railW,railH,3,true,true);ctx.shadowBlur=0;ctx.shadowOffsetY=0;
- line(ctx,railX+28,railY+20,railX+railW-28,railY+20,"#242424",3);line(ctx,railX+28,railY+44,railX+railW-28,railY+44,"#505050",2);line(ctx,railX+28,railY+59,railX+railW-28,railY+59,"#222",1.4);
- txt(ctx,"SESAMO",railX+88,railY+28,19,"#0057D9","center","1000");txt(ctx,"SA-TEC",railX+88,railY+55,15,"#0057D9","center","1000");
- ctx.fillStyle="#111";rr(ctx,railX+railW-210,railY+12,128,44,5,true,false);const mg=ctx.createLinearGradient(railX+railW-202,railY+14,railX+railW-95,railY+55);mg.addColorStop(0,"#3A3A3A");mg.addColorStop(.55,"#0F0F0F");mg.addColorStop(1,"#020202");ctx.fillStyle=mg;rr(ctx,railX+railW-202,railY+15,108,38,5,true,false);ctx.fillStyle="#4A4A4A";rr(ctx,railX+railW-90,railY+20,45,27,4,true,false);txt(ctx,"MOT",railX+railW-68,railY+38,11,"#FFF");
- function pulley(x){{ctx.fillStyle="#111";ctx.beginPath();ctx.arc(x,railY+35,11,0,Math.PI*2);ctx.fill();ctx.fillStyle="#777";ctx.beginPath();ctx.arc(x,railY+35,4.5,0,Math.PI*2);ctx.fill();}}[335,392,580,637,820,877,1010].forEach(pulley);line(ctx,335,railY+35,1010,railY+35,"#181818",2.2);
- function bracket(x){{ctx.fillStyle="#E9E9E9";ctx.strokeStyle="#333";ctx.lineWidth=1.5;rr(ctx,x,railY+41,40,24,3,true,true);bolt(ctx,x+10,railY+49);bolt(ctx,x+30,railY+49);line(ctx,x+20,railY+65,x+20,fy+13,"#333",2.4);}}[290,475,660,845,1030].forEach(bracket);
- function trolley(x){{ctx.fillStyle="#1F1F1F";rr(ctx,x,railY+63,62,14,3,true,false);line(ctx,x+14,railY+77,x+14,fy+13,"#202020",2.5);line(ctx,x+48,railY+77,x+48,fy+13,"#202020",2.5);}}
- ctx.strokeStyle="#222";ctx.lineWidth=2.8;rr(ctx,fx,fy,fw,fh,4,false,true);
- if(dueAnte){{trolley(430);trolley(765);glass(ctx,255,176,455,210);glass(ctx,710,176,455,210);line(ctx,710,176,710,386,"#003C96",3.5);arrow(ctx,690,270,585,270,"#148C2E");arrow(ctx,730,270,835,270,"#148C2E");}}else{{trolley(545);trolley(835);glass(ctx,435,176,540,210);arrow(ctx,690,270,875,270,"#148C2E");}}
- txt(ctx,"APERTURA",710,307,15,"#148C2E");txt(ctx,"AUTOMATICA",710,329,15,"#148C2E");
- ctx.fillStyle="#D6D6D6";ctx.fillRect(fx-10,fy,10,fh);ctx.fillRect(fx+fw,fy,10,fh);ctx.fillStyle="#CFCFCF";ctx.fillRect(fx-55,fy+fh,fw+110,10);line(ctx,fx-70,fy+fh+16,fx+fw+70,fy+fh+16,"#9A9A9A",2.8);
- line(ctx,92,fy,92,fy+fh,"#003C96",2);line(ctx,80,fy,104,fy,"#003C96",2);line(ctx,80,fy+fh,104,fy+fh,"#003C96",2);txt(ctx,"ALTEZZA LUCE",84,260,13,"#003C96","right");txt(ctx,altezza+" mm",84,286,15,"#003C96","right","1000");
- line(ctx,1260,fy-65,1260,fy+fh,"#003C96",2);line(ctx,1248,fy-65,1272,fy-65,"#003C96",2);line(ctx,1248,fy+fh,1272,fy+fh,"#003C96",2);txt(ctx,"ALTEZZA TOTALE",1278,260,13,"#003C96","left");txt(ctx,(altezza+100)+" mm",1278,286,15,"#003C96","left","1000");
- line(ctx,fx+280,440,fx+fw-280,440,"#003C96",2);line(ctx,fx+280,429,fx+280,451,"#003C96",2);line(ctx,fx+fw-280,429,fx+fw-280,451,"#003C96",2);txt(ctx,"LUCE NETTA DI PASSAGGIO",680,434,13,"#003C96");txt(ctx,luce+" mm",680,464,16,"#003C96","center","1000");
- line(ctx,fx,502,fx+fw,502,"#003C96",2);line(ctx,fx,491,fx,513,"#003C96",2);line(ctx,fx+fw,491,fx+fw,513,"#003C96",2);txt(ctx,"LUNGHEZZA TRAVERSA",680,497,13,"#003C96");txt(ctx,traversaMm+" mm",680,527,16,"#003C96","center","1000");
-}}
-drawDoor();
-</script>
-</body></html>
-"""
-
-
-
-
-
-# =========================
-# V802 - SVG STATICO DEFINITIVO SESAMO / SA-TEC
-# No Canvas. No Javascript. Immagine diversa garantita.
-# =========================
-def v802_style():
-    st.markdown("""
-    <style>
-    .stApp{background:linear-gradient(180deg,#F3F8FF 0%,#FFFFFF 72%)!important;}
-    .block-container{padding-top:.6rem!important;max-width:1550px!important;}
-    .v802-header{background:#FFFFFF;border:1px solid #C9DCF7;border-radius:20px;overflow:hidden;box-shadow:0 10px 26px rgba(0,43,103,.10);margin:6px 0 12px 0;}
-    .v802-header-top{display:grid;grid-template-columns:190px minmax(0,1fr) 330px;align-items:center;min-height:128px;background:#FFFFFF;}
-    .v802-logo-box{height:128px;border-right:1px solid #D8E7FB;display:flex;align-items:center;justify-content:center;background:#FFFFFF;padding:10px;}
-    .v802-logo-img{max-width:145px;max-height:105px;object-fit:contain;}
-    .v802-logo-fallback{color:#0057D9;font-size:34px;font-weight:1000;}
-    .v802-title-box{padding:18px 26px;}
-    .v802-title{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:42px;line-height:1;font-weight:1000;letter-spacing:.3px;}
-    .v802-subtitle{color:#475569!important;-webkit-text-fill-color:#475569!important;font-size:17px;font-weight:900;margin-top:10px;letter-spacing:.4px;text-transform:uppercase;}
-    .v802-company{border-left:1px solid #D8E7FB;padding:16px 22px;color:#061A40!important;-webkit-text-fill-color:#061A40!important;font-size:14px;line-height:1.55;font-weight:900;}
-    .v802-company b{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:15px;}
-    .v802-nav{background:linear-gradient(90deg,#003C96,#0057D9);min-height:48px;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;color:#FFFFFF!important;}
-    .v802-nav div{text-align:center;font-size:14px;font-weight:1000;color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;border-right:1px solid rgba(255,255,255,.22);}
-    .v802-nav div:last-child{border-right:0;}
-    section[data-testid="stSidebar"]{background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;border-right:5px solid #F5B301!important;}
-    section[data-testid="stSidebar"] h1,section[data-testid="stSidebar"] h2,section[data-testid="stSidebar"] h3,section[data-testid="stSidebar"] p,section[data-testid="stSidebar"] span,section[data-testid="stSidebar"] label,section[data-testid="stSidebar"] div{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;}
-    section[data-testid="stSidebar"] input,section[data-testid="stSidebar"] textarea,section[data-testid="stSidebar"] [data-baseweb="input"],section[data-testid="stSidebar"] [data-baseweb="input"] *,section[data-testid="stSidebar"] [data-baseweb="select"],section[data-testid="stSidebar"] [data-baseweb="select"] *{background:#FFFFFF!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
-    .stButton button,.stDownloadButton button{background:#FFFFFF!important;color:#0057D9!important;-webkit-text-fill-color:#0057D9!important;border:2px solid #0057D9!important;border-radius:14px!important;min-height:48px!important;font-size:15px!important;font-weight:1000!important;box-shadow:0 6px 15px rgba(0,87,217,.12)!important;}
-    .stButton button:hover,.stDownloadButton button:hover{background:#F5B301!important;color:#111111!important;-webkit-text-fill-color:#111111!important;border-color:#F5B301!important;}
-    [data-testid="stCheckbox"] label{background:#FFFFFF!important;border:2px solid #C9DCF7!important;border-radius:14px!important;padding:10px 12px!important;box-shadow:0 4px 12px rgba(0,87,217,.06)!important;transition:all .18s ease!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
-    [data-testid="stCheckbox"] label:hover{border-color:#0057D9!important;background:#F4F8FF!important;}
-    [data-testid="stCheckbox"] label:has(input:checked){background:#EAF3FF!important;border-color:#0057D9!important;box-shadow:0 0 0 3px rgba(0,87,217,.16),0 8px 18px rgba(0,87,217,.12)!important;}
-    </style>
-    """, unsafe_allow_html=True)
-
-def v802_header():
-    st.markdown("""
-    <div class="v802-header">
-        <div class="v802-header-top">
-            <div class="v802-logo-box"><img src="data:image/png;base64,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" class="v802-logo-img"></div>
-            <div class="v802-title-box">
-                <div class="v802-title">SA-TEC - CONFIGURATORE PORTE AUTOMATICHE</div>
-                <div class="v802-subtitle">Tecnologia, sicurezza e soluzioni su misura</div>
-            </div>
-            <div class="v802-company">
-                <b>SA-TEC S.R.L.s</b><br>
-                📍 Via L. Settembrini 84<br>
-                88046 Lamezia Terme (CZ)<br>
-                ☎ 0968-036797<br>
-                ✉ sacco.tecnologie@gmail.com
-            </div>
-        </div>
-        <div class="v802-nav">
-            <div>⌂ HOME</div><div>⚙ CONFIGURATORE</div><div>▤ CATALOGO</div><div>▥ CODICI</div><div>☏ ASSISTENZA</div><div>⚙ IMPOSTAZIONI</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-def disegno_porta_v802(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
-
-    due_ante = "2" in str(ante or "")
-    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
-    titolo = "PORTA SCORREVOLE AUTOMATICA A 2 ANTE" if due_ante else "PORTA SCORREVOLE AUTOMATICA A 1 ANTA"
-
-    if due_ante:
-        doors_svg = """
-        <g id="doors">
-            <rect x="260" y="210" width="430" height="220" rx="2" fill="url(#glass)" stroke="#0B82F0" stroke-width="4"/>
-            <rect x="690" y="210" width="430" height="220" rx="2" fill="url(#glass)" stroke="#0B82F0" stroke-width="4"/>
-            <line x1="690" y1="210" x2="690" y2="430" stroke="#003C96" stroke-width="4"/>
-            <path d="M665 315 L560 315" stroke="#148C2E" stroke-width="8" stroke-linecap="round"/>
-            <polygon points="560,315 580,303 580,327" fill="#148C2E"/>
-            <path d="M715 315 L820 315" stroke="#148C2E" stroke-width="8" stroke-linecap="round"/>
-            <polygon points="820,315 800,303 800,327" fill="#148C2E"/>
-        </g>
-        <g id="hangers">
-            <rect x="420" y="148" width="78" height="16" rx="3" fill="#1f1f1f"/>
-            <line x1="440" y1="164" x2="440" y2="210" stroke="#222" stroke-width="4"/>
-            <line x1="478" y1="164" x2="478" y2="210" stroke="#222" stroke-width="4"/>
-            <rect x="795" y="148" width="78" height="16" rx="3" fill="#1f1f1f"/>
-            <line x1="815" y1="164" x2="815" y2="210" stroke="#222" stroke-width="4"/>
-            <line x1="853" y1="164" x2="853" y2="210" stroke="#222" stroke-width="4"/>
-        </g>
-        """
-    else:
-        doors_svg = """
-        <g id="doors">
-            <rect x="420" y="210" width="560" height="220" rx="2" fill="url(#glass)" stroke="#0B82F0" stroke-width="4"/>
-            <path d="M690 315 L875 315" stroke="#148C2E" stroke-width="8" stroke-linecap="round"/>
-            <polygon points="875,315 855,303 855,327" fill="#148C2E"/>
-        </g>
-        <g id="hangers">
-            <rect x="540" y="148" width="78" height="16" rx="3" fill="#1f1f1f"/>
-            <line x1="560" y1="164" x2="560" y2="210" stroke="#222" stroke-width="4"/>
-            <line x1="598" y1="164" x2="598" y2="210" stroke="#222" stroke-width="4"/>
-            <rect x="810" y="148" width="78" height="16" rx="3" fill="#1f1f1f"/>
-            <line x1="830" y1="164" x2="830" y2="210" stroke="#222" stroke-width="4"/>
-            <line x1="868" y1="164" x2="868" y2="210" stroke="#222" stroke-width="4"/>
-        </g>
-        """
-
-    return f"""
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-body{{margin:0;font-family:Arial,Helvetica,sans-serif;background:white;color:#061A40}}
-.sheet{{border:1px solid #D8E7FB;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 10px 26px rgba(0,42,110,.08)}}
-.head{{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px 8px 22px}}
-.title{{color:#0047B8;font-size:24px;font-weight:1000;line-height:1.12}}
-.sub{{color:#64748B;font-size:13px;font-weight:900;margin-top:6px;text-transform:uppercase;letter-spacing:.4px}}
-.brand{{text-align:right;color:#0047B8;font-size:30px;font-weight:1000;line-height:1}}
-.brand small{{display:block;color:#475569;font-size:11px;letter-spacing:1.2px;margin-top:4px}}
-.svgbox{{padding:4px 18px 0 18px}}
-.metrics{{border-top:1px solid #D8E7FB;background:#FBFDFF;display:grid;grid-template-columns:repeat(6,1fr)}}
-.metric{{padding:13px 8px;border-right:1px solid #D8E7FB;min-height:78px;text-align:center;color:#06245C;font-weight:900}}
-.metric:last-child{{border-right:0}}
-.metric b{{display:block;color:#0057D9;font-size:18px;margin-top:4px}}
-.metric small{{display:block;color:#465B78;font-size:10px;margin-top:3px}}
-</style>
-</head>
-<body>
-<div class="sheet">
-    <div class="head">
-        <div>
-            <div class="title">V802 - SCHEMA TECNICO {titolo}</div>
-            <div class="sub">SESAMO POWERCORE PW100 · SA-TEC · SVG statico definitivo</div>
-        </div>
-        <div class="brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div>
-    </div>
-
-    <div class="svgbox">
-        <svg width="100%" height="545" viewBox="0 0 1360 545" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="rail" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#fafafa"/>
-                    <stop offset="12%" stop-color="#d8d8d8"/>
-                    <stop offset="30%" stop-color="#9f9f9f"/>
-                    <stop offset="50%" stop-color="#f6f6f6"/>
-                    <stop offset="73%" stop-color="#bdbdbd"/>
-                    <stop offset="100%" stop-color="#707070"/>
-                </linearGradient>
-                <linearGradient id="motor" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#3a3a3a"/>
-                    <stop offset="55%" stop-color="#101010"/>
-                    <stop offset="100%" stop-color="#020202"/>
-                </linearGradient>
-                <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stop-color="#ffffff" stop-opacity=".98"/>
-                    <stop offset="42%" stop-color="#d9f1ff" stop-opacity=".72"/>
-                    <stop offset="100%" stop-color="#91d7ff" stop-opacity=".78"/>
-                </linearGradient>
-                <filter id="shadow" x="-10%" y="-20%" width="120%" height="150%">
-                    <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity=".20"/>
-                </filter>
-            </defs>
-
-            <rect x="130" y="58" width="1100" height="70" rx="3" fill="url(#rail)" stroke="#202020" stroke-width="2.5" filter="url(#shadow)"/>
-            <line x1="158" y1="78" x2="1202" y2="78" stroke="#242424" stroke-width="3"/>
-            <line x1="158" y1="102" x2="1202" y2="102" stroke="#505050" stroke-width="2"/>
-            <line x1="158" y1="117" x2="1202" y2="117" stroke="#222" stroke-width="1.5"/>
-            <text x="218" y="86" fill="#0057D9" font-size="19" font-weight="1000" text-anchor="middle">SESAMO</text>
-            <text x="218" y="113" fill="#0057D9" font-size="15" font-weight="1000" text-anchor="middle">SA-TEC</text>
-
-            <rect x="1020" y="70" width="128" height="44" rx="5" fill="#111"/>
-            <rect x="1028" y="73" width="108" height="38" rx="5" fill="url(#motor)"/>
-            <rect x="1140" y="78" width="45" height="27" rx="4" fill="#4a4a4a"/>
-            <text x="1162" y="96" fill="#fff" font-size="11" font-weight="900" text-anchor="middle">MOT</text>
-
-            <g fill="#111">
-                <circle cx="335" cy="93" r="11"/><circle cx="392" cy="93" r="11"/>
-                <circle cx="580" cy="93" r="11"/><circle cx="637" cy="93" r="11"/>
-                <circle cx="820" cy="93" r="11"/><circle cx="877" cy="93" r="11"/>
-                <circle cx="1010" cy="93" r="11"/>
-            </g>
-            <g fill="#777">
-                <circle cx="335" cy="93" r="4.5"/><circle cx="392" cy="93" r="4.5"/>
-                <circle cx="580" cy="93" r="4.5"/><circle cx="637" cy="93" r="4.5"/>
-                <circle cx="820" cy="93" r="4.5"/><circle cx="877" cy="93" r="4.5"/>
-                <circle cx="1010" cy="93" r="4.5"/>
-            </g>
-            <line x1="335" y1="93" x2="1010" y2="93" stroke="#181818" stroke-width="2.2"/>
-
-            <g>
-                <rect x="185" y="160" width="990" height="245" rx="4" fill="none" stroke="#222" stroke-width="3"/>
-                <rect x="175" y="160" width="10" height="245" fill="#d6d6d6"/>
-                <rect x="1175" y="160" width="10" height="245" fill="#d6d6d6"/>
-                <rect x="130" y="405" width="1100" height="10" fill="#cfcfcf"/>
-                <line x1="115" y1="421" x2="1245" y2="421" stroke="#9a9a9a" stroke-width="3"/>
-            </g>
-
-            {doors_svg}
-
-            <text x="710" y="365" fill="#148C2E" font-size="15" font-weight="1000" text-anchor="middle">APERTURA</text>
-            <text x="710" y="386" fill="#148C2E" font-size="15" font-weight="1000" text-anchor="middle">AUTOMATICA</text>
-
-            <line x1="92" y1="160" x2="92" y2="405" stroke="#003C96" stroke-width="2"/>
-            <line x1="80" y1="160" x2="104" y2="160" stroke="#003C96" stroke-width="2"/>
-            <line x1="80" y1="405" x2="104" y2="405" stroke="#003C96" stroke-width="2"/>
-            <text x="84" y="260" fill="#003C96" font-size="13" font-weight="900" text-anchor="end">ALTEZZA LUCE</text>
-            <text x="84" y="286" fill="#003C96" font-size="15" font-weight="1000" text-anchor="end">{altezza} mm</text>
-
-            <line x1="1260" y1="95" x2="1260" y2="405" stroke="#003C96" stroke-width="2"/>
-            <line x1="1248" y1="95" x2="1272" y2="95" stroke="#003C96" stroke-width="2"/>
-            <line x1="1248" y1="405" x2="1272" y2="405" stroke="#003C96" stroke-width="2"/>
-            <text x="1278" y="260" fill="#003C96" font-size="13" font-weight="900">ALTEZZA TOTALE</text>
-            <text x="1278" y="286" fill="#003C96" font-size="15" font-weight="1000">{altezza + 100} mm</text>
-
-            <line x1="465" y1="440" x2="895" y2="440" stroke="#003C96" stroke-width="2"/>
-            <line x1="465" y1="429" x2="465" y2="451" stroke="#003C96" stroke-width="2"/>
-            <line x1="895" y1="429" x2="895" y2="451" stroke="#003C96" stroke-width="2"/>
-            <text x="680" y="434" fill="#003C96" font-size="13" font-weight="900" text-anchor="middle">LUCE NETTA DI PASSAGGIO</text>
-            <text x="680" y="464" fill="#003C96" font-size="16" font-weight="1000" text-anchor="middle">{luce} mm</text>
-
-            <line x1="185" y1="502" x2="1175" y2="502" stroke="#003C96" stroke-width="2"/>
-            <line x1="185" y1="491" x2="185" y2="513" stroke="#003C96" stroke-width="2"/>
-            <line x1="1175" y1="491" x2="1175" y2="513" stroke="#003C96" stroke-width="2"/>
-            <text x="680" y="497" fill="#003C96" font-size="13" font-weight="900" text-anchor="middle">LUNGHEZZA TRAVERSA</text>
-            <text x="680" y="527" fill="#003C96" font-size="16" font-weight="1000" text-anchor="middle">{int(traversa*1000)} mm</text>
-        </svg>
-    </div>
-
-    <div class="metrics">
-        <div class="metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
-        <div class="metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
-        <div class="metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div>
-        <div class="metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
-        <div class="metric">Portata<b>120 kg</b><small>Per anta</small></div>
-        <div class="metric">Velocità<b>0,6 m/s</b><small>Regolabile</small></div>
-    </div>
-</div>
-</body>
-</html>
-"""
-
-
-
-
-
-# =========================
-# V1000 PROFESSIONAL SA-TEC / SESAMO
-# Render diretto con st.markdown: non usa components, non sparisce.
-# =========================
-def v1000_style():
-    st.markdown('''
-    <style>
-    .stApp{background:linear-gradient(180deg,#F4F8FF 0%,#FFFFFF 75%)!important;}
-    .block-container{padding-top:.6rem!important;max-width:1580px!important;}
-    .v1000-header{background:#fff;border:1px solid #C9DCF7;border-radius:20px;overflow:hidden;box-shadow:0 10px 26px rgba(0,43,103,.10);margin:6px 0 12px 0;}
-    .v1000-header-top{display:grid;grid-template-columns:190px minmax(0,1fr) 330px;align-items:center;min-height:128px;background:#fff;}
-    .v1000-logo-box{height:128px;border-right:1px solid #D8E7FB;display:flex;align-items:center;justify-content:center;background:#fff;padding:10px;}
-    .v1000-logo-img{max-width:145px;max-height:105px;object-fit:contain;}
-    .v1000-title-box{padding:18px 26px;}.v1000-title{color:#003C96!important;font-size:42px;line-height:1;font-weight:1000;letter-spacing:.3px;}
-    .v1000-subtitle{color:#475569!important;font-size:17px;font-weight:900;margin-top:10px;letter-spacing:.4px;text-transform:uppercase;}
-    .v1000-company{border-left:1px solid #D8E7FB;padding:16px 22px;color:#061A40!important;font-size:14px;line-height:1.55;font-weight:900;}.v1000-company b{color:#003C96!important;}
-    .v1000-nav{background:linear-gradient(90deg,#003C96,#0057D9);min-height:48px;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;color:#fff!important;}
-    .v1000-nav div{text-align:center;font-size:14px;font-weight:1000;color:#fff!important;border-right:1px solid rgba(255,255,255,.22);}
-    section[data-testid="stSidebar"]{background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;border-right:5px solid #F5B301!important;}
-    section[data-testid="stSidebar"] *{color:#fff!important;-webkit-text-fill-color:#fff!important;}
-    section[data-testid="stSidebar"] input,section[data-testid="stSidebar"] textarea,section[data-testid="stSidebar"] [data-baseweb="input"],section[data-testid="stSidebar"] [data-baseweb="input"] *,section[data-testid="stSidebar"] [data-baseweb="select"],section[data-testid="stSidebar"] [data-baseweb="select"] *{background:#fff!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
-    [data-testid="stCheckbox"] label{background:#fff!important;border:2px solid #C9DCF7!important;border-radius:14px!important;padding:10px 12px!important;box-shadow:0 4px 12px rgba(0,87,217,.06)!important;transition:all .18s ease!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
-    [data-testid="stCheckbox"] label:hover{border-color:#0057D9!important;background:#F4F8FF!important;}
-    [data-testid="stCheckbox"] label:has(input:checked){background:#EAF3FF!important;border-color:#0057D9!important;box-shadow:0 0 0 3px rgba(0,87,217,.16),0 8px 18px rgba(0,87,217,.12)!important;}
-    .v1000-sheet{background:#fff;border:1px solid #D8E7FB;border-radius:18px;overflow:hidden;box-shadow:0 12px 30px rgba(0,42,110,.10);margin-bottom:12px;}
-    .v1000-sheet-head{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px 8px 22px;}.v1000-sheet-title{color:#0047B8;font-size:25px;font-weight:1000;line-height:1.12;}.v1000-sheet-sub{color:#64748B;font-size:13px;font-weight:900;margin-top:6px;text-transform:uppercase;letter-spacing:.4px;}
-    .v1000-brand{color:#0047B8;font-size:30px;font-weight:1000;text-align:right;line-height:1;}.v1000-brand small{display:block;color:#475569;font-size:11px;letter-spacing:1.2px;margin-top:4px;}
-    .v1000-svgbox{padding:4px 18px 0 18px;}.v1000-svgbox svg{width:100%;height:auto;display:block;border:1px solid #EDF3FC;border-radius:14px;background:white;}
-    .v1000-metrics{border-top:1px solid #D8E7FB;background:#FBFDFF;display:grid;grid-template-columns:repeat(6,1fr);}.v1000-metric{padding:13px 8px;border-right:1px solid #D8E7FB;min-height:78px;text-align:center;color:#06245C;font-weight:900;}.v1000-metric b{display:block;color:#0057D9;font-size:18px;margin-top:4px;}.v1000-metric small{display:block;color:#465B78;font-size:10px;margin-top:3px;}
-    </style>
-    ''', unsafe_allow_html=True)
-
-def v1000_header():
-    st.markdown('''
-    <div class="v1000-header"><div class="v1000-header-top"><div class="v1000-logo-box"><img src="data:image/png;base64,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" class="v1000-logo-img"></div><div class="v1000-title-box"><div class="v1000-title">SA-TEC - CONFIGURATORE PORTE AUTOMATICHE</div><div class="v1000-subtitle">Preventivo e disegno tecnico</div></div><div class="v1000-company"><b>SA-TEC S.R.L.s</b><br>📍 Via L. Settembrini 84<br>88046 Lamezia Terme (CZ)<br>☎ 0968-036797<br>✉ sacco.tecnologie@gmail.com</div></div><div class="v1000-nav"><div>⌂ HOME</div><div>⚙ CONFIGURATORE</div><div>▤ CATALOGO</div><div>▥ CODICI</div><div>☏ ASSISTENZA</div><div>⚙ IMPOSTAZIONI</div></div></div>
-    ''', unsafe_allow_html=True)
-
-def disegno_porta_v1000(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try: luce=int(float(luce_mm))
-    except Exception: luce=1600
-    try: altezza=int(float(altezza_mm))
-    except Exception: altezza=2200
-    try: traversa=float(lunghezza_traversa)
-    except Exception: traversa=0.0
-    due_ante='2' in str(ante or '')
-    ante_numero='2 ANTE' if due_ante else '1 ANTA'
-    titolo='PORTA SCORREVOLE AUTOMATICA A 2 ANTE' if due_ante else 'PORTA SCORREVOLE AUTOMATICA A 1 ANTA'
-    if due_ante:
-        ante_svg='''<rect x="250" y="190" width="430" height="245" fill="url(#glass)" stroke="#0B82F0" stroke-width="4"/><rect x="680" y="190" width="430" height="245" fill="url(#glass)" stroke="#0B82F0" stroke-width="4"/><line x1="680" y1="190" x2="680" y2="435" stroke="#003C96" stroke-width="4"/><path d="M660 315 L555 315" stroke="#148C2E" stroke-width="9" stroke-linecap="round"/><polygon points="555,315 577,302 577,328" fill="#148C2E"/><path d="M700 315 L805 315" stroke="#148C2E" stroke-width="9" stroke-linecap="round"/><polygon points="805,315 783,302 783,328" fill="#148C2E"/><rect x="415" y="145" width="82" height="18" rx="4" fill="#111"/><line x1="438" y1="163" x2="438" y2="190" stroke="#111" stroke-width="5"/><line x1="474" y1="163" x2="474" y2="190" stroke="#111" stroke-width="5"/><rect x="785" y="145" width="82" height="18" rx="4" fill="#111"/><line x1="808" y1="163" x2="808" y2="190" stroke="#111" stroke-width="5"/><line x1="844" y1="163" x2="844" y2="190" stroke="#111" stroke-width="5"/>'''
-    else:
-        ante_svg='''<rect x="390" y="190" width="560" height="245" fill="url(#glass)" stroke="#0B82F0" stroke-width="4"/><path d="M660 315 L845 315" stroke="#148C2E" stroke-width="9" stroke-linecap="round"/><polygon points="845,315 823,302 823,328" fill="#148C2E"/><rect x="515" y="145" width="82" height="18" rx="4" fill="#111"/><line x1="538" y1="163" x2="538" y2="190" stroke="#111" stroke-width="5"/><line x1="574" y1="163" x2="574" y2="190" stroke="#111" stroke-width="5"/><rect x="805" y="145" width="82" height="18" rx="4" fill="#111"/><line x1="828" y1="163" x2="828" y2="190" stroke="#111" stroke-width="5"/><line x1="864" y1="163" x2="864" y2="190" stroke="#111" stroke-width="5"/>'''
-    html=f'''
-    <div class="v1000-sheet"><div class="v1000-sheet-head"><div><div class="v1000-sheet-title">V1000 PROFESSIONAL - {titolo}</div><div class="v1000-sheet-sub">SESAMO POWERCORE PW100 · SA-TEC · Preventivo e disegno tecnico</div></div><div class="v1000-brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div></div><div class="v1000-svgbox">
-    <svg viewBox="0 0 1360 560" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="rail" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff"/><stop offset="12%" stop-color="#d9d9d9"/><stop offset="30%" stop-color="#9b9b9b"/><stop offset="50%" stop-color="#f7f7f7"/><stop offset="72%" stop-color="#b8b8b8"/><stop offset="100%" stop-color="#6f6f6f"/></linearGradient><linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity=".98"/><stop offset="40%" stop-color="#d9f1ff" stop-opacity=".74"/><stop offset="100%" stop-color="#91d7ff" stop-opacity=".78"/></linearGradient><linearGradient id="motor" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3A3A3A"/><stop offset="55%" stop-color="#101010"/><stop offset="100%" stop-color="#020202"/></linearGradient><filter id="drop"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity=".20"/></filter></defs>
-    <rect x="130" y="60" width="1100" height="76" rx="3" fill="url(#rail)" stroke="#202020" stroke-width="2.5" filter="url(#drop)"/><line x1="160" y1="82" x2="1200" y2="82" stroke="#242424" stroke-width="3"/><line x1="160" y1="108" x2="1200" y2="108" stroke="#505050" stroke-width="2"/><line x1="160" y1="124" x2="1200" y2="124" stroke="#222" stroke-width="1.5"/><text x="220" y="88" fill="#0057D9" font-size="20" font-weight="1000" text-anchor="middle">SESAMO</text><text x="220" y="116" fill="#0057D9" font-size="16" font-weight="1000" text-anchor="middle">SA-TEC</text><rect x="1015" y="74" width="132" height="46" rx="5" fill="#111"/><rect x="1023" y="77" width="112" height="40" rx="5" fill="url(#motor)"/><rect x="1140" y="83" width="45" height="27" rx="4" fill="#4a4a4a"/><text x="1162" y="101" fill="#fff" font-size="11" font-weight="900" text-anchor="middle">MOT</text>
-    <line x1="330" y1="98" x2="1010" y2="98" stroke="#181818" stroke-width="2.3"/><g fill="#111"><circle cx="330" cy="98" r="11"/><circle cx="390" cy="98" r="11"/><circle cx="575" cy="98" r="11"/><circle cx="635" cy="98" r="11"/><circle cx="820" cy="98" r="11"/><circle cx="880" cy="98" r="11"/><circle cx="1010" cy="98" r="11"/></g><g fill="#777"><circle cx="330" cy="98" r="4.5"/><circle cx="390" cy="98" r="4.5"/><circle cx="575" cy="98" r="4.5"/><circle cx="635" cy="98" r="4.5"/><circle cx="820" cy="98" r="4.5"/><circle cx="880" cy="98" r="4.5"/><circle cx="1010" cy="98" r="4.5"/></g><g fill="#e9e9e9" stroke="#333" stroke-width="1.5"><rect x="285" y="112" width="42" height="24" rx="3"/><rect x="475" y="112" width="42" height="24" rx="3"/><rect x="660" y="112" width="42" height="24" rx="3"/><rect x="845" y="112" width="42" height="24" rx="3"/><rect x="1030" y="112" width="42" height="24" rx="3"/></g>
-    <rect x="185" y="170" width="990" height="275" rx="4" fill="none" stroke="#222" stroke-width="3"/><rect x="175" y="170" width="10" height="275" fill="#d6d6d6"/><rect x="1175" y="170" width="10" height="275" fill="#d6d6d6"/><rect x="130" y="445" width="1100" height="11" fill="#cfcfcf"/><line x1="115" y1="462" x2="1245" y2="462" stroke="#9a9a9a" stroke-width="3"/>{ante_svg}<text x="680" y="365" fill="#148C2E" font-size="16" font-weight="1000" text-anchor="middle">APERTURA</text><text x="680" y="388" fill="#148C2E" font-size="16" font-weight="1000" text-anchor="middle">AUTOMATICA</text>
-    <line x1="92" y1="170" x2="92" y2="445" stroke="#003C96" stroke-width="2"/><line x1="80" y1="170" x2="104" y2="170" stroke="#003C96" stroke-width="2"/><line x1="80" y1="445" x2="104" y2="445" stroke="#003C96" stroke-width="2"/><text x="84" y="285" fill="#003C96" font-size="13" font-weight="900" text-anchor="end">ALTEZZA LUCE</text><text x="84" y="312" fill="#003C96" font-size="16" font-weight="1000" text-anchor="end">{altezza} mm</text><line x1="1260" y1="100" x2="1260" y2="445" stroke="#003C96" stroke-width="2"/><line x1="1248" y1="100" x2="1272" y2="100" stroke="#003C96" stroke-width="2"/><line x1="1248" y1="445" x2="1272" y2="445" stroke="#003C96" stroke-width="2"/><text x="1278" y="285" fill="#003C96" font-size="13" font-weight="900">ALTEZZA TOTALE</text><text x="1278" y="312" fill="#003C96" font-size="16" font-weight="1000">{altezza+100} mm</text><line x1="465" y1="480" x2="895" y2="480" stroke="#003C96" stroke-width="2"/><line x1="465" y1="469" x2="465" y2="491" stroke="#003C96" stroke-width="2"/><line x1="895" y1="469" x2="895" y2="491" stroke="#003C96" stroke-width="2"/><text x="680" y="474" fill="#003C96" font-size="13" font-weight="900" text-anchor="middle">LUCE NETTA DI PASSAGGIO</text><text x="680" y="504" fill="#003C96" font-size="16" font-weight="1000" text-anchor="middle">{luce} mm</text><line x1="185" y1="530" x2="1175" y2="530" stroke="#003C96" stroke-width="2"/><line x1="185" y1="519" x2="185" y2="541" stroke="#003C96" stroke-width="2"/><line x1="1175" y1="519" x2="1175" y2="541" stroke="#003C96" stroke-width="2"/><text x="680" y="525" fill="#003C96" font-size="13" font-weight="900" text-anchor="middle">LUNGHEZZA TRAVERSA</text><text x="680" y="555" fill="#003C96" font-size="16" font-weight="1000" text-anchor="middle">{int(traversa*1000)} mm</text></svg></div>
-    <div class="v1000-metrics"><div class="v1000-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div><div class="v1000-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div><div class="v1000-metric">Altezza luce<b>{altezza} mm</b><small>Personalizzata</small></div><div class="v1000-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div><div class="v1000-metric">Portata<b>120 kg</b><small>Per anta</small></div><div class="v1000-metric">Velocità<b>0,6 m/s</b><small>Regolabile</small></div></div></div>'''
-    return html
-
-
-
-
-# =========================
-# V1001 - RENDER SEMPLICE PROFESSIONALE
-# Solo traversa rettangolare + ante vetro.
-# Niente interno traversa, niente motore, niente carrelli.
-# =========================
-def v1001_style():
-    st.markdown("""
-    <style>
-    .stApp{background:linear-gradient(180deg,#F4F8FF 0%,#FFFFFF 75%)!important;}
-    .block-container{padding-top:.6rem!important;max-width:1500px!important;}
-    .v1001-header{background:#fff;border:1px solid #C9DCF7;border-radius:18px;overflow:hidden;box-shadow:0 8px 22px rgba(0,43,103,.10);margin:6px 0 14px 0;}
-    .v1001-headtop{display:grid;grid-template-columns:1fr 330px;align-items:center;min-height:112px;}
-    .v1001-titlebox{padding:18px 24px;}
-    .v1001-title{color:#003C96!important;-webkit-text-fill-color:#003C96!important;font-size:40px;line-height:1;font-weight:1000;}
-    .v1001-subtitle{color:#475569!important;-webkit-text-fill-color:#475569!important;font-size:16px;font-weight:900;margin-top:10px;text-transform:uppercase;}
-    .v1001-company{border-left:1px solid #D8E7FB;padding:16px 22px;color:#061A40!important;-webkit-text-fill-color:#061A40!important;font-size:14px;line-height:1.55;font-weight:900;}
-    .v1001-company b{color:#003C96!important;-webkit-text-fill-color:#003C96!important;}
-    .v1001-bar{background:linear-gradient(90deg,#003C96,#0057D9);height:46px;display:flex;align-items:center;justify-content:center;color:white!important;-webkit-text-fill-color:white!important;font-weight:1000;letter-spacing:.3px;}
-    section[data-testid="stSidebar"]{background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;border-right:5px solid #F5B301!important;}
-    section[data-testid="stSidebar"] *{color:#FFFFFF!important;-webkit-text-fill-color:#FFFFFF!important;}
-    section[data-testid="stSidebar"] input,section[data-testid="stSidebar"] textarea,section[data-testid="stSidebar"] [data-baseweb="input"],section[data-testid="stSidebar"] [data-baseweb="input"] *,section[data-testid="stSidebar"] [data-baseweb="select"],section[data-testid="stSidebar"] [data-baseweb="select"] *{background:#FFFFFF!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
-    .stButton button,.stDownloadButton button{background:#FFFFFF!important;color:#0057D9!important;-webkit-text-fill-color:#0057D9!important;border:2px solid #0057D9!important;border-radius:14px!important;min-height:48px!important;font-size:15px!important;font-weight:1000!important;}
-    .stButton button:hover,.stDownloadButton button:hover{background:#F5B301!important;color:#111!important;-webkit-text-fill-color:#111!important;border-color:#F5B301!important;}
-    [data-testid="stCheckbox"] label{background:#FFFFFF!important;border:2px solid #C9DCF7!important;border-radius:14px!important;padding:10px 12px!important;color:#071124!important;-webkit-text-fill-color:#071124!important;font-weight:900!important;}
-    [data-testid="stCheckbox"] label:has(input:checked){background:#EAF3FF!important;border-color:#0057D9!important;box-shadow:0 0 0 3px rgba(0,87,217,.16)!important;}
-    .v1001-sheet{background:#fff;border:1px solid #D8E7FB;border-radius:18px;overflow:hidden;box-shadow:0 10px 26px rgba(0,42,110,.08);margin-bottom:14px;}
-    .v1001-sheet-head{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 22px 8px 22px;}
-    .v1001-sheet-title{color:#0047B8;font-size:24px;font-weight:1000;}
-    .v1001-sheet-sub{color:#64748B;font-size:13px;font-weight:900;margin-top:6px;text-transform:uppercase;}
-    .v1001-brand{color:#0047B8;font-size:30px;font-weight:1000;text-align:right;}
-    .v1001-brand small{display:block;color:#475569;font-size:11px;letter-spacing:1.2px;margin-top:4px;}
-    .v1001-svgbox{padding:4px 18px 0 18px;}
-    .v1001-svgbox svg{width:100%;height:auto;display:block;border:1px solid #EDF3FC;border-radius:14px;background:white;}
-    .v1001-metrics{border-top:1px solid #D8E7FB;background:#FBFDFF;display:grid;grid-template-columns:repeat(4,1fr);}
-    .v1001-metric{padding:13px 8px;border-right:1px solid #D8E7FB;text-align:center;color:#06245C;font-weight:900;}
-    .v1001-metric:last-child{border-right:0;}
-    .v1001-metric b{display:block;color:#0057D9;font-size:18px;margin-top:4px;}
-    .v1001-metric small{display:block;color:#465B78;font-size:10px;margin-top:3px;}
-    </style>
-    """, unsafe_allow_html=True)
-
-def v1001_header():
-    st.markdown("""
-    <div class="v1001-header">
-        <div class="v1001-headtop">
-            <div class="v1001-titlebox">
-                <div class="v1001-title">SA-TEC - CONFIGURATORE PORTE AUTOMATICHE</div>
-                <div class="v1001-subtitle">Disegno tecnico semplice, pulito e proporzionato</div>
-            </div>
-            <div class="v1001-company">
-                <b>SA-TEC S.R.L.s</b><br>
-                Via L. Settembrini 84<br>
-                88046 Lamezia Terme (CZ)<br>
-                ☎ 0968-036797<br>
-                ✉ sacco.tecnologie@gmail.com
-            </div>
-        </div>
-        <div class="v1001-bar">SESAMO POWERCORE PW100 · PREVENTIVO PORTE AUTOMATICHE</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-def disegno_porta_v1001(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
-
-    due_ante = "2" in str(ante or "")
-    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
-    titolo = "PORTA SCORREVOLE AUTOMATICA A 2 ANTE" if due_ante else "PORTA SCORREVOLE AUTOMATICA A 1 ANTA"
-
-    if due_ante:
-        ante_svg = """
-        <rect x="235" y="170" width="455" height="250" rx="4" fill="url(#glassDark)" stroke="#0B82F0" stroke-width="4"/>
-        <rect x="690" y="170" width="455" height="250" rx="4" fill="url(#glassDark)" stroke="#0B82F0" stroke-width="4"/>
-        <line x1="690" y1="170" x2="690" y2="420" stroke="#003C96" stroke-width="5"/>
-        <path d="M660 295 L555 295" stroke="#148C2E" stroke-width="9" stroke-linecap="round"/>
-        <polygon points="555,295 578,282 578,308" fill="#148C2E"/>
-        <path d="M720 295 L825 295" stroke="#148C2E" stroke-width="9" stroke-linecap="round"/>
-        <polygon points="825,295 802,282 802,308" fill="#148C2E"/>
-        """
-    else:
-        ante_svg = """
-        <rect x="405" y="170" width="560" height="250" rx="4" fill="url(#glassDark)" stroke="#0B82F0" stroke-width="4"/>
-        <path d="M650 295 L835 295" stroke="#148C2E" stroke-width="9" stroke-linecap="round"/>
-        <polygon points="835,295 812,282 812,308" fill="#148C2E"/>
-        """
-
-    html = f"""
-    <div class="v1001-sheet">
-        <div class="v1001-sheet-head">
-            <div>
-                <div class="v1001-sheet-title">V1001 - {titolo}</div>
-                <div class="v1001-sheet-sub">Solo traversa e ante · niente interno traversa · 1/2 ante automatiche</div>
-            </div>
-            <div class="v1001-brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div>
-        </div>
-
-        <div class="v1001-svgbox">
-            <svg viewBox="0 0 1360 520" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <linearGradient id="railSimple" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#f7f7f7"/>
-                        <stop offset="45%" stop-color="#b8b8b8"/>
-                        <stop offset="100%" stop-color="#7c7c7c"/>
-                    </linearGradient>
-                    <linearGradient id="glassDark" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#ffffff" stop-opacity=".95"/>
-                        <stop offset="42%" stop-color="#b9e3ff" stop-opacity=".78"/>
-                        <stop offset="100%" stop-color="#5fb6ee" stop-opacity=".82"/>
-                    </linearGradient>
-                    <filter id="drop2" x="-10%" y="-20%" width="120%" height="150%">
-                        <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity=".18"/>
-                    </filter>
-                </defs>
-
-                <rect x="150" y="70" width="1060" height="72" rx="4" fill="url(#railSimple)" stroke="#222" stroke-width="2.5" filter="url(#drop2)"/>
-                <text x="235" y="112" fill="#0057D9" font-size="28" font-weight="1000" text-anchor="middle">SESAMO</text>
-                <text x="1130" y="113" fill="#003C96" font-size="18" font-weight="1000" text-anchor="middle">PW100</text>
-
-                <rect x="185" y="150" width="990" height="290" rx="4" fill="none" stroke="#222" stroke-width="3"/>
-                <rect x="175" y="150" width="10" height="290" fill="#d6d6d6"/>
-                <rect x="1175" y="150" width="10" height="290" fill="#d6d6d6"/>
-                <rect x="130" y="440" width="1100" height="11" fill="#cfcfcf"/>
-                <line x1="115" y1="458" x2="1245" y2="458" stroke="#9a9a9a" stroke-width="3"/>
-
-                {ante_svg}
-
-                <text x="680" y="350" fill="#148C2E" font-size="17" font-weight="1000" text-anchor="middle">APERTURA AUTOMATICA</text>
-
-                <line x1="85" y1="150" x2="85" y2="440" stroke="#003C96" stroke-width="2"/>
-                <line x1="73" y1="150" x2="97" y2="150" stroke="#003C96" stroke-width="2"/>
-                <line x1="73" y1="440" x2="97" y2="440" stroke="#003C96" stroke-width="2"/>
-                <text x="75" y="290" fill="#003C96" font-size="14" font-weight="900" text-anchor="end">ALTEZZA</text>
-                <text x="75" y="316" fill="#003C96" font-size="16" font-weight="1000" text-anchor="end">{altezza} mm</text>
-
-                <line x1="465" y1="475" x2="895" y2="475" stroke="#003C96" stroke-width="2"/>
-                <line x1="465" y1="464" x2="465" y2="486" stroke="#003C96" stroke-width="2"/>
-                <line x1="895" y1="464" x2="895" y2="486" stroke="#003C96" stroke-width="2"/>
-                <text x="680" y="468" fill="#003C96" font-size="14" font-weight="900" text-anchor="middle">LUCE NETTA</text>
-                <text x="680" y="500" fill="#003C96" font-size="17" font-weight="1000" text-anchor="middle">{luce} mm</text>
-            </svg>
-        </div>
-
-        <div class="v1001-metrics">
-            <div class="v1001-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
-            <div class="v1001-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
-            <div class="v1001-metric">Altezza<b>{altezza} mm</b><small>Luce porta</small></div>
-            <div class="v1001-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
-        </div>
-    </div>
-    """
-    return html
-
-
-v1001_style()
-v1001_header()
-
-
-
-# =========================
-# V1004 - MOCKUP PULITO PROFESSIONALE
-# Traversa grande, ante vetro scure, 1/2 ante automatiche.
-# =========================
-def disegno_porta_v1004(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
-
-    due_ante = "2" in str(ante or "")
-    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
-    titolo = "PORTA SCORREVOLE AUTOMATICA A 2 ANTE" if due_ante else "PORTA SCORREVOLE AUTOMATICA A 1 ANTA"
-
-    if due_ante:
-        ante_svg = '''
-            <rect x="330" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-            <rect x="680" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-            <line x1="680" y1="188" x2="680" y2="488" stroke="#003C96" stroke-width="5"/>
-            <path d="M655 340 L555 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
-            <polygon points="555,340 578,327 578,353" fill="#0B8F2A"/>
-            <path d="M705 340 L805 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
-            <polygon points="805,340 782,327 782,353" fill="#0B8F2A"/>
-        '''
-    else:
-        ante_svg = '''
-            <rect x="430" y="188" width="510" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-            <rect x="685" y="188" width="255" height="300" rx="0" fill="rgba(10,60,90,.08)"/>
-            <path d="M600 340 L780 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
-            <polygon points="780,340 756,326 756,354" fill="#0B8F2A"/>
-        '''
-
-    return f'''
-    <div class="v1001-sheet">
-        <div class="v1001-sheet-head">
-            <div>
-                <div class="v1001-sheet-title">V1004 - {titolo}</div>
-                <div class="v1001-sheet-sub">Traversa grande · ante vetro scure · grafica pulita</div>
-            </div>
-            <div class="v1001-brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div>
-        </div>
-
-        <div class="v1001-svgbox">
-            <svg viewBox="0 0 1360 585" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <linearGradient id="railPro" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#eeeeee"/>
-                        <stop offset="18%" stop-color="#cfcfcf"/>
-                        <stop offset="45%" stop-color="#9a9a9a"/>
-                        <stop offset="75%" stop-color="#777777"/>
-                        <stop offset="100%" stop-color="#555555"/>
-                    </linearGradient>
-                    <linearGradient id="glassSoft" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#ffffff" stop-opacity=".92"/>
-                        <stop offset="45%" stop-color="#c8eaf7" stop-opacity=".85"/>
-                        <stop offset="100%" stop-color="#78b7c9" stop-opacity=".90"/>
-                    </linearGradient>
-                    <filter id="shadowPro" x="-15%" y="-25%" width="130%" height="170%">
-                        <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000000" flood-opacity=".24"/>
-                    </filter>
-                    <filter id="softShadow" x="-15%" y="-25%" width="130%" height="170%">
-                        <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000000" flood-opacity=".16"/>
-                    </filter>
-                </defs>
-
-                <rect x="145" y="60" width="1070" height="96" rx="6" fill="url(#railPro)" stroke="#222" stroke-width="2.5" filter="url(#shadowPro)"/>
-                <rect x="155" y="72" width="1050" height="14" rx="3" fill="rgba(255,255,255,.45)"/>
-                <rect x="155" y="138" width="1050" height="11" rx="3" fill="rgba(0,0,0,.32)"/>
-                <text x="255" y="122" fill="#0057D9" font-size="34" font-weight="1000" text-anchor="middle">SESAMO</text>
-                <text x="680" y="121" fill="#ffffff" font-size="22" font-weight="1000" text-anchor="middle">TRAVERSA AUTOMAZIONE</text>
-                <text x="1110" y="122" fill="#003C96" font-size="26" font-weight="1000" text-anchor="middle">PW100</text>
-
-                <rect x="190" y="156" width="12" height="352" fill="#c8c8c8" stroke="#777" stroke-width="1"/>
-                <rect x="1158" y="156" width="12" height="352" fill="#c8c8c8" stroke="#777" stroke-width="1"/>
-                <rect x="185" y="156" width="990" height="352" rx="3" fill="none" stroke="#333" stroke-width="3"/>
-                <rect x="130" y="508" width="1100" height="12" fill="#cfcfcf"/>
-                <line x1="115" y1="525" x2="1245" y2="525" stroke="#9a9a9a" stroke-width="3"/>
-
-                <g filter="url(#softShadow)">
-                    {ante_svg}
-                </g>
-
-                <text x="680" y="392" fill="#0B8F2A" font-size="19" font-weight="1000" text-anchor="middle">APERTURA AUTOMATICA</text>
-
-                <line x1="86" y1="188" x2="86" y2="508" stroke="#003C96" stroke-width="2"/>
-                <line x1="73" y1="188" x2="99" y2="188" stroke="#003C96" stroke-width="2"/>
-                <line x1="73" y1="508" x2="99" y2="508" stroke="#003C96" stroke-width="2"/>
-                <text x="76" y="335" fill="#003C96" font-size="15" font-weight="900" text-anchor="end">ALTEZZA</text>
-                <text x="76" y="365" fill="#003C96" font-size="19" font-weight="1000" text-anchor="end">{altezza} mm</text>
-
-                <line x1="420" y1="545" x2="940" y2="545" stroke="#003C96" stroke-width="2"/>
-                <line x1="420" y1="533" x2="420" y2="557" stroke="#003C96" stroke-width="2"/>
-                <line x1="940" y1="533" x2="940" y2="557" stroke="#003C96" stroke-width="2"/>
-                <text x="680" y="538" fill="#003C96" font-size="15" font-weight="900" text-anchor="middle">LUCE NETTA</text>
-                <text x="680" y="574" fill="#003C96" font-size="20" font-weight="1000" text-anchor="middle">{luce} mm</text>
-            </svg>
-        </div>
-
-        <div class="v1001-metrics">
-            <div class="v1001-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
-            <div class="v1001-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
-            <div class="v1001-metric">Altezza<b>{altezza} mm</b><small>Luce porta</small></div>
-            <div class="v1001-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
-        </div>
-    </div>
-    '''
-
-
-
-# =========================
-# V1005 - GRAFICA DEFINITIVA SEMPLICE
-# Traversa professionale + anta/e vetro scure.
-# =========================
-def disegno_porta_v1005(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
-
-    due_ante = "2" in str(ante or "")
-    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
-    titolo = "PORTA SCORREVOLE AUTOMATICA A 2 ANTE" if due_ante else "PORTA SCORREVOLE AUTOMATICA A 1 ANTA"
-
-    if due_ante:
-        ante_svg = """
-        <rect x="330" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-        <rect x="680" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-        <rect x="680" y="188" width="175" height="300" fill="rgba(10,60,90,.08)"/>
-        <line x1="680" y1="188" x2="680" y2="488" stroke="#003C96" stroke-width="5"/>
-        <path d="M655 340 L555 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
-        <polygon points="555,340 578,327 578,353" fill="#0B8F2A"/>
-        <path d="M705 340 L805 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
-        <polygon points="805,340 782,327 782,353" fill="#0B8F2A"/>
-        """
-    else:
-        ante_svg = """
-        <rect x="430" y="188" width="510" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-        <rect x="685" y="188" width="255" height="300" fill="rgba(10,60,90,.09)"/>
-        <path d="M600 340 L780 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
-        <polygon points="780,340 756,326 756,354" fill="#0B8F2A"/>
-        """
-
-    return f"""
-    <div class="v1001-sheet">
-        <div class="v1001-sheet-head">
-            <div>
-                <div class="v1001-sheet-title">V1005 - {titolo}</div>
-                <div class="v1001-sheet-sub">Traversa professionale · ante vetro scure · grafica cliente</div>
-            </div>
-            <div class="v1001-brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div>
-        </div>
-
-        <div class="v1001-svgbox">
-            <svg viewBox="0 0 1360 585" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <linearGradient id="railPro" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#f4f4f4"/>
-                        <stop offset="18%" stop-color="#cfcfcf"/>
-                        <stop offset="44%" stop-color="#9a9a9a"/>
-                        <stop offset="72%" stop-color="#747474"/>
-                        <stop offset="100%" stop-color="#565656"/>
-                    </linearGradient>
-                    <linearGradient id="glassSoft" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#ffffff" stop-opacity=".94"/>
-                        <stop offset="45%" stop-color="#c8eaf7" stop-opacity=".86"/>
-                        <stop offset="100%" stop-color="#78b7c9" stop-opacity=".91"/>
-                    </linearGradient>
-                    <filter id="shadowPro" x="-15%" y="-25%" width="130%" height="170%">
-                        <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000000" flood-opacity=".24"/>
-                    </filter>
-                    <filter id="softShadow" x="-15%" y="-25%" width="130%" height="170%">
-                        <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000000" flood-opacity=".16"/>
-                    </filter>
-                </defs>
-
-                <rect x="145" y="60" width="1070" height="96" rx="8" fill="url(#railPro)" stroke="#1b1b1b" stroke-width="2.5" filter="url(#shadowPro)"/>
-                <rect x="145" y="60" width="28" height="96" rx="8" fill="#242424"/>
-                <rect x="1187" y="60" width="28" height="96" rx="8" fill="#242424"/>
-                <rect x="165" y="74" width="1030" height="12" rx="3" fill="rgba(255,255,255,.45)"/>
-                <line x1="170" y1="111" x2="1188" y2="111" stroke="#555" stroke-width="3"/>
-                <line x1="170" y1="119" x2="1188" y2="119" stroke="#dddddd" stroke-width="1"/>
-                <rect x="165" y="138" width="1030" height="11" rx="3" fill="rgba(0,0,0,.33)"/>
-                <text x="255" y="122" fill="#0057D9" font-size="34" font-weight="1000" text-anchor="middle">SESAMO</text>
-                <text x="680" y="121" fill="#ffffff" font-size="22" font-weight="1000" text-anchor="middle">TRAVERSA AUTOMAZIONE</text>
-                <text x="1110" y="122" fill="#003C96" font-size="26" font-weight="1000" text-anchor="middle">PW100</text>
-
-                <rect x="190" y="156" width="12" height="352" fill="#c8c8c8" stroke="#777" stroke-width="1"/>
-                <rect x="1158" y="156" width="12" height="352" fill="#c8c8c8" stroke="#777" stroke-width="1"/>
-                <rect x="185" y="156" width="990" height="352" rx="3" fill="none" stroke="#333" stroke-width="3"/>
-                <rect x="130" y="508" width="1100" height="12" fill="#cfcfcf"/>
-                <line x1="115" y1="525" x2="1245" y2="525" stroke="#9a9a9a" stroke-width="3"/>
-
-                <g filter="url(#softShadow)">
-                    {ante_svg}
-                    <path d="M465 190 L610 190 L900 488 L760 488 Z" fill="white" opacity=".16"/>
-                </g>
-
-                <text x="680" y="392" fill="#0B8F2A" font-size="19" font-weight="1000" text-anchor="middle">APERTURA AUTOMATICA</text>
-
-                <line x1="86" y1="188" x2="86" y2="508" stroke="#003C96" stroke-width="2"/>
-                <line x1="73" y1="188" x2="99" y2="188" stroke="#003C96" stroke-width="2"/>
-                <line x1="73" y1="508" x2="99" y2="508" stroke="#003C96" stroke-width="2"/>
-                <text x="76" y="335" fill="#003C96" font-size="15" font-weight="900" text-anchor="end">ALTEZZA</text>
-                <text x="76" y="365" fill="#003C96" font-size="19" font-weight="1000" text-anchor="end">{altezza} mm</text>
-
-                <line x1="420" y1="545" x2="940" y2="545" stroke="#003C96" stroke-width="2"/>
-                <line x1="420" y1="533" x2="420" y2="557" stroke="#003C96" stroke-width="2"/>
-                <line x1="940" y1="533" x2="940" y2="557" stroke="#003C96" stroke-width="2"/>
-                <text x="680" y="538" fill="#003C96" font-size="15" font-weight="900" text-anchor="middle">LUCE NETTA</text>
-                <text x="680" y="574" fill="#003C96" font-size="20" font-weight="1000" text-anchor="middle">{luce} mm</text>
-            </svg>
-        </div>
-
-        <div class="v1001-metrics">
-            <div class="v1001-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
-            <div class="v1001-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
-            <div class="v1001-metric">Altezza<b>{altezza} mm</b><small>Luce porta</small></div>
-            <div class="v1001-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
-        </div>
-    </div>
-    """
-
-
-
-# =========================
-# V1006 - CODICE DEFINITIVO GRAFICA TRAVERSA + ANTE
-# =========================
-def disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa):
-    try:
-        luce = int(float(luce_mm))
-    except Exception:
-        luce = 1600
-    try:
-        altezza = int(float(altezza_mm))
-    except Exception:
-        altezza = 2200
-    try:
-        traversa = float(lunghezza_traversa)
-    except Exception:
-        traversa = 0.0
-
-    due_ante = "2" in str(ante or "")
-    ante_numero = "2 ANTE" if due_ante else "1 ANTA"
-    titolo = "PORTA SCORREVOLE AUTOMATICA A 2 ANTE" if due_ante else "PORTA SCORREVOLE AUTOMATICA A 1 ANTA"
-
-    if due_ante:
-        ante_svg = """
-        <rect x="330" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-        <rect x="680" y="188" width="350" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-        <rect x="680" y="188" width="175" height="300" fill="rgba(10,60,90,.09)"/>
-        <line x1="680" y1="188" x2="680" y2="488" stroke="#003C96" stroke-width="5"/>
-        <path d="M655 340 L555 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
-        <polygon points="555,340 578,327 578,353" fill="#0B8F2A"/>
-        <path d="M705 340 L805 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
-        <polygon points="805,340 782,327 782,353" fill="#0B8F2A"/>
-        """
-    else:
-        ante_svg = """
-        <rect x="430" y="188" width="510" height="300" rx="5" fill="url(#glassSoft)" stroke="#0057D9" stroke-width="5"/>
-        <rect x="685" y="188" width="255" height="300" rx="0" fill="rgba(10,60,90,.09)"/>
-        <path d="M600 340 L780 340" stroke="#0B8F2A" stroke-width="9" stroke-linecap="round"/>
-        <polygon points="780,340 756,326 756,354" fill="#0B8F2A"/>
-        """
-
-    return f"""
-    <div class="v1001-sheet">
-        <div class="v1001-sheet-head">
-            <div>
-                <div class="v1001-sheet-title">V1006 - {titolo}</div>
-                <div class="v1001-sheet-sub">Traversa professionale · ante vetro scure · grafica definitiva</div>
-            </div>
-            <div class="v1001-brand">SESAMO<small>THE DOOR TECHNOLOGY</small></div>
-        </div>
-
-        <div class="v1001-svgbox">
-            <svg viewBox="0 0 1360 585" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <linearGradient id="railPro" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#f4f4f4"/>
-                        <stop offset="18%" stop-color="#cfcfcf"/>
-                        <stop offset="44%" stop-color="#9a9a9a"/>
-                        <stop offset="72%" stop-color="#747474"/>
-                        <stop offset="100%" stop-color="#565656"/>
-                    </linearGradient>
-                    <linearGradient id="glassSoft" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#ffffff" stop-opacity=".94"/>
-                        <stop offset="45%" stop-color="#c8eaf7" stop-opacity=".86"/>
-                        <stop offset="100%" stop-color="#78b7c9" stop-opacity=".91"/>
-                    </linearGradient>
-                    <filter id="shadowPro" x="-15%" y="-25%" width="130%" height="170%">
-                        <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000000" flood-opacity=".24"/>
-                    </filter>
-                    <filter id="softShadow" x="-15%" y="-25%" width="130%" height="170%">
-                        <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000000" flood-opacity=".16"/>
-                    </filter>
-                </defs>
-
-                <rect x="145" y="60" width="1070" height="96" rx="8" fill="url(#railPro)" stroke="#1b1b1b" stroke-width="2.5" filter="url(#shadowPro)"/>
-                <rect x="145" y="60" width="28" height="96" rx="8" fill="#242424"/>
-                <rect x="1187" y="60" width="28" height="96" rx="8" fill="#242424"/>
-                <rect x="165" y="74" width="1030" height="12" rx="3" fill="rgba(255,255,255,.45)"/>
-                <line x1="170" y1="111" x2="1188" y2="111" stroke="#555" stroke-width="3"/>
-                <line x1="170" y1="119" x2="1188" y2="119" stroke="#dddddd" stroke-width="1"/>
-                <rect x="165" y="138" width="1030" height="11" rx="3" fill="rgba(0,0,0,.33)"/>
-                <text x="255" y="122" fill="#0057D9" font-size="34" font-weight="1000" text-anchor="middle">SESAMO</text>
-                <text x="680" y="121" fill="#ffffff" font-size="22" font-weight="1000" text-anchor="middle">TRAVERSA AUTOMAZIONE</text>
-                <text x="1110" y="122" fill="#003C96" font-size="26" font-weight="1000" text-anchor="middle">PW100</text>
-
-                <rect x="190" y="156" width="12" height="352" fill="#c8c8c8" stroke="#777" stroke-width="1"/>
-                <rect x="1158" y="156" width="12" height="352" fill="#c8c8c8" stroke="#777" stroke-width="1"/>
-                <rect x="185" y="156" width="990" height="352" rx="3" fill="none" stroke="#333" stroke-width="3"/>
-                <rect x="130" y="508" width="1100" height="12" fill="#cfcfcf"/>
-                <line x1="115" y1="525" x2="1245" y2="525" stroke="#9a9a9a" stroke-width="3"/>
-
-                <g filter="url(#softShadow)">
-                    {ante_svg}
-                    <path d="M465 190 L610 190 L900 488 L760 488 Z" fill="white" opacity=".16"/>
-                </g>
-
-                <text x="680" y="392" fill="#0B8F2A" font-size="19" font-weight="1000" text-anchor="middle">APERTURA AUTOMATICA</text>
-
-                <line x1="86" y1="188" x2="86" y2="508" stroke="#003C96" stroke-width="2"/>
-                <line x1="73" y1="188" x2="99" y2="188" stroke="#003C96" stroke-width="2"/>
-                <line x1="73" y1="508" x2="99" y2="508" stroke="#003C96" stroke-width="2"/>
-                <text x="76" y="335" fill="#003C96" font-size="15" font-weight="900" text-anchor="end">ALTEZZA</text>
-                <text x="76" y="365" fill="#003C96" font-size="19" font-weight="1000" text-anchor="end">{altezza} mm</text>
-
-                <line x1="420" y1="545" x2="940" y2="545" stroke="#003C96" stroke-width="2"/>
-                <line x1="420" y1="533" x2="420" y2="557" stroke="#003C96" stroke-width="2"/>
-                <line x1="940" y1="533" x2="940" y2="557" stroke="#003C96" stroke-width="2"/>
-                <text x="680" y="538" fill="#003C96" font-size="15" font-weight="900" text-anchor="middle">LUCE NETTA</text>
-                <text x="680" y="574" fill="#003C96" font-size="20" font-weight="1000" text-anchor="middle">{luce} mm</text>
-            </svg>
-        </div>
-
-        <div class="v1001-metrics">
-            <div class="v1001-metric">Tipologia<b>{ante_numero}</b><small>Scorrevole</small></div>
-            <div class="v1001-metric">Luce netta<b>{luce} mm</b><small>Passaggio utile</small></div>
-            <div class="v1001-metric">Altezza<b>{altezza} mm</b><small>Luce porta</small></div>
-            <div class="v1001-metric">Traversa<b>{int(traversa*1000)} mm</b><small>Lunghezza totale</small></div>
-        </div>
-    </div>
-    """
+""", unsafe_allow_html=True)
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
-
-# V400: riapplica stile dopo login
-v400_style()
-
-
-
-
-# V63 - Incremento prezzo vendita nascosto per rivenditore/grossista
-ricarico_base_assegnato = float(ricarico_effettivo or 0)
-ricarico_cliente_finale = 60.0
-
-if profilo in ["RIVENDITORE", "GROSSISTA"]:
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### Prezzo vendita")
-    st.sidebar.caption("Seleziona l’incremento da applicare al prezzo di vendita.")
-
-    extra_massimo = max(0.0, ricarico_cliente_finale - ricarico_base_assegnato)
-
-    step_extra = [0.0]
-    valore = 10.0
-    while valore <= extra_massimo + 0.001:
-        step_extra.append(float(valore))
-        valore += 10.0
-
-    labels_extra = [f"+{x:.0f}%" for x in step_extra]
-
-    st.sidebar.markdown(
-        """
-        <div class="incremento-box-v69">
-            <div class="incremento-title-v69">Prezzo vendita</div>
-            <div class="incremento-note-v69">Seleziona l’incremento commerciale da applicare al preventivo.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    scelta_extra_label = st.sidebar.select_slider(
-        "Incremento prezzo vendita",
-        options=labels_extra,
-        value=labels_extra[0],
-        key="ricarico_extra_utente_step10"
-    )
-
-    ricarico_extra_utente = float(scelta_extra_label.replace("+", "").replace("%", ""))
-
-    ricarico_effettivo = min(
-        ricarico_base_assegnato + ricarico_extra_utente,
-        ricarico_cliente_finale
-    )
-
-    st.sidebar.markdown(
-        f"""
-        <div class="incremento-risultato-v69">
-            Incremento selezionato: <b>{ricarico_extra_utente:.0f}%</b>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-elif profilo == "CLIENTE":
-    ricarico_extra_utente = 0.0
-else:
-    ricarico_extra_utente = 0.0
-
-# V68_FORCE_RICARICO_ATTIVO
-RICARICO_ATTIVO = float(ricarico_effettivo or 0)
 
 # Ricarico manuale solo per ADMIN SA-TEC
 if profilo == "SA-TEC":
@@ -5268,1078 +1880,183 @@ if supabase_attivo():
 else:
     st.sidebar.warning("Supabase non collegato - uso CSV")
 
-
 # =========================
-# V102 - CSS ADMIN REALE VISIBILE
-# =========================
-st.markdown("""
-<style>
-.stApp{
-    background:#f5f7fb!important;
-}
-
-/* Sidebar sempre professionale */
-section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#061b35 0%,#0b2a4a 60%,#03152f 100%)!important;
-    border-right:4px solid #f5b301!important;
-}
-section[data-testid="stSidebar"] h1,
-section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] div{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] textarea,
-section[data-testid="stSidebar"] [data-baseweb="input"] *,
-section[data-testid="stSidebar"] [data-baseweb="select"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    background:#ffffff!important;
-}
-section[data-testid="stSidebar"] .stButton button{
-    background:#ffffff!important;
-    color:#06499b!important;
-    -webkit-text-fill-color:#06499b!important;
-    border-radius:14px!important;
-    min-height:48px!important;
-    font-weight:900!important;
-    border:2px solid rgba(255,255,255,.35)!important;
-}
-section[data-testid="stSidebar"] .stButton button:hover{
-    background:#f5b301!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-
-/* Area principale */
-.block-container{
-    padding-top:1.2rem!important;
-}
-.block-container,
-.block-container *:not(svg):not(path){
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-.block-container h1,
-.block-container h2,
-.block-container h3{
-    color:#06499b!important;
-    -webkit-text-fill-color:#06499b!important;
-    font-weight:900!important;
-}
-
-/* Admin hero */
-.v102-admin-hero{
-    background:linear-gradient(135deg,#061b35,#06499b);
-    border-radius:26px;
-    padding:28px;
-    margin:10px 0 22px 0;
-    box-shadow:0 14px 32px rgba(6,73,155,.25);
-    display:flex;
-    justify-content:space-between;
-    gap:20px;
-    align-items:center;
-}
-.v102-admin-hero h1{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-size:42px!important;
-    margin:0!important;
-    font-weight:900!important;
-}
-.v102-admin-hero p{
-    color:#dbeafe!important;
-    -webkit-text-fill-color:#dbeafe!important;
-    font-size:18px!important;
-    margin:8px 0 0 0!important;
-    font-weight:800!important;
-}
-.v102-admin-badge{
-    background:#f5b301;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    border-radius:20px;
-    padding:18px 24px;
-    font-size:24px;
-    font-weight:900;
-    text-align:center;
-    min-width:240px;
-}
-
-/* Cards e righe */
-.v100-title-bar,
-.v102-title-bar{
-    background:linear-gradient(135deg,#0b2a4a,#06499b)!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    border-radius:18px!important;
-    padding:16px 22px!important;
-    margin:18px 0 16px 0!important;
-    font-size:24px!important;
-    font-weight:900!important;
-}
-.v100-row-card{
-    background:#ffffff!important;
-    border:1px solid #dbeafe!important;
-    border-radius:18px!important;
-    box-shadow:0 7px 18px rgba(6,73,155,.09)!important;
-}
-
-/* Tabelle */
-th{
-    background:#06499b!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:900!important;
-}
-td{
-    background:#ffffff!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:800!important;
-}
-
-/* Bottoni */
-.stButton button,
-.stDownloadButton button{
-    border-radius:14px!important;
-    min-height:46px!important;
-    font-weight:900!important;
-}
-
-/* Box sidebar logo */
-.v102-side-logo{
-    background:rgba(255,255,255,.08);
-    border:1px solid rgba(255,255,255,.25);
-    border-radius:18px;
-    padding:18px;
-    text-align:center;
-    margin-bottom:14px;
-}
-.v102-side-logo .brand{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-size:38px;
-    font-weight:900;
-}
-.v102-side-logo .sub{
-    color:#dbeafe!important;
-    -webkit-text-fill-color:#dbeafe!important;
-    font-size:13px;
-    font-weight:900;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-
-
-# =========================
-# V104 - FIX CONTRASTO ADMIN DEFINITIVO
-# =========================
-st.markdown("""
-<style>
-
-/* SEPARATORE AREA ADMIN */
-.v104-admin-separator{
-    background:#ffffff!important;
-    border:3px solid #06499b!important;
-    border-radius:22px!important;
-    padding:14px 20px!important;
-    margin:24px 0 14px 0!important;
-    box-shadow:0 8px 24px rgba(6,73,155,.16)!important;
-}
-.v104-admin-separator span{
-    color:#06499b!important;
-    -webkit-text-fill-color:#06499b!important;
-    font-size:24px!important;
-    font-weight:1000!important;
-}
-
-/* HEADER ADMIN - vince su tutti i CSS vecchi */
-.v102-admin-hero,
-.v104-admin-hero{
-    background:linear-gradient(135deg,#061b35 0%,#06499b 55%,#0b5cff 100%)!important;
-    border-radius:28px!important;
-    padding:34px 38px!important;
-    margin:8px 0 16px 0!important;
-    box-shadow:0 18px 40px rgba(6,73,155,.32)!important;
-    display:flex!important;
-    justify-content:space-between!important;
-    align-items:center!important;
-    min-height:175px!important;
-    border:2px solid rgba(255,255,255,.24)!important;
-}
-
-/* Titolo bianco forzato */
-.v102-admin-hero h1,
-.v102-admin-hero h1 *,
-.v104-admin-title,
-.v104-admin-title *{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-size:56px!important;
-    font-weight:1000!important;
-    letter-spacing:.5px!important;
-    margin:0!important;
-    line-height:1!important;
-    text-shadow:0 4px 12px rgba(0,0,0,.45)!important;
-}
-
-/* Sottotitolo bianco forzato */
-.v102-admin-hero p,
-.v102-admin-hero p *,
-.v104-admin-subtitle,
-.v104-admin-subtitle *{
-    color:#eaf3ff!important;
-    -webkit-text-fill-color:#eaf3ff!important;
-    font-size:21px!important;
-    font-weight:900!important;
-    margin:12px 0 0 0!important;
-    line-height:1.35!important;
-    text-shadow:0 3px 10px rgba(0,0,0,.35)!important;
-}
-
-/* Badge giallo */
-.v102-admin-badge,
-.v104-admin-badge{
-    background:linear-gradient(135deg,#ffd84d,#f5b301)!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    border-radius:24px!important;
-    padding:24px 34px!important;
-    font-size:28px!important;
-    font-weight:1000!important;
-    text-align:center!important;
-    min-width:300px!important;
-    box-shadow:0 12px 30px rgba(245,179,1,.42)!important;
-    border:4px solid #fff0a8!important;
-    line-height:1.25!important;
-}
-
-/* Menu admin più evidente */
-div[data-testid="stHorizontalBlock"] .stButton button{
-    background:linear-gradient(135deg,#06499b,#0b5cff)!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    border-radius:18px!important;
-    min-height:66px!important;
-    font-size:18px!important;
-    font-weight:1000!important;
-    border:0!important;
-    box-shadow:0 10px 22px rgba(6,73,155,.25)!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button:hover{
-    background:linear-gradient(135deg,#f5b301,#d68a00)!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-
-/* Evita che i vecchi h1/h2 neri vincano dentro header admin */
-.block-container .v102-admin-hero h1,
-.block-container .v102-admin-hero p,
-.block-container .v104-admin-hero h1,
-.block-container .v104-admin-hero p{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-
-@media(max-width:900px){
-    .v102-admin-hero,
-    .v104-admin-hero{
-        flex-direction:column!important;
-        align-items:stretch!important;
-    }
-    .v102-admin-badge,
-    .v104-admin-badge{
-        min-width:100%!important;
-    }
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-
-
-# =========================
-# V105 - MINIMAL PROFESSIONAL ADMIN
-# =========================
-st.markdown("""
-<style>
-
-/* RESET ADMIN PROFESSIONALE */
-.stApp{
-    background:#F5F7FA!important;
-}
-
-.block-container{
-    padding-top:1rem!important;
-    padding-left:2rem!important;
-    padding-right:2rem!important;
-}
-
-/* Testi sempre leggibili */
-.block-container,
-.block-container *:not(svg):not(path){
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-
-.block-container h1,
-.block-container h2,
-.block-container h3{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    font-weight:900!important;
-}
-
-/* SIDEBAR PULITA */
-section[data-testid="stSidebar"]{
-    background:#0B2A4A!important;
-    border-right:4px solid #F5B301!important;
-}
-
-section[data-testid="stSidebar"] h1,
-section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] div{
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] textarea,
-section[data-testid="stSidebar"] [data-baseweb="input"] *,
-section[data-testid="stSidebar"] [data-baseweb="select"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    background:#ffffff!important;
-}
-
-section[data-testid="stSidebar"] .stButton button{
-    background:#ffffff!important;
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    border:1px solid #D7E3F4!important;
-    border-radius:12px!important;
-    min-height:44px!important;
-    font-weight:900!important;
-    box-shadow:none!important;
-}
-
-section[data-testid="stSidebar"] .stButton button:hover{
-    background:#F5B301!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-
-/* HEADER ADMIN MINIMAL */
-.v102-admin-hero,
-.v104-admin-hero,
-.v105-admin-header{
-    background:#ffffff!important;
-    border:1px solid #D7E3F4!important;
-    border-left:8px solid #06499B!important;
-    border-radius:18px!important;
-    padding:26px 30px!important;
-    margin:12px 0 18px 0!important;
-    box-shadow:0 8px 22px rgba(6,73,155,.08)!important;
-    display:flex!important;
-    justify-content:space-between!important;
-    align-items:center!important;
-    gap:18px!important;
-    min-height:130px!important;
-}
-
-/* Titolo Admin */
-.v102-admin-hero h1,
-.v102-admin-hero h1 *,
-.v104-admin-title,
-.v104-admin-title *,
-.v105-admin-title,
-.v105-admin-title *{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    font-size:42px!important;
-    font-weight:1000!important;
-    letter-spacing:.2px!important;
-    line-height:1.05!important;
-    margin:0!important;
-    text-shadow:none!important;
-}
-
-/* Sottotitolo Admin */
-.v102-admin-hero p,
-.v102-admin-hero p *,
-.v104-admin-subtitle,
-.v104-admin-subtitle *,
-.v105-admin-subtitle,
-.v105-admin-subtitle *{
-    color:#475569!important;
-    -webkit-text-fill-color:#475569!important;
-    font-size:18px!important;
-    font-weight:800!important;
-    line-height:1.35!important;
-    margin:8px 0 0 0!important;
-    text-shadow:none!important;
-}
-
-/* Badge area admin */
-.v102-admin-badge,
-.v104-admin-badge,
-.v105-admin-badge{
-    background:#FFF3C4!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    border:2px solid #F5B301!important;
-    border-radius:16px!important;
-    padding:16px 22px!important;
-    font-size:20px!important;
-    font-weight:1000!important;
-    text-align:center!important;
-    min-width:220px!important;
-    box-shadow:none!important;
-    line-height:1.25!important;
-}
-
-/* Separatore vecchio meno invadente */
-.v104-admin-separator{
-    background:#ffffff!important;
-    border:1px solid #D7E3F4!important;
-    border-left:6px solid #F5B301!important;
-    border-radius:14px!important;
-    padding:10px 16px!important;
-    margin:12px 0!important;
-    box-shadow:none!important;
-}
-.v104-admin-separator span{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    font-size:18px!important;
-    font-weight:900!important;
-}
-
-/* MENU ADMIN */
-div[data-testid="stHorizontalBlock"] .stButton button{
-    background:#ffffff!important;
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    border:1px solid #D7E3F4!important;
-    border-radius:14px!important;
-    min-height:54px!important;
-    font-size:16px!important;
-    font-weight:900!important;
-    box-shadow:0 4px 12px rgba(6,73,155,.06)!important;
-}
-
-div[data-testid="stHorizontalBlock"] .stButton button:hover{
-    background:#06499B!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-
-/* TITOLI SEZIONE */
-.v100-title-bar,
-.v102-title-bar,
-.v90-section-title,
-.v101-menu-title{
-    background:#ffffff!important;
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    border:1px solid #D7E3F4!important;
-    border-left:8px solid #06499B!important;
-    border-radius:16px!important;
-    padding:15px 20px!important;
-    margin:18px 0 14px 0!important;
-    font-size:23px!important;
-    font-weight:1000!important;
-    box-shadow:0 6px 16px rgba(6,73,155,.06)!important;
-}
-
-/* CRM DASHBOARD IFRAME: contenitore neutro */
-iframe{
-    border-radius:18px!important;
-}
-
-/* CARD PREVENTIVI */
-.v100-row-card{
-    background:#ffffff!important;
-    border:1px solid #D7E3F4!important;
-    border-radius:18px!important;
-    padding:18px!important;
-    margin:14px 0 12px 0!important;
-    box-shadow:0 6px 16px rgba(6,73,155,.06)!important;
-}
-
-.v100-row-code{
-    color:#06499B!important;
-    -webkit-text-fill-color:#06499B!important;
-    font-size:22px!important;
-    font-weight:1000!important;
-}
-
-/* TABELLE */
-table{
-    border-collapse:separate!important;
-    border-spacing:0!important;
-    width:100%!important;
-    border:1px solid #D7E3F4!important;
-    border-radius:14px!important;
-    overflow:hidden!important;
-    background:#ffffff!important;
-    box-shadow:0 6px 16px rgba(6,73,155,.05)!important;
-}
-
-th{
-    background:#0B2A4A!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:900!important;
-    padding:11px!important;
-}
-
-td{
-    background:#ffffff!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:700!important;
-    padding:10px!important;
-    border-bottom:1px solid #EEF2F7!important;
-}
-
-tr:nth-child(even) td{
-    background:#F8FAFC!important;
-}
-
-/* INPUT / SELECT */
-.block-container input,
-.block-container textarea,
-.block-container [data-baseweb="input"] *,
-.block-container [data-baseweb="select"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    background:#ffffff!important;
-    font-weight:800!important;
-}
-
-/* Alert leggibili */
-[data-testid="stAlert"],
-[data-testid="stAlert"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:800!important;
-}
-
-/* Bottoni generali */
-.stButton button,
-.stDownloadButton button{
-    border-radius:12px!important;
-    min-height:44px!important;
-    font-weight:900!important;
-}
-
-/* Evita vecchi gradienti/test-shadow */
-.v90-hero,
-.v101-top{
-    background:#ffffff!important;
-    border:1px solid #D7E3F4!important;
-    border-left:8px solid #06499B!important;
-    box-shadow:0 6px 16px rgba(6,73,155,.06)!important;
-}
-
-.v90-hero h1,
-.v101-top h1{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-}
-
-.v90-hero p,
-.v101-top p{
-    color:#475569!important;
-    -webkit-text-fill-color:#475569!important;
-}
-
-@media(max-width:900px){
-    .v102-admin-hero,
-    .v104-admin-hero,
-    .v105-admin-header{
-        flex-direction:column!important;
-        align-items:stretch!important;
-    }
-    .v102-admin-badge,
-    .v104-admin-badge,
-    .v105-admin-badge{
-        min-width:100%!important;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-
-# =========================
-# V106 - ADMIN VIVO + CREA PREVENTIVO
-# =========================
-st.markdown("""
-<style>
-
-/* Colori più vivi */
-:root{
-    --satec-blue:#06499B;
-    --satec-dark:#0B2A4A;
-    --satec-orange:#F5B301;
-    --satec-bg:#F2F7FF;
-}
-
-/* Sfondo */
-.stApp{
-    background:linear-gradient(180deg,#F2F7FF 0%,#FFFFFF 55%)!important;
-}
-
-/* Header Admin più vivo */
-.v105-admin-header,
-.v106-admin-header{
-    background:linear-gradient(135deg,#ffffff 0%,#eef6ff 100%)!important;
-    border:1px solid #b9d5f5!important;
-    border-left:10px solid #06499B!important;
-    border-radius:20px!important;
-    padding:28px 32px!important;
-    margin:12px 0 18px 0!important;
-    box-shadow:0 10px 28px rgba(6,73,155,.14)!important;
-}
-
-.v105-admin-title,
-.v106-admin-title{
-    color:#06499B!important;
-    -webkit-text-fill-color:#06499B!important;
-    font-size:46px!important;
-    font-weight:1000!important;
-}
-
-.v105-admin-subtitle,
-.v106-admin-subtitle{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-    font-size:19px!important;
-    font-weight:900!important;
-}
-
-.v105-admin-badge,
-.v106-admin-badge{
-    background:linear-gradient(135deg,#F5B301,#FFD766)!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    border:2px solid #e2a300!important;
-    border-radius:18px!important;
-    box-shadow:0 8px 20px rgba(245,179,1,.25)!important;
-}
-
-/* Menu admin più acceso */
-div[data-testid="stHorizontalBlock"] .stButton button{
-    background:#06499B!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    border:0!important;
-    border-radius:14px!important;
-    min-height:58px!important;
-    font-size:16px!important;
-    font-weight:1000!important;
-    box-shadow:0 8px 18px rgba(6,73,155,.22)!important;
-}
-
-div[data-testid="stHorizontalBlock"] .stButton button:hover{
-    background:#F5B301!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-
-/* Bottone crea preventivo evidenziato */
-button[kind="secondary"]:has(div p){
-    font-weight:900!important;
-}
-
-/* Titoli sezioni più vivi */
-.v100-title-bar,
-.v102-title-bar,
-.v90-section-title,
-.v101-menu-title{
-    background:linear-gradient(135deg,#06499B,#0b5cff)!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    border:0!important;
-    border-radius:18px!important;
-    box-shadow:0 8px 20px rgba(6,73,155,.18)!important;
-}
-
-/* Card preventivi */
-.v100-row-card{
-    border:1px solid #b9d5f5!important;
-    border-left:6px solid #06499B!important;
-    box-shadow:0 8px 20px rgba(6,73,155,.10)!important;
-}
-
-/* Tabelle */
-th{
-    background:#06499B!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-tr:nth-child(even) td{
-    background:#F2F7FF!important;
-}
-
-/* Sidebar viva */
-section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#0B2A4A,#06499B)!important;
-    border-right:5px solid #F5B301!important;
-}
-
-section[data-testid="stSidebar"] .stButton button{
-    background:#ffffff!important;
-    color:#06499B!important;
-    -webkit-text-fill-color:#06499B!important;
-    border-radius:14px!important;
-    font-weight:1000!important;
-}
-section[data-testid="stSidebar"] .stButton button:hover{
-    background:#F5B301!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-
-/* Info box */
-[data-testid="stAlert"],
-[data-testid="stAlert"] *{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:850!important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-
-# =========================
-# V107 - BOTTONE CREA PREVENTIVO VISIBILE
-# =========================
-st.markdown("""
-<style>
-section[data-testid="stSidebar"] .stButton button{
-    min-height:50px!important;
-    font-size:15px!important;
-    font-weight:1000!important;
-}
-section[data-testid="stSidebar"] .stButton button:hover{
-    background:#F5B301!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-
-# =========================
-# V111 - GRAFICA DEFINITIVA SA-TEC
-# =========================
-st.markdown("""
-<style>
-:root{
-    --satec-blue:#0057C8;
-    --satec-blue-dark:#003B86;
-    --satec-dark:#0B2A4A;
-    --satec-orange:#F5B301;
-    --satec-bg:#F3F7FF;
-    --satec-border:#BFD7F5;
-    --satec-text:#111827;
-}
-.stApp{background:linear-gradient(180deg,#F3F7FF 0%,#FFFFFF 55%)!important;}
-.block-container{padding-top:1rem!important;padding-left:2rem!important;padding-right:2rem!important;}
-.block-container,.block-container *:not(svg):not(path){color:var(--satec-text)!important;-webkit-text-fill-color:var(--satec-text)!important;}
-.block-container h1,.block-container h2,.block-container h3{color:var(--satec-dark)!important;-webkit-text-fill-color:var(--satec-dark)!important;font-weight:1000!important;}
-
-section[data-testid="stSidebar"]{background:linear-gradient(180deg,#0B2A4A 0%,#003B86 100%)!important;border-right:5px solid var(--satec-orange)!important;}
-section[data-testid="stSidebar"] h1,section[data-testid="stSidebar"] h2,section[data-testid="stSidebar"] h3,section[data-testid="stSidebar"] p,section[data-testid="stSidebar"] span,section[data-testid="stSidebar"] label,section[data-testid="stSidebar"] div{color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;}
-section[data-testid="stSidebar"] input,section[data-testid="stSidebar"] textarea,section[data-testid="stSidebar"] [data-baseweb="input"] *,section[data-testid="stSidebar"] [data-baseweb="select"] *{color:var(--satec-text)!important;-webkit-text-fill-color:var(--satec-text)!important;background:#ffffff!important;}
-
-.stButton button,.stDownloadButton button,section[data-testid="stSidebar"] .stButton button{
-    background:#ffffff!important;color:var(--satec-blue)!important;-webkit-text-fill-color:var(--satec-blue)!important;
-    border:2px solid var(--satec-blue)!important;border-radius:13px!important;min-height:50px!important;
-    font-size:15px!important;font-weight:1000!important;box-shadow:0 4px 12px rgba(0,87,200,.08)!important;
-    transition:all .16s ease-in-out!important;opacity:1!important;
-}
-.stButton button *,.stDownloadButton button *,section[data-testid="stSidebar"] .stButton button *{
-    color:inherit!important;-webkit-text-fill-color:inherit!important;font-weight:1000!important;opacity:1!important;
-}
-.stButton button:hover,.stDownloadButton button:hover,section[data-testid="stSidebar"] .stButton button:hover{
-    background:var(--satec-orange)!important;color:#111111!important;-webkit-text-fill-color:#111111!important;
-    border-color:var(--satec-orange)!important;box-shadow:0 8px 20px rgba(245,179,1,.30)!important;transform:translateY(-1px)!important;
-}
-.stButton button:focus,.stDownloadButton button:focus,.stButton button:active,.stDownloadButton button:active{
-    background:var(--satec-blue)!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;border-color:var(--satec-blue)!important;
-}
-
-.v105-admin-header,.v106-admin-header,.v110-admin-header,.v111-admin-header{
-    background:#ffffff!important;border:1px solid var(--satec-border)!important;border-left:10px solid var(--satec-blue)!important;
-    border-radius:20px!important;padding:28px 32px!important;margin:12px 0 18px 0!important;
-    box-shadow:0 10px 26px rgba(0,87,200,.12)!important;display:flex!important;justify-content:space-between!important;align-items:center!important;gap:18px!important;
-}
-.v105-admin-title,.v106-admin-title,.v110-admin-title,.v111-admin-title{
-    color:var(--satec-blue)!important;-webkit-text-fill-color:var(--satec-blue)!important;font-size:44px!important;font-weight:1000!important;line-height:1.05!important;margin:0!important;text-shadow:none!important;
-}
-.v105-admin-subtitle,.v106-admin-subtitle,.v110-admin-subtitle,.v111-admin-subtitle{
-    color:var(--satec-dark)!important;-webkit-text-fill-color:var(--satec-dark)!important;font-size:18px!important;font-weight:900!important;line-height:1.35!important;margin:8px 0 0 0!important;
-}
-.v105-admin-badge,.v106-admin-badge,.v110-admin-badge,.v111-admin-badge{
-    background:#FFF3C4!important;color:#111827!important;-webkit-text-fill-color:#111827!important;border:2px solid var(--satec-orange)!important;border-radius:17px!important;
-    padding:16px 24px!important;font-size:20px!important;font-weight:1000!important;text-align:center!important;min-width:230px!important;box-shadow:0 6px 16px rgba(245,179,1,.18)!important;
-}
-.v100-title-bar,.v102-title-bar,.v90-section-title,.v101-menu-title{
-    background:#ffffff!important;color:var(--satec-blue)!important;-webkit-text-fill-color:var(--satec-blue)!important;
-    border:1px solid var(--satec-border)!important;border-left:8px solid var(--satec-blue)!important;border-radius:17px!important;
-    padding:16px 21px!important;margin:18px 0 14px 0!important;font-size:23px!important;font-weight:1000!important;box-shadow:0 7px 18px rgba(0,87,200,.08)!important;
-}
-.v100-row-card{background:#ffffff!important;border:1px solid var(--satec-border)!important;border-left:6px solid var(--satec-blue)!important;border-radius:18px!important;padding:18px!important;margin:14px 0 12px 0!important;box-shadow:0 7px 18px rgba(0,87,200,.08)!important;}
-.v100-row-code{color:var(--satec-blue)!important;-webkit-text-fill-color:var(--satec-blue)!important;font-size:23px!important;font-weight:1000!important;}
-table{border-collapse:separate!important;border-spacing:0!important;width:100%!important;border:1px solid var(--satec-border)!important;border-radius:15px!important;overflow:hidden!important;background:#ffffff!important;box-shadow:0 7px 18px rgba(0,87,200,.06)!important;}
-th{background:var(--satec-blue)!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;font-weight:1000!important;padding:12px!important;}
-td{background:#ffffff!important;color:var(--satec-text)!important;-webkit-text-fill-color:var(--satec-text)!important;font-weight:750!important;padding:10px!important;border-bottom:1px solid #EEF2F7!important;}
-tr:nth-child(even) td{background:#F3F7FF!important;}
-[data-testid="stAlert"],[data-testid="stAlert"] *{color:var(--satec-text)!important;-webkit-text-fill-color:var(--satec-text)!important;font-weight:850!important;}
-.block-container input,.block-container textarea,.block-container [data-baseweb="input"] *,.block-container [data-baseweb="select"] *{color:var(--satec-text)!important;-webkit-text-fill-color:var(--satec-text)!important;background:#ffffff!important;font-weight:850!important;}
-.v90-hero,.v101-top,.v102-admin-hero,.v104-admin-hero{background:#ffffff!important;border:1px solid var(--satec-border)!important;border-left:8px solid var(--satec-blue)!important;box-shadow:0 7px 18px rgba(0,87,200,.08)!important;}
-.v90-hero h1,.v101-top h1,.v102-admin-hero h1,.v104-admin-title{color:var(--satec-blue)!important;-webkit-text-fill-color:var(--satec-blue)!important;text-shadow:none!important;}
-.v90-hero p,.v101-top p,.v102-admin-hero p,.v104-admin-subtitle{color:var(--satec-dark)!important;-webkit-text-fill-color:var(--satec-dark)!important;text-shadow:none!important;}
-section[data-testid="stSidebar"] [data-testid="stAlert"],section[data-testid="stSidebar"] [data-testid="stAlert"] *{color:#111827!important;-webkit-text-fill-color:#111827!important;}
-@media(max-width:900px){
-    .v105-admin-header,.v106-admin-header,.v110-admin-header,.v111-admin-header{flex-direction:column!important;align-items:stretch!important;}
-    .v105-admin-badge,.v106-admin-badge,.v110-admin-badge,.v111-admin-badge{min-width:100%!important;}
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-# =========================
-# ADMIN V102 - GESTIONALE SUBITO VISIBILE
+# ADMIN
 # =========================
 
 if profilo == "SA-TEC":
-    st.sidebar.markdown("---")
     st.sidebar.success("AREA ADMIN ATTIVA")
+    st.sidebar.markdown("---")
+    mostra_dashboard = st.sidebar.checkbox("Mostra dashboard SA-TEC", value=False)
 
-
-    st.sidebar.markdown("""
-    <div class="v102-side-logo">
-        <div class="brand">SA-TEC</div>
-        <div class="sub">GESTIONALE ADMIN</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    with st.sidebar.expander("Crea utente manuale", expanded=False):
+    with st.sidebar.expander("Crea utente manuale"):
         utenti_now = carica_tutti_utenti()
-        profilo_new = st.selectbox("Profilo nuovo utente", ["CLIENTE", "RIVENDITORE", "GROSSISTA"], key="admin_profilo_new_v102")
-        nome_new = st.text_input("Nome", key="admin_nome_new_v102")
-        azienda_new = st.text_input("Azienda", key="admin_azienda_new_v102")
-        telefono_new = st.text_input("Telefono", key="admin_tel_new_v102")
-        email_new = st.text_input("Email", key="admin_email_new_v102")
-        ricarico_new = st.number_input(
-            "Ricarico %",
-            min_value=0.0,
-            max_value=100.0,
-            value=ricarico_default(profilo_new),
-            step=1.0,
-            key="admin_ricarico_new_v102"
-        )
-
-        if st.button("CREA UTENTE", key="crea_utente_v102", use_container_width=True):
+        profilo_new = st.selectbox("Profilo nuovo utente", ["CLIENTE", "RIVENDITORE", "GROSSISTA"], key="admin_profilo_new")
+        nome_new = st.text_input("Nome", key="admin_nome_new")
+        azienda_new = st.text_input("Azienda", key="admin_azienda_new")
+        telefono_new = st.text_input("Telefono", key="admin_tel_new")
+        email_new = st.text_input("Email", key="admin_email_new")
+        ricarico_new = st.number_input("Ricarico %", min_value=0.0, max_value=100.0, value=ricarico_default(profilo_new), step=1.0, key="admin_ricarico_new")
+        if st.button("CREA UTENTE"):
             codice = genera_codice_progressivo(profilo_new, utenti_now)
             pwd = genera_password()
-            salva_utente_csv(
-                codice,
-                pwd,
-                profilo_new,
-                nome_new,
-                azienda_new,
-                telefono_new,
-                email_new,
-                str(ricarico_new)
-            )
+            salva_utente_csv(codice, pwd, profilo_new, nome_new, azienda_new, telefono_new, email_new, str(ricarico_new))
             st.success("Utente creato")
             st.code(f"Utente: {codice}\nPassword: {pwd}\nProfilo: {profilo_new}\nRicarico: {ricarico_new}%")
 
-    preventivi = carica_preventivi()
+    if mostra_dashboard:
+        st.markdown('<div class="admin-box"><h2 style="color:#06499b;">Dashboard SA-TEC</h2>', unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="v111-admin-header">
-        <div>
-            <div class="v111-admin-title">SA-TEC ADMIN</div>
-            <div class="v111-admin-subtitle">Gestionale commerciale porte automatiche · Preventivi · Clienti · Rivenditori</div>
-        </div>
-        <div class="v111-admin-badge">🛡️ AREA<br>AMMINISTRATIVA</div>
-    </div>
-    """, unsafe_allow_html=True)
+        preventivi = carica_preventivi()
+        utenti_csv = carica_utenti_csv()
 
-    if "admin_menu_v102" not in st.session_state:
-        st.session_state.admin_menu_v102 = "preventivi"
+        tab1, tab2 = st.tabs(["Preventivi", "Utenti creati"])
 
-    m1, m2, m3, m4, m5 = st.columns(5)
+        with tab1:
+            if not preventivi:
+                st.info("Nessun preventivo salvato ancora.")
+            else:
+                st.write(f"Preventivi salvati: **{len(preventivi)}**")
 
-    with m1:
-        if st.button("➕ CREA PREVENTIVO", key="menu_config_v106", use_container_width=True):
-            st.session_state.admin_menu_v102 = "configuratore"
-            st.rerun()
+                st.markdown('<h3 style="color:#06499b;">CRM Commerciale</h3>', unsafe_allow_html=True)
+                render_dashboard_crm(preventivi)
 
-    with m2:
-        if st.button("📋 PREVENTIVI", key="menu_prev_v102", use_container_width=True):
-            st.session_state.admin_menu_v102 = "preventivi"
-            st.rerun()
+                stats_stati = statistiche_stati_preventivi(preventivi)
+                render_stati_preventivi(stats_stati)
 
-    with m3:
-        if st.button("👥 CLIENTI", key="menu_cli_v102", use_container_width=True):
-            st.session_state.admin_menu_v102 = "clienti"
-            st.rerun()
+                col_filtro1, col_filtro2 = st.columns([2, 1])
+                with col_filtro1:
+                    cerca_preventivo_dash = st.text_input("Cerca preventivo / cliente / utente", key="cerca_preventivo_dash")
+                with col_filtro2:
+                    stato_filtro_dash = st.selectbox("Filtra per stato", ["Tutti"] + STATI_PREVENTIVO, key="stato_filtro_dash")
 
-    with m4:
-        if st.button("🏪 RIVENDITORI", key="menu_riv_v102", use_container_width=True):
-            st.session_state.admin_menu_v102 = "rivenditori"
-            st.rerun()
+                preventivi_visualizzati = filtra_preventivi_dashboard(preventivi, cerca_preventivo_dash, stato_filtro_dash)
 
-    with m5:
-        if st.button("🧪 SIMULAZIONE", key="menu_sim_v102", use_container_width=True):
-            st.session_state.admin_menu_v102 = "simulazione"
-            st.rerun()
+                totale = 0.0
+                for p in preventivi_visualizzati:
+                    try:
+                        totale += float(p.get("imponibile", p.get("totale_iva", 0)))
+                    except:
+                        pass
+                utile_totale = 0.0
+                costo_totale_dashboard = 0.0
+                for p in preventivi_visualizzati:
+                    try:
+                        utile_totale += float(p.get("utile_lordo", 0) or 0)
+                    except:
+                        pass
+                    try:
+                        costo_totale_dashboard += float(p.get("costo_satec", 0) or 0)
+                    except:
+                        pass
+                margine_dash = (utile_totale / costo_totale_dashboard * 100) if costo_totale_dashboard > 0 else 0
 
-    st.markdown("---")
+                st.write(f"Preventivi visualizzati: **{len(preventivi_visualizzati)}**")
+                st.write(f"Valore visualizzato: **{euro(totale)}**")
+                st.write(f"Utile lordo visualizzato: **{euro(utile_totale)}**")
+                st.write(f"Margine medio su costo: **{margine_dash:.1f}%**")
+                st.markdown(tabella_html_sicura(preventivi_visualizzati), unsafe_allow_html=True)
 
-    if st.session_state.admin_menu_v102 == "configuratore":
-        st.markdown('<div class="v102-title-bar">➕ CREA PREVENTIVO DA ADMIN</div>', unsafe_allow_html=True)
-        st.info("Modalità Admin: puoi creare un preventivo usando il configuratore sotto. Il preventivo verrà salvato nel CRM.")
-        # Non faccio st.stop(): lascio proseguire al configuratore sotto.
+                st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown('<h3 style="color:#06499b;">Aggiorna stato preventivo</h3>', unsafe_allow_html=True)
 
-    elif st.session_state.admin_menu_v102 == "preventivi":
-        v100_render_admin(preventivi)
+                codici_disponibili = [
+                    p.get("codice_preventivo", "") for p in preventivi_visualizzati
+                    if p.get("codice_preventivo", "")
+                ]
 
-    elif st.session_state.admin_menu_v102 == "clienti":
-        st.markdown('<div class="v102-title-bar">👥 ARCHIVIO CLIENTI</div>', unsafe_allow_html=True)
-        clienti = carica_clienti()
-        cerca_cliente_dash = st.text_input(
-            "Cerca cliente",
-            placeholder="Nome, azienda, telefono, email o codice preventivo",
-            key="cerca_cliente_dash_v102"
-        )
-        clienti_filtrati = filtra_clienti_dashboard(clienti, cerca_cliente_dash)
-
-        if not clienti:
-            st.info("Nessun cliente salvato ancora.")
-        elif not clienti_filtrati:
-            st.warning("Nessun cliente trovato.")
-        else:
-            st.write(f"Clienti trovati: **{len(clienti_filtrati)}**")
-            st.markdown(tabella_html_sicura(righe_clienti_dashboard(clienti_filtrati)), unsafe_allow_html=True)
-
-            st.markdown("---")
-            st.markdown("### Elimina cliente")
-            st.warning("L'eliminazione rimuove il cliente dall'archivio. I preventivi storici restano.")
-
-            opzioni_clienti = {}
-            for c in clienti_filtrati:
-                label = label_cliente_elimina(c)
-                ident = identificativo_cliente_elimina(c)
-                if ident:
-                    opzioni_clienti[label] = ident
-
-            if opzioni_clienti:
-                cdel1, cdel2, cdel3 = st.columns([2, 1, 1])
-                with cdel1:
-                    cliente_label_del = st.selectbox(
-                        "Cliente da eliminare",
-                        list(opzioni_clienti.keys()),
-                        key="cliente_del_v102"
-                    )
-                with cdel2:
-                    conferma_elimina_cliente = st.checkbox("Confermo", key="conf_cliente_del_v102")
-                with cdel3:
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    if st.button("ELIMINA CLIENTE", key="btn_cliente_del_v102", use_container_width=True):
-                        if not conferma_elimina_cliente:
-                            st.warning("Spunta prima Confermo.")
-                        else:
-                            ok_cli_del, msg_cli_del = elimina_cliente_admin(opzioni_clienti.get(cliente_label_del, ""))
-                            if ok_cli_del:
-                                st.success(msg_cli_del)
-                                st.rerun()
+                if codici_disponibili:
+                    col_stato_1, col_stato_2, col_stato_3 = st.columns([2, 1, 1])
+                    with col_stato_1:
+                        codice_da_modificare = st.selectbox("Preventivo", codici_disponibili, key="codice_stato_admin")
+                    with col_stato_2:
+                        nuovo_stato_admin = st.selectbox("Nuovo stato", STATI_PREVENTIVO, key="nuovo_stato_admin")
+                    with col_stato_3:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        if st.button("AGGIORNA STATO"):
+                            if aggiorna_stato_preventivo_admin(codice_da_modificare, nuovo_stato_admin):
+                                st.success(f"Stato {codice_da_modificare} aggiornato a {nuovo_stato_admin}.")
                             else:
-                                st.error(msg_cli_del)
+                                st.error("Preventivo non trovato.")
+                else:
+                    st.info("Salva almeno un preventivo con codice SAT per aggiornare lo stato.")
 
-    elif st.session_state.admin_menu_v102 == "rivenditori":
-        st.markdown('<div class="v102-title-bar">🏪 RIVENDITORI / GROSSISTI</div>', unsafe_allow_html=True)
+                if Path(PREVENTIVI_CSV).exists():
+                    with open(PREVENTIVI_CSV, "rb") as f:
+                        st.download_button("Scarica CSV preventivi", data=f, file_name="preventivi_satec.csv", mime="text/csv")
+                else:
+                    st.caption("Backup CSV preventivi non ancora creato.")
+
+        with tab2:
+            if not utenti_csv:
+                st.info("Nessun utente creato da CSV.")
+            else:
+                righe = []
+                for u, d in utenti_csv.items():
+                    righe.append({
+                        "Utente": u,
+                        "Password": d["password"],
+                        "Profilo": d["profilo"],
+                        "Nome": d["nome"],
+                        "Azienda": d["azienda"],
+                        "Telefono": d["telefono"],
+                        "Email": d["email"],
+                        "Ricarico %": d.get("ricarico", ""),
+                    })
+                st.markdown(tabella_html_sicura(righe), unsafe_allow_html=True)
+                if Path(UTENTI_CSV).exists():
+                    with open(UTENTI_CSV, "rb") as f:
+                        st.download_button("Scarica CSV utenti", data=f, file_name="utenti_satec.csv", mime="text/csv")
+                else:
+                    st.caption("Backup CSV utenti non ancora creato.")
+
+
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown('<h3 style="color:#06499b;">Gestione Rivenditori / Grossisti</h3>', unsafe_allow_html=True)
+
         righe_riv = utenti_rivenditori_grossisti()
-
         if not righe_riv:
             st.info("Nessun rivenditore o grossista presente.")
         else:
             st.markdown(tabella_html_sicura(righe_riv), unsafe_allow_html=True)
-            codici_riv = [r["utente"] for r in righe_riv]
 
-            st.markdown("### Modifica ricarico")
-            r1, r2, r3 = st.columns([2, 1, 1])
-            with r1:
-                utente_riv_mod = st.selectbox("Utente", codici_riv, key="riv_mod_v102")
-            with r2:
-                nuovo_ricarico_riv = st.number_input(
-                    "Nuovo ricarico %",
-                    min_value=0.0,
-                    max_value=200.0,
-                    value=30.0,
-                    step=1.0,
-                    key="ricarico_riv_v102"
-                )
-            with r3:
+            codici_riv = [r["utente"] for r in righe_riv]
+            col_riv1, col_riv2, col_riv3 = st.columns([2, 1, 1])
+            with col_riv1:
+                utente_riv_mod = st.selectbox("Utente rivenditore/grossista", codici_riv, key="utente_riv_mod")
+            with col_riv2:
+                nuovo_ricarico_riv = st.number_input("Nuovo ricarico %", min_value=0.0, max_value=200.0, value=30.0, step=1.0, key="nuovo_ricarico_riv")
+            with col_riv3:
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("AGGIORNA", key="agg_riv_v102", use_container_width=True):
+                if st.button("AGGIORNA RICARICO"):
                     ok_riv, err_riv = aggiorna_ricarico_utente_supabase(utente_riv_mod, nuovo_ricarico_riv)
                     if ok_riv:
-                        st.success(f"Ricarico aggiornato per {utente_riv_mod}")
+                        st.success(f"Ricarico aggiornato per {utente_riv_mod}: {nuovo_ricarico_riv:.0f}%")
                     else:
                         st.error(f"Ricarico non aggiornato: {err_riv}")
 
-            st.markdown("---")
-            st.markdown("### Elimina rivenditore / grossista")
-            st.warning("L'eliminazione blocca l'accesso dell'utente. Lo storico preventivi resta.")
-            d1, d2, d3 = st.columns([2, 1, 1])
-            with d1:
-                utente_da_eliminare = st.selectbox("Utente da eliminare", codici_riv, key="riv_del_v102")
-            with d2:
-                conferma_elimina_utente = st.checkbox("Confermo", key="conf_riv_del_v102")
-            with d3:
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("ELIMINA UTENTE", key="btn_riv_del_v102", use_container_width=True):
-                    if not conferma_elimina_utente:
-                        st.warning("Spunta prima Confermo.")
-                    else:
-                        ok_del_user, msg_del_user = elimina_utente_admin(utente_da_eliminare)
-                        if ok_del_user:
-                            st.success(msg_del_user)
-                            st.rerun()
-                        else:
-                            st.error(msg_del_user)
 
-    elif st.session_state.admin_menu_v102 == "simulazione":
-        st.markdown('<div class="v102-title-bar">🧪 SIMULAZIONE FUNZIONAMENTO</div>', unsafe_allow_html=True)
-        st.info("1) Esci da Admin e salva un preventivo come Cliente. 2) Entra come Rivenditore/Grossista e salva un preventivo. 3) Rientra come Admin e controlla preventivi, clienti e rivenditori.")
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown('<h3 style="color:#06499b;">Archivio Clienti</h3>', unsafe_allow_html=True)
 
-    if st.session_state.get("admin_menu_v102") != "configuratore":
-        st.stop()
+        clienti = carica_clienti()
+        cerca_cliente_dash = st.text_input("Cerca cliente", placeholder="Nome, azienda, telefono, email o codice preventivo", key="cerca_cliente_dash")
+        clienti_filtrati = filtra_clienti_dashboard(clienti, cerca_cliente_dash)
 
+        if not clienti:
+            st.info("Nessun cliente salvato ancora. Verrà creato automaticamente al salvataggio del primo preventivo.")
+        elif not clienti_filtrati:
+            st.warning("Nessun cliente trovato con questo filtro.")
+        else:
+            st.write(f"Clienti trovati: **{len(clienti_filtrati)}**")
+            st.markdown(tabella_html_sicura(righe_clienti_dashboard(clienti_filtrati)), unsafe_allow_html=True)
 
+            if Path(CLIENTI_CSV).exists():
+                with open(CLIENTI_CSV, "rb") as f:
+                    st.download_button("Scarica CSV clienti", data=f, file_name="clienti_satec.csv", mime="text/csv")
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================
 # CONFIGURATORE
@@ -6351,88 +2068,36 @@ if "scelta" not in st.session_state:
 col_main, col_side = st.columns([0.69, 0.31], gap="large")
 
 with col_main:
-    st.markdown('<div class="card"><div class="title-bar">1&nbsp;&nbsp; SCEGLI L\'AUTOMAZIONE</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card"><div class="title-bar">1&nbsp;&nbsp; SCEGLI LA PORTA AUTOMATICA</div>', unsafe_allow_html=True)
 
-    pw_active = st.session_state.scelta in ["STANDARD 1 ANTA", "STANDARD 2 ANTE"]
-    er_active = st.session_state.scelta in ["RIDONDANTE 1 ANTA", "RIDONDANTE 2 ANTE"]
+    cards = [
+        ("STANDARD<br>1 ANTA", "STANDARD 1 ANTA", "Porta automatica lineare standard a una anta", "1 anta"),
+        ("STANDARD<br>2 ANTE", "STANDARD 2 ANTE", "Porta automatica lineare standard a due ante", "2 ante"),
+        ("RIDONDANTE<br>1 ANTA", "RIDONDANTE 1 ANTA", "Automazione lineare per via di fuga a una anta", "1 anta"),
+        ("RIDONDANTE<br>2 ANTE", "RIDONDANTE 2 ANTE", "Automazione lineare per via di fuga a due ante", "2 ante"),
+    ]
 
-    pw100_img = img_to_base64(["pw100.png", "PW100.png", "pw100(1) (3).png"])
-    er140_img = img_to_base64(["er140.png", "ER140.png", "er140(1).png"])
+    cols = st.columns(4)
 
-    pw_img_html = f'<img class="choice-img-v57" src="data:image/png;base64,{pw100_img}">' if pw100_img else ""
-    er_img_html = f'<img class="choice-img-v57" src="data:image/png;base64,{er140_img}">' if er140_img else ""
+    for c, (titolo, key, desc, ante_mini) in zip(cols, cards):
+        with c:
+            active = st.session_state.scelta == key
+            classe_card = "porta-card porta-card-attiva" if active else "porta-card"
 
-    pcol1, pcol2 = st.columns(2)
-
-    with pcol1:
-        classe_pw = "choice-card-v57 choice-card-v57-active" if pw_active else "choice-card-v57"
-        st.markdown(f"""
-        <div class="{classe_pw}">
-            {pw_img_html}
-            <div class="choice-badge-standard-v57">STANDARD</div>
-            <div class="choice-title-v57">Sesamo PowerCore PW100</div>
-            <div class="choice-desc-v57">
-                ✓ Automazione standard<br>
-                ✓ Conforme EN16005<br>
-                ✓ Made in Italy<br>
-                ✓ Garanzia 12 mesi<br>
-                ✓ Assistenza tecnica SA-TEC
+            # Card visuale
+            st.markdown(f"""
+            <div class="{classe_card}">
+                <div class="porta-card-title">{titolo}</div>
+                <div>{mini_porta_html(ante_mini)}</div>
+                <div class="porta-card-desc">{desc}</div>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
-    with pcol2:
-        classe_er = "choice-card-v57 choice-card-v57-active" if er_active else "choice-card-v57"
-        st.markdown(f"""
-        <div class="{classe_er}">
-            {er_img_html}
-            <div class="choice-badge-er-v57">RIDONDANTE / VIE DI FUGA</div>
-            <div class="choice-title-v57">Sesamo ER140 Ridondante</div>
-            <div class="choice-desc-v57">
-                ✓ Sistema ridondante<br>
-                ✓ Per uscite di emergenza<br>
-                ✓ Conforme EN16005<br>
-                ✓ Garanzia 12 mesi<br>
-                ✓ Assistenza tecnica SA-TEC
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('<div style="color:#06499b;font-size:18px;font-weight:900;margin:12px 0 8px 0;">Seleziona configurazione</div>', unsafe_allow_html=True)
-
-    s1, s2, s3, s4 = st.columns(4)
-
-    with s1:
-        classe = "sel-box-v57 sel-on-standard-v57" if st.session_state.scelta == "STANDARD 1 ANTA" else "sel-box-v57 sel-off-v57"
-        testo = "✓ PW100 1 ANTA" if st.session_state.scelta == "STANDARD 1 ANTA" else "PW100 1 ANTA"
-        st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
-        if st.button("PW100 1 ANTA", key="btn_pw100_1", use_container_width=True):
-            st.session_state.scelta = "STANDARD 1 ANTA"
-            st.rerun()
-
-    with s2:
-        classe = "sel-box-v57 sel-on-standard-v57" if st.session_state.scelta == "STANDARD 2 ANTE" else "sel-box-v57 sel-off-v57"
-        testo = "✓ PW100 2 ANTE" if st.session_state.scelta == "STANDARD 2 ANTE" else "PW100 2 ANTE"
-        st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
-        if st.button("PW100 2 ANTE", key="btn_pw100_2", use_container_width=True):
-            st.session_state.scelta = "STANDARD 2 ANTE"
-            st.rerun()
-
-    with s3:
-        classe = "sel-box-v57 sel-on-ridondante-v57" if st.session_state.scelta == "RIDONDANTE 1 ANTA" else "sel-box-v57 sel-off-v57"
-        testo = "✓ ER140 1 ANTA" if st.session_state.scelta == "RIDONDANTE 1 ANTA" else "ER140 1 ANTA"
-        st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
-        if st.button("ER140 1 ANTA", key="btn_er140_1", use_container_width=True):
-            st.session_state.scelta = "RIDONDANTE 1 ANTA"
-            st.rerun()
-
-    with s4:
-        classe = "sel-box-v57 sel-on-ridondante-v57" if st.session_state.scelta == "RIDONDANTE 2 ANTE" else "sel-box-v57 sel-off-v57"
-        testo = "✓ ER140 2 ANTE" if st.session_state.scelta == "RIDONDANTE 2 ANTE" else "ER140 2 ANTE"
-        st.markdown(f'<div class="{classe}">{testo}</div>', unsafe_allow_html=True)
-        if st.button("ER140 2 ANTE", key="btn_er140_2", use_container_width=True):
-            st.session_state.scelta = "RIDONDANTE 2 ANTE"
-            st.rerun()
+            # Pulsante grande quanto il riquadro: è lui il riquadro cliccabile reale in Streamlit
+            label_btn = "✓ SELEZIONATA" if active else "CLICCA QUI"
+            if st.button(label_btn, key=f"select_{key}", use_container_width=True):
+                st.session_state.scelta = key
+                st.rerun()
 
     scelta = st.session_state.scelta
 
@@ -6445,7 +2110,12 @@ with col_main:
     else:
         tipo, ante = "Ridondante", "2 ante"
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="section-row">
+    <div class="section-box">CONFIGURAZIONE STANDARD<br><span style="font-weight:500;color:#111;">Sesamo PowerCore PW100 per porta scorrevole automatica lineare ad uso normale.</span></div>
+    <div class="section-box green">CONFIGURAZIONE RIDONDANTE<br><span style="font-weight:500;color:#111;">Automazione ridondante per vie di fuga e uscite di emergenza.</span></div>
+    </div></div>
+    """, unsafe_allow_html=True)
 
     st.markdown('<div class="card"><div class="title-bar">2&nbsp;&nbsp; MISURE PORTA</div>', unsafe_allow_html=True)
     m1, m2 = st.columns(2)
@@ -6456,10 +2126,8 @@ with col_main:
         altezza_mm = st.number_input("ALTEZZA PASSAGGIO IN MM", min_value=1800, max_value=3000, value=2200, step=50)
 
     lunghezza_traversa = calcola_traversa(luce_mm, ante)
+    components.html(disegno_porta(ante, luce_mm, altezza_mm, lunghezza_traversa), height=555)
 
-    components.html(disegno_porta_v1006(ante, luce_mm, altezza_mm, lunghezza_traversa), height=760, scrolling=False)
-
-    # Render vecchio rimosso in V1001
     st.markdown(f"""
     <div class="measure-total">
     <div><b>MISURA TRAVERSA CALCOLATA</b><br>1 anta = doppio luce + 10 cm<br>2 ante = doppio luce + 20 cm</div>
@@ -6833,7 +2501,7 @@ html_stampa = f"""
 body {{font-family:Arial,sans-serif;color:#18324f;margin:28px;background:#ffffff;}}
 .header {{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:5px solid #06499b;padding-bottom:18px;margin-bottom:22px;}}
 .company {{text-align:right;font-size:13px;line-height:1.45;color:#111;}}
-h1 {{color:#06499b;font-size:32px;margin:10px 0 2px 0;}}
+h1 {{color:#06499b;font-size:30px;margin:10px 0 2px 0;}}
 h2 {{color:#06499b;font-size:20px;margin:18px 0 10px 0;}}
 .doc-code {{font-size:24px;font-weight:900;color:#111;margin-bottom:18px;}}
 .box {{border:2px solid #d7e6f7;border-left:8px solid #06499b;border-radius:12px;padding:16px;margin-bottom:18px;background:#f8fbff;}}
@@ -6972,7 +2640,7 @@ def crea_html_ordine_fornitore(codice_preventivo, articoli, scelta, luce_mm, alt
     <style>
     body {{font-family:Arial,sans-serif;margin:30px;color:#111;}}
     .header {{display:flex;justify-content:space-between;border-bottom:5px solid #06499b;padding-bottom:18px;margin-bottom:22px;}}
-    h1 {{color:#06499b;margin:0;font-size:32px;}}
+    h1 {{color:#06499b;margin:0;font-size:30px;}}
     h2 {{color:#06499b;margin-top:20px;}}
     .company {{text-align:right;font-size:13px;line-height:1.5;}}
     .box {{border:2px solid #d7e6f7;border-left:8px solid #06499b;border-radius:12px;padding:16px;margin-bottom:18px;background:#f8fbff;}}
@@ -7185,7 +2853,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1007 - SVG renderizzato correttamente")
+st.caption("Versione V48 - CRM avanzato + manuali protetti")
 
 st.markdown(f"""
 <div class="footer">
@@ -7194,195 +2862,3 @@ st.markdown(f"""
 <div>✉ {EMAIL}</div>
 </div>
 """, unsafe_allow_html=True)
-
-
-
-# =========================
-# V305 - CSS FINALE ASSOLUTO A FINE FILE
-# =========================
-st.markdown("""
-<style>
-/* V305: vince su tutti perché è l'ultimo CSS del file */
-
-/* HEADER */
-.v303-header{
-    background:linear-gradient(90deg,#0057D9 0%,#003C96 100%)!important;
-    border-radius:18px!important;
-    padding:20px 26px!important;
-    min-height:120px!important;
-    box-shadow:0 12px 30px rgba(0,87,217,.28)!important;
-}
-.v303-header,
-.v303-header div,
-.v303-header span,
-.v303-header p,
-.v303-header h1,
-.v303-header h2,
-.v303-header h3{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    opacity:1!important;
-    text-shadow:none!important;
-}
-.v303-brand{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:50px!important;
-    font-weight:1000!important;
-    letter-spacing:1.2px!important;
-}
-.v303-brand-sub{
-    color:#EAF3FF!important;
-    -webkit-text-fill-color:#EAF3FF!important;
-    font-size:14px!important;
-    font-weight:1000!important;
-    letter-spacing:5px!important;
-}
-.v303-title-main{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:32px!important;
-    font-weight:1000!important;
-}
-.v303-title-main span{
-    color:#F5B301!important;
-    -webkit-text-fill-color:#F5B301!important;
-}
-.v303-title-sub{
-    color:#EAF3FF!important;
-    -webkit-text-fill-color:#EAF3FF!important;
-    font-weight:1000!important;
-}
-.v303-info,
-.v303-info div,
-.v303-info span{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:13px!important;
-    font-weight:900!important;
-}
-.v303-sesamo-name{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    font-size:30px!important;
-    font-weight:1000!important;
-}
-.v303-sesamo-sub{
-    color:#EAF3FF!important;
-    -webkit-text-fill-color:#EAF3FF!important;
-}
-.v303-sesamo-mark,
-.v303-product-mark{
-    background:#F58220!important;
-    color:#071124!important;
-    -webkit-text-fill-color:#071124!important;
-}
-
-/* PRODOTTO */
-.v303-product{
-    background:#FFFFFF!important;
-    border:1px solid #C9DCF7!important;
-    border-radius:16px!important;
-    box-shadow:0 8px 22px rgba(0,87,217,.08)!important;
-}
-.v303-product-title{
-    color:#0B2A4A!important;
-    -webkit-text-fill-color:#0B2A4A!important;
-}
-.v303-product-sub{
-    color:#334155!important;
-    -webkit-text-fill-color:#334155!important;
-}
-.v303-product-name,
-.v303-product-tech{
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-}
-
-/* SIDEBAR */
-section[data-testid="stSidebar"]{
-    background:linear-gradient(180deg,#002B67 0%,#0057D9 100%)!important;
-    border-right:5px solid #F5B301!important;
-}
-section[data-testid="stSidebar"] h1,
-section[data-testid="stSidebar"] h2,
-section[data-testid="stSidebar"] h3,
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] span,
-section[data-testid="stSidebar"] label,
-section[data-testid="stSidebar"] div{
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-}
-
-/* INPUT SIDEBAR */
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] textarea,
-section[data-testid="stSidebar"] [data-baseweb="input"],
-section[data-testid="stSidebar"] [data-baseweb="input"] *,
-section[data-testid="stSidebar"] [data-baseweb="select"],
-section[data-testid="stSidebar"] [data-baseweb="select"] *{
-    background:#FFFFFF!important;
-    color:#111827!important;
-    -webkit-text-fill-color:#111827!important;
-    font-weight:900!important;
-}
-
-/* PULSANTI SIDEBAR LOGIN */
-section[data-testid="stSidebar"] .stButton button,
-section[data-testid="stSidebar"] .stButton button *,
-section[data-testid="stSidebar"] .stButton button p,
-section[data-testid="stSidebar"] .stButton button span,
-section[data-testid="stSidebar"] .stButton button div{
-    background:#FFFFFF!important;
-    color:#0057D9!important;
-    -webkit-text-fill-color:#0057D9!important;
-    border-color:#FFFFFF!important;
-    font-weight:1000!important;
-    opacity:1!important;
-}
-section[data-testid="stSidebar"] .stButton button:hover,
-section[data-testid="stSidebar"] .stButton button:hover *,
-section[data-testid="stSidebar"] .stButton button:hover p,
-section[data-testid="stSidebar"] .stButton button:hover span,
-section[data-testid="stSidebar"] .stButton button:hover div{
-    background:#F5B301!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:#F5B301!important;
-}
-
-/* PULSANTI ADMIN CENTRALI */
-div[data-testid="stHorizontalBlock"] .stButton button,
-div[data-testid="stHorizontalBlock"] .stButton button *,
-div[data-testid="stHorizontalBlock"] .stButton button p,
-div[data-testid="stHorizontalBlock"] .stButton button span,
-div[data-testid="stHorizontalBlock"] .stButton button div{
-    background:#0057D9!important;
-    color:#FFFFFF!important;
-    -webkit-text-fill-color:#FFFFFF!important;
-    border-color:#0057D9!important;
-    font-weight:1000!important;
-}
-div[data-testid="stHorizontalBlock"] .stButton button:hover,
-div[data-testid="stHorizontalBlock"] .stButton button:hover *,
-div[data-testid="stHorizontalBlock"] .stButton button:hover p,
-div[data-testid="stHorizontalBlock"] .stButton button:hover span,
-div[data-testid="stHorizontalBlock"] .stButton button:hover div{
-    background:#F5B301!important;
-    color:#111111!important;
-    -webkit-text-fill-color:#111111!important;
-    border-color:#F5B301!important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-
-# =========================
-# V400 - RIAPPLICA CSS A FINE FILE
-# =========================
-try:
-    v400_style()
-except Exception:
-    pass
