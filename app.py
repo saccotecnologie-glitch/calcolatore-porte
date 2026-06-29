@@ -1071,6 +1071,198 @@ def carica_preventivi():
         return list(csv.DictReader(f))
 
 
+
+
+# =========================
+# V1016 - ELIMINAZIONE CLIENTI E PREVENTIVI
+# =========================
+
+def elimina_preventivo_csv(codice_preventivo):
+    path = Path(PREVENTIVI_CSV)
+    if not path.exists():
+        return False, "File preventivi CSV non trovato."
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+
+        if not righe:
+            return False, "Nessun preventivo presente."
+
+        fieldnames = list(righe[0].keys())
+        codice_preventivo = str(codice_preventivo or "").strip()
+        nuove = [r for r in righe if str(r.get("codice_preventivo", "")).strip() != codice_preventivo]
+
+        if len(nuove) == len(righe):
+            return False, "Preventivo non trovato."
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_cliente_csv(identificativo):
+    path = Path(CLIENTI_CSV)
+    if not path.exists():
+        return False, "File clienti CSV non trovato."
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+
+        if not righe:
+            return False, "Nessun cliente presente."
+
+        fieldnames = list(righe[0].keys())
+        ident = str(identificativo or "").strip().lower()
+
+        def match_cliente(r):
+            valori = [
+                str(r.get("email", "")).strip().lower(),
+                str(r.get("telefono", "")).strip().lower(),
+                str(r.get("nome", "")).strip().lower(),
+                str(r.get("azienda", "")).strip().lower(),
+            ]
+            return ident and ident in valori
+
+        nuove = [r for r in righe if not match_cliente(r)]
+
+        if len(nuove) == len(righe):
+            return False, "Cliente non trovato."
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_preventivo_supabase(codice_preventivo):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato."
+
+    try:
+        codice_preventivo = str(codice_preventivo or "").strip()
+        if not codice_preventivo:
+            return False, "Codice preventivo mancante."
+
+        sb.table("preventivi").delete().eq("codice_preventivo", codice_preventivo).execute()
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_cliente_supabase(identificativo):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato."
+
+    try:
+        ident = str(identificativo or "").strip()
+        if not ident:
+            return False, "Identificativo cliente mancante."
+
+        sb.table("clienti").delete().eq("email", ident.lower()).execute()
+        sb.table("clienti").delete().eq("telefono", ident).execute()
+        sb.table("clienti").delete().eq("nome", ident).execute()
+        sb.table("clienti").delete().eq("azienda", ident).execute()
+        return True, ""
+    except Exception as e:
+        return False, str(e)
+
+
+def elimina_preventivo_totale(codice_preventivo):
+    messaggi = []
+    ok_csv, err_csv = elimina_preventivo_csv(codice_preventivo)
+    if ok_csv:
+        messaggi.append("CSV eliminato")
+    elif err_csv:
+        messaggi.append(f"CSV: {err_csv}")
+
+    if supabase_attivo():
+        ok_sb, err_sb = elimina_preventivo_supabase(codice_preventivo)
+        if ok_sb:
+            messaggi.append("Supabase eliminato")
+        elif err_sb:
+            messaggi.append(f"Supabase: {err_sb}")
+
+    ok = ok_csv or any("Supabase eliminato" in m for m in messaggi)
+    return ok, " | ".join(messaggi)
+
+
+def elimina_cliente_totale(identificativo):
+    messaggi = []
+    ok_csv, err_csv = elimina_cliente_csv(identificativo)
+    if ok_csv:
+        messaggi.append("CSV eliminato")
+    elif err_csv:
+        messaggi.append(f"CSV: {err_csv}")
+
+    if supabase_attivo():
+        ok_sb, err_sb = elimina_cliente_supabase(identificativo)
+        if ok_sb:
+            messaggi.append("Supabase eliminato")
+        elif err_sb:
+            messaggi.append(f"Supabase: {err_sb}")
+
+    ok = ok_csv or any("Supabase eliminato" in m for m in messaggi)
+    return ok, " | ".join(messaggi)
+
+
+def render_admin_eliminazioni_v1016():
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("## 🗑 Eliminazione dati")
+
+    with st.sidebar.expander("Elimina preventivo"):
+        st.caption("Inserisci il codice preventivo esatto, esempio SAT-2026-0001.")
+        codice_del = st.text_input("Codice preventivo da eliminare", key="v1016_delete_preventivo_codice")
+        conferma_prev = st.checkbox("Confermo eliminazione definitiva preventivo", key="v1016_confirm_delete_preventivo")
+
+        if st.button("ELIMINA PREVENTIVO", key="v1016_btn_delete_preventivo"):
+            if not codice_del:
+                st.error("Inserisci il codice preventivo.")
+            elif not conferma_prev:
+                st.warning("Spunta la conferma prima di eliminare.")
+            else:
+                ok, msg = elimina_preventivo_totale(codice_del)
+                if ok:
+                    st.success(f"Preventivo {codice_del} eliminato.")
+                    if msg:
+                        st.caption(msg)
+                    st.rerun()
+                else:
+                    st.error(f"Eliminazione non riuscita: {msg}")
+
+    with st.sidebar.expander("Elimina cliente"):
+        st.caption("Inserisci email, telefono, nome o azienda esatta del cliente.")
+        cliente_del = st.text_input("Cliente da eliminare", key="v1016_delete_cliente_id")
+        conferma_cliente = st.checkbox("Confermo eliminazione definitiva cliente", key="v1016_confirm_delete_cliente")
+
+        if st.button("ELIMINA CLIENTE", key="v1016_btn_delete_cliente"):
+            if not cliente_del:
+                st.error("Inserisci email, telefono, nome o azienda.")
+            elif not conferma_cliente:
+                st.warning("Spunta la conferma prima di eliminare.")
+            else:
+                ok, msg = elimina_cliente_totale(cliente_del)
+                if ok:
+                    st.success(f"Cliente {cliente_del} eliminato.")
+                    if msg:
+                        st.caption(msg)
+                    st.rerun()
+                else:
+                    st.error(f"Eliminazione non riuscita: {msg}")
+
+
 # =========================
 # CRM DASHBOARD NATIVA - FIX SICURO
 # =========================
@@ -1866,7 +2058,7 @@ if profilo == "SA-TEC":
             "Ricarico SA-TEC %",
             min_value=0.0,
             max_value=200.0,
-            value=50.0,
+            value=30.0,
             step=1.0,
             key="ricarico_satec_admin"
         )
@@ -2853,7 +3045,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V48 - CRM avanzato + manuali protetti")
+st.caption("Versione V1016 - Eliminazione clienti e preventivi")
 
 st.markdown(f"""
 <div class="footer">
