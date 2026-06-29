@@ -622,7 +622,18 @@ def carica_tutti_utenti():
     if "ADMIN" in utenti_csv:
         utenti_csv.pop("ADMIN", None)
     utenti.update(utenti_csv)
+
+    # V1027: nasconde davvero gli utenti eliminati, anche se presenti in UTENTI_BASE
+    try:
+        eliminati = v1027_carica_utenti_eliminati()
+        for codice in list(utenti.keys()):
+            if str(codice).strip().upper() in eliminati and str(codice).strip().upper() != "ADMIN":
+                utenti.pop(codice, None)
+    except Exception:
+        pass
+
     return utenti
+
 
 def genera_codice_progressivo(profilo, utenti):
     prefisso = {
@@ -1567,18 +1578,22 @@ def render_dashboard_crm(preventivi):
     persi = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "perso")
     conversione = ((accettati + ordinati) / totale_preventivi * 100) if totale_preventivi else 0
 
+    v1027_css_finale()
     c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.metric("Preventivi", totale_preventivi)
-    c2.metric("Valore totale", euro(valore_totale))
-    c3.metric("Utile lordo", euro(utile_totale))
-    c4.metric("Accettati/Ordinati", accettati + ordinati)
-    c5.metric("Persi", persi)
-    c6.metric("Conversione", f"{conversione:.1f}%")
+    c1.markdown(v1027_card_metriche("Preventivi", totale_preventivi), unsafe_allow_html=True)
+    c2.markdown(v1027_card_metriche("Valore totale", euro(valore_totale)), unsafe_allow_html=True)
+    c3.markdown(v1027_card_metriche("Utile lordo", euro(utile_totale)), unsafe_allow_html=True)
+    c4.markdown(v1027_card_metriche("Accettati/Ordinati", accettati + ordinati), unsafe_allow_html=True)
+    c5.markdown(v1027_card_metriche("Persi", persi), unsafe_allow_html=True)
+    c6.markdown(v1027_card_metriche("Conversione", f"{conversione:.1f}%"), unsafe_allow_html=True)
+
 
 def render_stati_preventivi(stats):
+    v1027_css_finale()
     cols = st.columns(len(STATI_PREVENTIVO))
     for col, stato in zip(cols, STATI_PREVENTIVO):
-        col.metric(stato, stats.get(stato, 0))
+        col.markdown(v1027_card_metriche(stato, stats.get(stato, 0)), unsafe_allow_html=True)
+
 
 def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
     cerca = str(cerca or "").strip().lower()
@@ -2336,6 +2351,200 @@ section[data-testid="stSidebar"] button * {
 """, unsafe_allow_html=True)
 
 
+
+
+# =========================
+# V1027 - ELIMINA RIVENDITORI/GROSSISTI NELLA SEZIONE GIUSTA
+# =========================
+
+UTENTI_ELIMINATI_CSV = "utenti_eliminati_satec.csv"
+
+def v1027_carica_utenti_eliminati():
+    path = Path(UTENTI_ELIMINATI_CSV)
+    if not path.exists():
+        return set()
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        return set(str(r.get("utente", "") or "").strip().upper() for r in righe if r.get("utente"))
+    except:
+        return set()
+
+def v1027_salva_utente_eliminato(username, profilo="", azienda=""):
+    username = str(username or "").strip().upper()
+    if not username or username == "ADMIN":
+        return False
+
+    eliminati = v1027_carica_utenti_eliminati()
+    if username in eliminati:
+        return True
+
+    path = Path(UTENTI_ELIMINATI_CSV)
+    file_exists = path.exists()
+    campi = ["utente", "profilo", "azienda", "data_eliminazione"]
+
+    with open(path, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=campi)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow({
+            "utente": username,
+            "profilo": profilo,
+            "azienda": azienda,
+            "data_eliminazione": datetime.now().strftime("%d/%m/%Y %H:%M")
+        })
+    return True
+
+def v1027_elimina_utente_csv(username):
+    path = Path(UTENTI_CSV)
+    if not path.exists():
+        return False, "CSV utenti non presente"
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        if not righe:
+            return False, "CSV utenti vuoto"
+
+        fieldnames = list(righe[0].keys())
+        user = str(username or "").strip().upper()
+        nuove = [r for r in righe if str(r.get("utente", "") or "").strip().upper() != user]
+
+        if len(nuove) == len(righe):
+            return False, "Utente non trovato nel CSV"
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+
+        return True, "Eliminato da CSV utenti"
+    except Exception as e:
+        return False, str(e)
+
+def v1027_elimina_utente_supabase(username):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato"
+    try:
+        user = str(username or "").strip().upper()
+        if not user:
+            return False, "Username mancante"
+        sb.table("utenti").delete().eq("username", user).execute()
+        return True, "Eliminato da Supabase utenti"
+    except Exception as e:
+        return False, str(e)
+
+def v1027_elimina_riv_gros(username):
+    username = str(username or "").strip().upper()
+    if not username:
+        return False, "Username mancante"
+    if username == "ADMIN":
+        return False, "ADMIN non può essere eliminato"
+
+    utenti = carica_tutti_utenti()
+    dati = utenti.get(username, {})
+    prof = str(dati.get("profilo", "") or "").strip().upper()
+    azienda = str(dati.get("azienda", "") or dati.get("nome", "") or "").strip()
+
+    if prof not in ["RIVENDITORE", "GROSSISTA"]:
+        return False, "Puoi eliminare solo RIVENDITORE o GROSSISTA"
+
+    messaggi = []
+
+    # fondamentale: nasconde anche utenti dentro UTENTI_BASE
+    v1027_salva_utente_eliminato(username, prof, azienda)
+    messaggi.append("Bloccato/nascosto dall'app")
+
+    ok_csv, msg_csv = v1027_elimina_utente_csv(username)
+    messaggi.append(msg_csv)
+
+    if supabase_attivo():
+        ok_sb, msg_sb = v1027_elimina_utente_supabase(username)
+        messaggi.append(msg_sb)
+
+    return True, " | ".join([m for m in messaggi if m])
+
+def v1027_card_metriche(label, valore):
+    return f"""
+    <div class="v1027-metric-card">
+        <div class="v1027-metric-label">{label}</div>
+        <div class="v1027-metric-value">{valore}</div>
+    </div>
+    """
+
+def v1027_css_finale():
+    st.markdown("""
+<style>
+.v1027-metric-card{
+    background:#ffffff!important;
+    border:3px solid #D60000!important;
+    border-radius:14px!important;
+    padding:16px!important;
+    min-height:96px!important;
+    box-shadow:0 6px 16px rgba(214,0,0,.12)!important;
+}
+.v1027-metric-label{
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    font-size:14px!important;
+    font-weight:1000!important;
+    text-transform:uppercase!important;
+}
+.v1027-metric-value{
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    font-size:28px!important;
+    font-weight:1000!important;
+    margin-top:8px!important;
+}
+.admin-box, .admin-box *, 
+.v85-toggle-title, .v85-toggle-title *,
+div[data-testid="stMarkdownContainer"] *,
+div[data-testid="stCaptionContainer"] *,
+div[data-testid="stCheckbox"] *,
+div[data-testid="stSelectbox"] *,
+div[data-testid="stTextInput"] *,
+div[data-testid="stNumberInput"] *,
+label, p, span, small, h1, h2, h3, h4 {
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    opacity:1!important;
+    text-shadow:none!important;
+    font-weight:900!important;
+}
+div[data-baseweb="select"] *,
+div[data-baseweb="popover"] *,
+div[data-baseweb="menu"] *,
+ul[role="listbox"] *,
+li[role="option"] *,
+div[role="option"] * {
+    background:#ffffff!important;
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    font-weight:1000!important;
+}
+table, tbody, tr, td, td *, div[data-testid="stTable"] *, div[data-testid="stDataFrame"] * {
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    background:#ffffff!important;
+}
+th, th *, thead, thead * {
+    background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+.stButton>button, .stButton>button *, button, button * {
+    background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:1000!important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+
 # =========================
 # LOGIN + REGISTRAZIONE
 # =========================
@@ -2993,6 +3202,8 @@ st.markdown(f"""
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
+v1027_css_finale()
+
 # Ricarico manuale solo per ADMIN SA-TEC
 if profilo == "SA-TEC":
     st.sidebar.markdown("---")
@@ -3172,6 +3383,26 @@ if profilo == "SA-TEC":
                         st.success(f"Ricarico aggiornato per {utente_riv_mod}: {nuovo_ricarico_riv:.0f}%")
                     else:
                         st.error(f"Ricarico non aggiornato: {err_riv}")
+
+                # V1027_DELETE_RIV_GROS_INSIDE_BLOCK
+                st.markdown("---")
+                st.markdown("### 🗑 Elimina rivenditore / grossista")
+                st.warning("Eliminazione definitiva: blocca l'accesso e lo nasconde dalla gestione.")
+                conferma_del_riv = st.checkbox(
+                    f"Confermo eliminazione definitiva di {utente_riv_mod}",
+                    key=f"v1027_conf_delete_riv_{utente_riv_mod}"
+                )
+                if st.button("🗑 ELIMINA RIVENDITORE / GROSSISTA", key=f"v1027_btn_delete_riv_{utente_riv_mod}"):
+                    if not conferma_del_riv:
+                        st.warning("Spunta la conferma prima di eliminare.")
+                    else:
+                        ok_del_riv, msg_del_riv = v1027_elimina_riv_gros(utente_riv_mod)
+                        if ok_del_riv:
+                            st.success(f"{utente_riv_mod} eliminato.")
+                            st.caption(msg_del_riv)
+                            st.rerun()
+                        else:
+                            st.error(msg_del_riv)
 
 
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -4494,7 +4725,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1026 - Elimina davvero Riv/Gross + CRM rosso finale")
+st.caption("Versione V1027 - Elimina Riv/Gross nel blocco giusto + CRM rosso")
 
 st.markdown(f"""
 <div class="footer">
