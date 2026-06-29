@@ -865,6 +865,144 @@ def aggiorna_stato_preventivo_admin(codice_preventivo, nuovo_stato):
 
 
 
+
+
+# =========================
+# V1024 - ELIMINA CLIENTE DA ADMIN
+# =========================
+
+def v1024_elimina_cliente_csv(identificativo):
+    path = Path(CLIENTI_CSV)
+    if not path.exists():
+        return False, "File clienti CSV non trovato."
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        if not righe:
+            return False, "Nessun cliente presente."
+
+        fieldnames = list(righe[0].keys())
+        ident = str(identificativo or "").strip().lower()
+
+        def match_cliente(r):
+            campi = ["email", "telefono", "nome", "azienda", "ultimo_preventivo", "primo_preventivo"]
+            return any(str(r.get(c, "") or "").strip().lower() == ident for c in campi)
+
+        nuove = [r for r in righe if not match_cliente(r)]
+
+        if len(nuove) == len(righe):
+            return False, "Cliente non trovato nel CSV."
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+
+        return True, "Cliente eliminato da CSV."
+    except Exception as e:
+        return False, str(e)
+
+
+def v1024_elimina_cliente_supabase(identificativo):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato."
+    try:
+        ident = str(identificativo or "").strip()
+        if not ident:
+            return False, "Identificativo cliente mancante."
+
+        # Compatibile con struttura già presente: prova i campi principali.
+        sb.table("clienti").delete().eq("email", ident.lower()).execute()
+        sb.table("clienti").delete().eq("telefono", ident).execute()
+        sb.table("clienti").delete().eq("nome", ident).execute()
+        sb.table("clienti").delete().eq("azienda", ident).execute()
+
+        return True, "Cliente eliminato da Supabase."
+    except Exception as e:
+        return False, str(e)
+
+
+def v1024_elimina_cliente_totale(identificativo):
+    ok_csv, msg_csv = v1024_elimina_cliente_csv(identificativo)
+    ok = ok_csv
+    msg = [msg_csv]
+
+    if supabase_attivo():
+        ok_sb, msg_sb = v1024_elimina_cliente_supabase(identificativo)
+        ok = ok or ok_sb
+        msg.append(msg_sb)
+
+    return ok, " | ".join([m for m in msg if m])
+
+
+def v1024_cliente_identificativo(c):
+    for campo in ["email", "telefono", "nome", "azienda", "ultimo_preventivo", "primo_preventivo"]:
+        val = str(c.get(campo, "") or "").strip()
+        if val:
+            return val
+    return ""
+
+
+def render_elimina_cliente_admin_v1024(profilo):
+    if profilo != "SA-TEC":
+        return
+
+    st.markdown("---")
+    st.markdown("### 🗑 Elimina cliente")
+    st.caption("Stesso principio dei preventivi: cerca il cliente e cancellalo definitivamente.")
+
+    clienti = carica_clienti()
+    cerca_cli_del = st.text_input(
+        "Cerca cliente da eliminare",
+        key="v1024_cerca_cliente_delete",
+        placeholder="Nome, azienda, telefono o email..."
+    )
+    clienti_filtrati = filtra_clienti_dashboard(clienti, cerca_cli_del)
+
+    opzioni = []
+    mappa = {}
+    for c in clienti_filtrati:
+        ident = v1024_cliente_identificativo(c)
+        if not ident:
+            continue
+        nome = str(c.get("nome", "") or "").strip()
+        azienda = str(c.get("azienda", "") or "").strip()
+        tel = str(c.get("telefono", "") or "").strip()
+        email = str(c.get("email", "") or "").strip()
+        label = f"{azienda or nome or ident} | {nome} | {tel} | {email}"
+        opzioni.append(label)
+        mappa[label] = ident
+
+    if not opzioni:
+        st.info("Nessun cliente trovato.")
+        return
+
+    scelta_cliente = st.selectbox(
+        "Cliente da eliminare",
+        opzioni,
+        key="v1024_select_cliente_delete"
+    )
+
+    conferma_cliente = st.checkbox(
+        "Confermo eliminazione definitiva del cliente selezionato",
+        key="v1024_confirm_cliente_delete"
+    )
+
+    if st.button("🗑 ELIMINA CLIENTE", key="v1024_btn_delete_cliente"):
+        if not conferma_cliente:
+            st.warning("Spunta la conferma prima di eliminare.")
+        else:
+            ident = mappa.get(scelta_cliente, "")
+            ok, msg = v1024_elimina_cliente_totale(ident)
+            if ok:
+                st.success("Cliente eliminato.")
+                st.caption(msg)
+                st.rerun()
+            else:
+                st.error(f"Eliminazione non riuscita: {msg}")
+
+
 # =========================
 # V1023 - ELIMINA PREVENTIVO DA TENDINA STATO
 # =========================
@@ -3517,6 +3655,144 @@ section[data-testid="stSidebar"] span {
     opacity:1!important;
 }
 
+
+
+/* =========================
+   V1024 - FIX CRM NASCOSTO DEFINITIVO
+   ========================= */
+
+/* Reset del corpo principale */
+html, body, .stApp, .main, .main .block-container {
+    background:#ffffff!important;
+}
+
+/* Tutto il testo del main forzato blu, compresi figli annidati */
+.main .block-container *:not(button):not(button *):not(svg):not(path) {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    opacity:1!important;
+    text-shadow:none!important;
+}
+
+/* CRM Commerciale e metriche: niente testo bianco */
+div[data-testid="stMetric"],
+div[data-testid="stMetric"] *,
+[data-testid="metric-container"],
+[data-testid="metric-container"] *,
+[data-testid="stMetricValue"],
+[data-testid="stMetricValue"] *,
+[data-testid="stMetricLabel"],
+[data-testid="stMetricLabel"] *,
+[data-testid="stMetricDelta"],
+[data-testid="stMetricDelta"] * {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    background:#ffffff!important;
+    opacity:1!important;
+    text-shadow:none!important;
+}
+
+div[data-testid="stMetric"] {
+    border:1px solid #d9e4f3!important;
+    border-radius:12px!important;
+    padding:12px!important;
+    box-shadow:0 4px 12px rgba(0,60,150,.08)!important;
+}
+
+/* Tabelle dataframe Streamlit e HTML */
+table, thead, tbody, tr, td, div[data-testid="stDataFrame"] *, div[data-testid="stTable"] * {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    opacity:1!important;
+}
+th, th * {
+    background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+/* Selectbox: campo e menu sempre bianco/blu */
+div[data-testid="stSelectbox"],
+div[data-testid="stSelectbox"] *,
+div[data-baseweb="select"],
+div[data-baseweb="select"] *,
+div[data-baseweb="popover"],
+div[data-baseweb="popover"] *,
+div[data-baseweb="menu"],
+div[data-baseweb="menu"] *,
+ul[role="listbox"],
+ul[role="listbox"] *,
+li[role="option"],
+li[role="option"] *,
+div[role="listbox"],
+div[role="listbox"] *,
+div[role="option"],
+div[role="option"] * {
+    background:#ffffff!important;
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    opacity:1!important;
+    font-weight:900!important;
+}
+
+li[aria-selected="true"], div[aria-selected="true"],
+li[role="option"]:hover, div[role="option"]:hover {
+    background:#dcecff!important;
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+/* Input */
+input, textarea,
+div[data-testid="stTextInput"] input,
+div[data-testid="stNumberInput"] input {
+    background:#ffffff!important;
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    border:2px solid #003C96!important;
+    font-weight:900!important;
+}
+
+/* Checkbox */
+div[data-testid="stCheckbox"],
+div[data-testid="stCheckbox"] *,
+div[data-testid="stCheckbox"] label,
+div[data-testid="stCheckbox"] p {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    opacity:1!important;
+    font-weight:900!important;
+}
+
+/* Bottoni */
+.stButton>button,
+.stButton>button *,
+button,
+button * {
+    background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    opacity:1!important;
+    font-weight:900!important;
+}
+
+/* Sidebar leggibile ma non bianca */
+section[data-testid="stSidebar"],
+section[data-testid="stSidebar"] *,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    opacity:1!important;
+}
+
+/* Header metric values generati da Emotion: cattura classi dinamiche */
+[class*="st-emotion-cache"] {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
 </style>
     </head>
     <body>
@@ -3720,7 +3996,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1023 - CRM blu e tendina ELIMINA")
+st.caption("Versione V1024 - Elimina clienti e CRM blu fix")
 
 st.markdown(f"""
 <div class="footer">
