@@ -817,9 +817,19 @@ def aggiorna_stato_preventivo_csv(codice_preventivo, nuovo_stato, email_destinat
         return False
 
 
-STATI_PREVENTIVO = ["Bozza", "Inviato", "Trattativa", "Accettato", "Perso", "Ordinato"]
+STATI_PREVENTIVO = ["Bozza", "Inviato", "Trattativa", "Accettato", "Perso", "Ordinato", "ELIMINA"]
 
 def aggiorna_stato_preventivo_admin(codice_preventivo, nuovo_stato):
+
+    # V1023: se dalla tendina scegli ELIMINA, cancella il preventivo invece di cambiare stato.
+    if str(nuovo_stato).upper() == "ELIMINA":
+        ok_del, msg_del = v1023_elimina_preventivo_totale(codice_preventivo)
+        if ok_del:
+            st.success(f"Preventivo {codice_preventivo} eliminato.")
+            st.caption(msg_del)
+        else:
+            st.error(f"Eliminazione non riuscita: {msg_del}")
+        return ok_del
     path = Path(PREVENTIVI_CSV)
     if not path.exists():
         return False
@@ -852,6 +862,60 @@ def aggiorna_stato_preventivo_admin(codice_preventivo, nuovo_stato):
     except Exception as e:
         st.warning(f"Stato non aggiornato: {e}")
         return False
+
+
+
+# =========================
+# V1023 - ELIMINA PREVENTIVO DA TENDINA STATO
+# =========================
+
+def v1023_elimina_preventivo_csv(codice_preventivo):
+    path = Path(PREVENTIVI_CSV)
+    if not path.exists():
+        return False, "File preventivi CSV non trovato."
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        if not righe:
+            return False, "Nessun preventivo presente."
+        fieldnames = list(righe[0].keys())
+        codice = str(codice_preventivo or "").strip()
+        nuove = [r for r in righe if str(r.get("codice_preventivo", "")).strip() != codice]
+        if len(nuove) == len(righe):
+            return False, "Preventivo non trovato."
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+        return True, "Eliminato da CSV."
+    except Exception as e:
+        return False, str(e)
+
+
+def v1023_elimina_preventivo_supabase(codice_preventivo):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato."
+    try:
+        codice = str(codice_preventivo or "").strip()
+        if not codice:
+            return False, "Codice mancante."
+        sb.table("preventivi").delete().eq("codice_preventivo", codice).execute()
+        return True, "Eliminato da Supabase."
+    except Exception as e:
+        return False, str(e)
+
+
+def v1023_elimina_preventivo_totale(codice_preventivo):
+    ok_csv, msg_csv = v1023_elimina_preventivo_csv(codice_preventivo)
+    ok = ok_csv
+    msg = [msg_csv]
+    if supabase_attivo():
+        ok_sb, msg_sb = v1023_elimina_preventivo_supabase(codice_preventivo)
+        ok = ok or ok_sb
+        msg.append(msg_sb)
+    return ok, " | ".join([m for m in msg if m])
+
 
 def statistiche_stati_preventivi(preventivi):
     stats = {s: 0 for s in STATI_PREVENTIVO}
@@ -3289,6 +3353,170 @@ button * {
     font-weight:900!important;
 }
 
+
+
+/* =========================
+   V1023 - CRM COMMERCIALE SCRITTE BLU FORZATE
+   ========================= */
+
+/* Fondo pagina sempre bianco */
+.stApp,
+.main,
+.main .block-container {
+    background:#ffffff!important;
+}
+
+/* Testi generali del corpo pagina */
+.main .block-container,
+.main .block-container *,
+div[data-testid="stMarkdownContainer"],
+div[data-testid="stMarkdownContainer"] *,
+div[data-testid="stCaptionContainer"],
+div[data-testid="stCaptionContainer"] *,
+label, p, span, small, strong, b, h1, h2, h3, h4 {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    opacity:1!important;
+    text-shadow:none!important;
+}
+
+/* METRICHE CRM: prima erano bianche e sparivano */
+div[data-testid="stMetric"],
+div[data-testid="stMetric"] *,
+[data-testid="metric-container"],
+[data-testid="metric-container"] *,
+[data-testid="stMetricValue"],
+[data-testid="stMetricValue"] *,
+[data-testid="stMetricLabel"],
+[data-testid="stMetricLabel"] * {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    background:transparent!important;
+    opacity:1!important;
+    text-shadow:none!important;
+}
+
+/* Blocchi metriche con bordo leggero */
+div[data-testid="stMetric"] {
+    background:#ffffff!important;
+    border:1px solid #d9e4f3!important;
+    border-radius:12px!important;
+    padding:12px!important;
+    box-shadow:0 4px 12px rgba(0,60,150,.06)!important;
+}
+
+/* Selectbox chiusa */
+div[data-testid="stSelectbox"] label,
+div[data-testid="stSelectbox"] label *,
+div[data-testid="stSelectbox"] div,
+div[data-testid="stSelectbox"] span,
+div[data-testid="stSelectbox"] input {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    font-weight:900!important;
+    opacity:1!important;
+}
+
+div[data-testid="stSelectbox"] [data-baseweb="select"] > div {
+    background:#ffffff!important;
+    color:#003C96!important;
+    border:2px solid #003C96!important;
+    border-radius:8px!important;
+}
+
+/* Dropdown aperta */
+div[data-baseweb="popover"],
+div[data-baseweb="popover"] *,
+div[data-baseweb="menu"],
+div[data-baseweb="menu"] *,
+ul[role="listbox"],
+ul[role="listbox"] *,
+li[role="option"],
+li[role="option"] *,
+div[role="listbox"],
+div[role="listbox"] *,
+div[role="option"],
+div[role="option"] * {
+    background:#ffffff!important;
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    font-weight:900!important;
+    opacity:1!important;
+}
+
+/* Opzione selezionata/hover */
+li[role="option"]:hover,
+div[role="option"]:hover,
+li[aria-selected="true"],
+div[aria-selected="true"] {
+    background:#dcecff!important;
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+/* Input */
+div[data-testid="stTextInput"] input,
+div[data-testid="stNumberInput"] input,
+textarea {
+    background:#ffffff!important;
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    border:2px solid #003C96!important;
+    font-weight:900!important;
+}
+
+/* Tabelle */
+table, tbody, tr, td, td * {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    background:#ffffff!important;
+    opacity:1!important;
+}
+thead, th, th * {
+    background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+/* Checkbox */
+div[data-testid="stCheckbox"],
+div[data-testid="stCheckbox"] *,
+div[data-testid="stCheckbox"] label,
+div[data-testid="stCheckbox"] p {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    font-weight:900!important;
+}
+
+/* Alert */
+div[data-testid="stAlert"],
+div[data-testid="stAlert"] * {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+/* Bottoni blu con testo bianco */
+.stButton>button,
+.stButton>button *,
+button[kind="primary"],
+button[kind="primary"] * {
+    background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:900!important;
+}
+
+/* Sidebar leggibile */
+section[data-testid="stSidebar"],
+section[data-testid="stSidebar"] *,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    opacity:1!important;
+}
+
 </style>
     </head>
     <body>
@@ -3492,7 +3720,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1022 - Tendine leggibili blu")
+st.caption("Versione V1023 - CRM blu e tendina ELIMINA")
 
 st.markdown(f"""
 <div class="footer">
