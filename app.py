@@ -2068,6 +2068,274 @@ def render_elimina_rivenditori_grossisti_v1025(profilo):
                 st.error(f"Eliminazione non riuscita: {msg}")
 
 
+
+
+# =========================
+# V1026 - ELIMINA DAVVERO RIVENDITORI/GROSSISTI + CRM ROSSO
+# =========================
+
+UTENTI_ELIMINATI_CSV = "utenti_eliminati_satec.csv"
+
+def v1026_carica_utenti_eliminati():
+    path = Path(UTENTI_ELIMINATI_CSV)
+    if not path.exists():
+        return set()
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        return set(str(r.get("utente", "") or "").strip().upper() for r in righe if r.get("utente"))
+    except:
+        return set()
+
+def v1026_salva_utente_eliminato(username, profilo="", azienda=""):
+    username = str(username or "").strip().upper()
+    if not username or username == "ADMIN":
+        return False
+
+    path = Path(UTENTI_ELIMINATI_CSV)
+    esistenti = v1026_carica_utenti_eliminati()
+    if username in esistenti:
+        return True
+
+    file_exists = path.exists()
+    campi = ["utente", "profilo", "azienda", "data_eliminazione"]
+    with open(path, "a", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=campi)
+        if not file_exists:
+            writer.writeheader()
+        writer.writerow({
+            "utente": username,
+            "profilo": str(profilo or ""),
+            "azienda": str(azienda or ""),
+            "data_eliminazione": datetime.now().strftime("%d/%m/%Y %H:%M")
+        })
+    return True
+
+# Override sicuro: filtra gli utenti eliminati, compresi quelli dentro UTENTI_BASE.
+def carica_tutti_utenti():
+    utenti = dict(UTENTI_BASE)
+
+    utenti_supabase = carica_utenti_supabase()
+    if "ADMIN" in utenti_supabase:
+        utenti["ADMIN"].update(utenti_supabase["ADMIN"])
+
+    for codice, dati in utenti_supabase.items():
+        if codice != "ADMIN":
+            utenti[codice] = dati
+
+    utenti_csv = carica_utenti_csv()
+    if "ADMIN" in utenti_csv:
+        utenti_csv.pop("ADMIN", None)
+    utenti.update(utenti_csv)
+
+    eliminati = v1026_carica_utenti_eliminati()
+    for codice in list(utenti.keys()):
+        if codice.strip().upper() in eliminati and codice.strip().upper() != "ADMIN":
+            utenti.pop(codice, None)
+
+    return utenti
+
+def v1026_elimina_utente_csv(username):
+    path = Path(UTENTI_CSV)
+    if not path.exists():
+        return False, "CSV utenti non trovato o utente presente solo in UTENTI_BASE."
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+
+        if not righe:
+            return False, "CSV utenti vuoto."
+
+        fieldnames = list(righe[0].keys())
+        user = str(username or "").strip().upper()
+
+        nuove = [r for r in righe if str(r.get("utente", "") or "").strip().upper() != user]
+
+        if len(nuove) == len(righe):
+            return False, "Utente non trovato nel CSV."
+
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(nuove)
+
+        return True, "Eliminato da CSV utenti."
+    except Exception as e:
+        return False, str(e)
+
+def v1026_elimina_utente_supabase(username):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato."
+
+    try:
+        user = str(username or "").strip().upper()
+        if not user:
+            return False, "Username mancante."
+        sb.table("utenti").delete().eq("username", user).execute()
+        return True, "Eliminato da Supabase utenti."
+    except Exception as e:
+        return False, str(e)
+
+def v1026_elimina_riv_gros_totale(username):
+    username = str(username or "").strip().upper()
+    if not username:
+        return False, "Username mancante."
+    if username == "ADMIN":
+        return False, "ADMIN non può essere eliminato."
+
+    utenti = carica_tutti_utenti()
+    dati = utenti.get(username, {})
+    profilo_user = str(dati.get("profilo", "") or "").strip().upper()
+    azienda = str(dati.get("azienda", "") or dati.get("nome", "") or "").strip()
+
+    if profilo_user not in ["RIVENDITORE", "GROSSISTA"]:
+        return False, "Puoi eliminare solo Rivenditori o Grossisti."
+
+    messaggi = []
+
+    # 1: blacklist persistente, questa è la parte che elimina davvero anche UTENTI_BASE
+    v1026_salva_utente_eliminato(username, profilo_user, azienda)
+    messaggi.append("Nascosto definitivamente da UTENTI_BASE/app.")
+
+    # 2: CSV
+    ok_csv, msg_csv = v1026_elimina_utente_csv(username)
+    messaggi.append(msg_csv)
+
+    # 3: Supabase
+    if supabase_attivo():
+        ok_sb, msg_sb = v1026_elimina_utente_supabase(username)
+        messaggi.append(msg_sb)
+
+    return True, " | ".join([m for m in messaggi if m])
+
+def render_elimina_riv_gros_v1026(profilo):
+    if profilo != "SA-TEC":
+        return
+
+    st.markdown("---")
+    st.markdown("## 🗑 Elimina Rivenditori / Grossisti")
+    st.caption("Funziona anche per utenti base tipo ROSSI01, VERDI01, GROS001: vengono messi in lista eliminati e non ricompaiono.")
+
+    utenti = carica_tutti_utenti()
+    opzioni = []
+    for codice, d in utenti.items():
+        prof = str(d.get("profilo", "") or "").strip().upper()
+        if prof in ["RIVENDITORE", "GROSSISTA"]:
+            azienda = str(d.get("azienda", "") or d.get("nome", "") or "").strip()
+            tel = str(d.get("telefono", "") or "").strip()
+            email = str(d.get("email", "") or "").strip()
+            opzioni.append(f"{codice} | {prof} | {azienda} | {tel} | {email}")
+
+    if not opzioni:
+        st.info("Nessun rivenditore/grossista presente.")
+        return
+
+    cerca = st.text_input("Cerca utente da eliminare", key="v1026_cerca_riv_gros")
+    if cerca:
+        opzioni = [o for o in opzioni if cerca.lower() in o.lower()]
+
+    if not opzioni:
+        st.warning("Nessun risultato.")
+        return
+
+    scelta = st.selectbox("Seleziona Rivenditore/Grossista da eliminare", opzioni, key="v1026_select_riv_gros")
+    username = scelta.split("|")[0].strip().upper()
+
+    conferma = st.checkbox(f"Confermo eliminazione definitiva di {username}", key=f"v1026_conf_{username}")
+
+    if st.button("🗑 ELIMINA RIVENDITORE / GROSSISTA", key=f"v1026_btn_del_{username}"):
+        if not conferma:
+            st.warning("Spunta la conferma prima di eliminare.")
+        else:
+            ok, msg = v1026_elimina_riv_gros_totale(username)
+            if ok:
+                st.success(f"{username} eliminato.")
+                st.caption(msg)
+                st.rerun()
+            else:
+                st.error(msg)
+
+def v1026_css_rosso_finale():
+    st.markdown("""
+<style>
+/* V1026 - ROSSO FORZATO FINALE, caricato dopo tutto */
+html, body, .stApp, .main, .main .block-container {
+    background:#ffffff!important;
+}
+.main .block-container *:not(button):not(button *):not(svg):not(path),
+div[data-testid="stMetric"] *,
+[data-testid="metric-container"] *,
+[data-testid="stMetricValue"] *,
+[data-testid="stMetricLabel"] *,
+[data-testid="stMarkdownContainer"] *,
+[data-testid="stCaptionContainer"] *,
+label, p, span, small, strong, b, h1, h2, h3, h4,
+div[data-testid="stSelectbox"] *,
+div[data-baseweb="select"] *,
+div[data-baseweb="popover"] *,
+div[data-baseweb="menu"] *,
+ul[role="listbox"] *,
+li[role="option"] *,
+div[role="listbox"] *,
+div[role="option"] *,
+div[data-testid="stCheckbox"] *,
+div[data-testid="stTextInput"] *,
+div[data-testid="stNumberInput"] *,
+input, textarea {
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    background:#ffffff!important;
+    opacity:1!important;
+    text-shadow:none!important;
+    font-weight:1000!important;
+}
+div[data-testid="stMetric"] {
+    background:#ffffff!important;
+    border:2px solid #D60000!important;
+    border-radius:12px!important;
+    padding:12px!important;
+}
+table, tbody, tr, td, td *, div[data-testid="stDataFrame"] *, div[data-testid="stTable"] * {
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    background:#ffffff!important;
+    opacity:1!important;
+}
+th, th *, thead, thead * {
+    background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+.stButton>button,
+.stButton>button *,
+button,
+button * {
+    background:#003C96!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    opacity:1!important;
+    font-weight:1000!important;
+}
+section[data-testid="stSidebar"] *,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span {
+    color:#D60000!important;
+    -webkit-text-fill-color:#D60000!important;
+    opacity:1!important;
+    font-weight:1000!important;
+}
+section[data-testid="stSidebar"] button,
+section[data-testid="stSidebar"] button * {
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 # =========================
 # LOGIN + REGISTRAZIONE
 # =========================
@@ -4226,7 +4494,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1025 - Elimina Rivenditori/Grossisti + CRM rosso")
+st.caption("Versione V1026 - Elimina davvero Riv/Gross + CRM rosso finale")
 
 st.markdown(f"""
 <div class="footer">
