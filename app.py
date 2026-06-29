@@ -1661,272 +1661,6 @@ def render_crm_avanzato(preventivi):
         st.markdown(tabella_html_sicura(righe_utenti), unsafe_allow_html=True)
 
 
-
-
-# =========================
-# V1018 - CRM ADMIN VISIBILE: CLIENTI / PREVENTIVI / ELIMINA
-# =========================
-
-def v1018_riscrivi_csv(path_file, righe, fieldnames):
-    with open(path_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(righe)
-
-
-def v1018_elimina_preventivo_csv(codice_preventivo):
-    path = Path(PREVENTIVI_CSV)
-    if not path.exists():
-        return False, "CSV preventivi non trovato"
-
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            righe = list(csv.DictReader(f))
-
-        if not righe:
-            return False, "Nessun preventivo presente"
-
-        fieldnames = list(righe[0].keys())
-        codice = str(codice_preventivo or "").strip()
-        nuove = [r for r in righe if str(r.get("codice_preventivo", "")).strip() != codice]
-
-        if len(nuove) == len(righe):
-            return False, "Preventivo non trovato"
-
-        v1018_riscrivi_csv(path, nuove, fieldnames)
-        return True, "CSV preventivi aggiornato"
-    except Exception as e:
-        return False, str(e)
-
-
-def v1018_elimina_cliente_csv(identificativo):
-    path = Path(CLIENTI_CSV)
-    if not path.exists():
-        return False, "CSV clienti non trovato"
-
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            righe = list(csv.DictReader(f))
-
-        if not righe:
-            return False, "Nessun cliente presente"
-
-        fieldnames = list(righe[0].keys())
-        ident = str(identificativo or "").strip().lower()
-
-        def match_cliente(r):
-            campi = ["email", "telefono", "nome", "azienda"]
-            return any(str(r.get(c, "") or "").strip().lower() == ident for c in campi)
-
-        nuove = [r for r in righe if not match_cliente(r)]
-
-        if len(nuove) == len(righe):
-            return False, "Cliente non trovato"
-
-        v1018_riscrivi_csv(path, nuove, fieldnames)
-        return True, "CSV clienti aggiornato"
-    except Exception as e:
-        return False, str(e)
-
-
-def v1018_elimina_preventivo_supabase(codice_preventivo):
-    sb = supabase_client()
-    if sb is None:
-        return False, "Supabase non collegato"
-    try:
-        codice = str(codice_preventivo or "").strip()
-        if not codice:
-            return False, "Codice mancante"
-        sb.table("preventivi").delete().eq("codice_preventivo", codice).execute()
-        return True, "Supabase preventivi aggiornato"
-    except Exception as e:
-        return False, str(e)
-
-
-def v1018_elimina_cliente_supabase(identificativo):
-    sb = supabase_client()
-    if sb is None:
-        return False, "Supabase non collegato"
-    try:
-        ident = str(identificativo or "").strip()
-        if not ident:
-            return False, "Identificativo mancante"
-
-        # Prova campi principali. Serve per compatibilità con struttura Supabase già usata.
-        sb.table("clienti").delete().eq("email", ident.lower()).execute()
-        sb.table("clienti").delete().eq("telefono", ident).execute()
-        sb.table("clienti").delete().eq("nome", ident).execute()
-        sb.table("clienti").delete().eq("azienda", ident).execute()
-        return True, "Supabase clienti aggiornato"
-    except Exception as e:
-        return False, str(e)
-
-
-def v1018_elimina_preventivo_totale(codice_preventivo):
-    messaggi = []
-    ok = False
-
-    ok_csv, msg_csv = v1018_elimina_preventivo_csv(codice_preventivo)
-    messaggi.append(msg_csv)
-    ok = ok or ok_csv
-
-    if supabase_attivo():
-        ok_sb, msg_sb = v1018_elimina_preventivo_supabase(codice_preventivo)
-        messaggi.append(msg_sb)
-        ok = ok or ok_sb
-
-    return ok, " | ".join([m for m in messaggi if m])
-
-
-def v1018_elimina_cliente_totale(identificativo):
-    messaggi = []
-    ok = False
-
-    ok_csv, msg_csv = v1018_elimina_cliente_csv(identificativo)
-    messaggi.append(msg_csv)
-    ok = ok or ok_csv
-
-    if supabase_attivo():
-        ok_sb, msg_sb = v1018_elimina_cliente_supabase(identificativo)
-        messaggi.append(msg_sb)
-        ok = ok or ok_sb
-
-    return ok, " | ".join([m for m in messaggi if m])
-
-
-def v1018_id_cliente(c):
-    for campo in ["email", "telefono", "nome", "azienda"]:
-        val = str(c.get(campo, "") or "").strip()
-        if val:
-            return val
-    return ""
-
-
-def render_admin_crm_v1018(profilo):
-    """
-    Questo blocco viene mostrato nel corpo principale, subito dopo il login.
-    Non è nascosto nella sidebar.
-    """
-    if profilo != "SA-TEC":
-        return
-
-    st.markdown("---")
-    st.markdown("## 🧾 AREA ADMIN - Clienti e Preventivi")
-
-    tab_clienti, tab_preventivi = st.tabs(["👥 Clienti", "📄 Preventivi"])
-
-    with tab_clienti:
-        st.markdown("### 👥 Clienti salvati")
-        clienti = carica_clienti()
-        cerca = st.text_input("Cerca cliente per nome, azienda, telefono o email", key="v1018_cerca_cliente")
-        clienti_vis = filtra_clienti_dashboard(clienti, cerca)
-
-        st.caption(f"Clienti trovati: {len(clienti_vis)}")
-
-        if not clienti_vis:
-            st.info("Nessun cliente trovato.")
-        else:
-            for i, c in enumerate(clienti_vis):
-                ident = v1018_id_cliente(c)
-                nome = str(c.get("nome", "") or "Cliente senza nome")
-                azienda = str(c.get("azienda", "") or "")
-                telefono = str(c.get("telefono", "") or "")
-                email = str(c.get("email", "") or "")
-                ultimo = str(c.get("ultimo_preventivo", "") or "")
-                totale = str(c.get("totale_preventivi", "") or "")
-
-                with st.container(border=True):
-                    col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
-                    with col1:
-                        st.markdown(f"**{nome}**")
-                        st.caption(f"Azienda: {azienda}")
-                        st.caption(f"Tel: {telefono} | Email: {email}")
-                    with col2:
-                        st.write(f"Ultimo preventivo: **{ultimo}**")
-                        st.caption(f"Totale preventivi: {totale}")
-                    with col3:
-                        conferma = st.checkbox("Conferma", key=f"v1018_conf_cli_{i}_{ident}")
-                    with col4:
-                        if st.button("🗑 Elimina", key=f"v1018_del_cli_{i}_{ident}"):
-                            if not conferma:
-                                st.warning("Spunta conferma prima di eliminare.")
-                            elif not ident:
-                                st.error("Cliente senza identificativo.")
-                            else:
-                                ok, msg = v1018_elimina_cliente_totale(ident)
-                                if ok:
-                                    st.success(f"Cliente eliminato: {nome}")
-                                    st.caption(msg)
-                                    st.rerun()
-                                else:
-                                    st.error(f"Non eliminato: {msg}")
-
-    with tab_preventivi:
-        st.markdown("### 📄 Preventivi salvati")
-        preventivi = carica_preventivi()
-
-        c1, c2 = st.columns([2, 1])
-        with c1:
-            cerca_p = st.text_input("Cerca preventivo per codice, cliente o configurazione", key="v1018_cerca_preventivo")
-        with c2:
-            stato_f = st.selectbox("Stato", ["Tutti"] + STATI_PREVENTIVO, key="v1018_stato_filtro")
-
-        preventivi_vis = filtra_preventivi_dashboard(preventivi, cerca_p, stato_f)
-        st.caption(f"Preventivi trovati: {len(preventivi_vis)}")
-
-        if not preventivi_vis:
-            st.info("Nessun preventivo trovato.")
-        else:
-            for i, p in enumerate(preventivi_vis):
-                codice = str(p.get("codice_preventivo", "") or "").strip()
-                cliente = crm_nome_cliente(p)
-                configurazione = str(p.get("configurazione", "") or "")
-                totale = str(p.get("totale_iva", p.get("imponibile", "")) or "")
-                stato_attuale = str(p.get("stato", "Bozza") or "Bozza")
-                if stato_attuale not in STATI_PREVENTIVO:
-                    stato_attuale = "Bozza"
-
-                with st.container(border=True):
-                    col1, col2, col3, col4, col5 = st.columns([2, 3, 2, 2, 1])
-                    with col1:
-                        st.markdown(f"**{codice}**")
-                        st.caption(f"Stato attuale: {stato_attuale}")
-                    with col2:
-                        st.write(cliente)
-                        st.caption(configurazione)
-                    with col3:
-                        st.write(f"Totale: **{totale}**")
-                    with col4:
-                        nuovo = st.selectbox(
-                            "Stato",
-                            STATI_PREVENTIVO,
-                            index=STATI_PREVENTIVO.index(stato_attuale),
-                            key=f"v1018_stato_{i}_{codice}"
-                        )
-                        if nuovo != stato_attuale:
-                            if st.button("Salva", key=f"v1018_salva_stato_{i}_{codice}"):
-                                if aggiorna_stato_preventivo_admin(codice, nuovo):
-                                    st.success("Stato aggiornato.")
-                                    st.rerun()
-                                else:
-                                    st.error("Stato non aggiornato.")
-                        conferma = st.checkbox("Conferma elimina", key=f"v1018_conf_prev_{i}_{codice}")
-                    with col5:
-                        if st.button("🗑", key=f"v1018_del_prev_{i}_{codice}"):
-                            if not conferma:
-                                st.warning("Spunta conferma.")
-                            elif not codice:
-                                st.error("Codice preventivo mancante.")
-                            else:
-                                ok, msg = v1018_elimina_preventivo_totale(codice)
-                                if ok:
-                                    st.success(f"Preventivo eliminato: {codice}")
-                                    st.caption(msg)
-                                    st.rerun()
-                                else:
-                                    st.error(f"Non eliminato: {msg}")
-
-
 # =========================
 # LOGIN + REGISTRAZIONE
 # =========================
@@ -2583,10 +2317,6 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
-
-# V1018 - Mostra CRM Admin subito dopo il login, quindi è visibile nel corpo pagina.
-if profilo == "SA-TEC":
-    render_admin_crm_v1018(profilo)
 
 # Ricarico manuale solo per ADMIN SA-TEC
 if profilo == "SA-TEC":
@@ -3382,7 +3112,142 @@ def crea_html_ordine_fornitore(codice_preventivo, articoli, scelta, luce_mm, alt
     .note {{margin-top:22px;border:2px solid #06499b;border-radius:12px;padding:16px;background:#fff3a3;line-height:1.6;}}
     .print-button {{background:#06499b;color:white;padding:14px 22px;border:none;border-radius:8px;font-size:18px;font-weight:bold;cursor:pointer;margin-bottom:18px;}}
     @media print {{.print-button {{display:none;}} body {{margin:18px;}}}}
-    </style>
+    
+
+/* =========================
+   V1019 - FIX SCRITTE BLU / NO BIANCO SU BIANCO
+   ========================= */
+
+/* Testi generali nel corpo app */
+.main .block-container,
+.main .block-container p,
+.main .block-container span,
+.main .block-container div,
+.main .block-container label,
+.main .block-container small,
+.main .block-container h1,
+.main .block-container h2,
+.main .block-container h3,
+.main .block-container h4,
+.main .block-container h5,
+.main .block-container h6 {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+/* Tabelle */
+table,
+table td,
+table td *,
+tbody,
+tbody tr,
+tbody td {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+table th,
+thead th,
+thead th * {
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    background:#06499b!important;
+}
+
+/* Card e contenitori Admin/CRM */
+div[data-testid="stVerticalBlock"],
+div[data-testid="stHorizontalBlock"],
+div[data-testid="stContainer"] {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+/* Input, select, text area */
+div[data-testid="stTextInput"] input,
+div[data-testid="stNumberInput"] input,
+div[data-testid="stSelectbox"] div,
+div[data-testid="stTextArea"] textarea {
+    background:#ffffff!important;
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    border:2px solid #06499b!important;
+    font-weight:800!important;
+}
+
+/* Placeholder più leggibile */
+input::placeholder,
+textarea::placeholder {
+    color:#4b6fb3!important;
+    opacity:1!important;
+}
+
+/* Caption e markdown dentro CRM */
+div[data-testid="stCaptionContainer"],
+div[data-testid="stCaptionContainer"] *,
+div[data-testid="stMarkdownContainer"],
+div[data-testid="stMarkdownContainer"] * {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+/* Bottoni: testo bianco solo sui bottoni blu */
+.stButton>button,
+.stButton>button *,
+button[kind="primary"],
+button[kind="primary"] * {
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+/* Checkbox: testo blu leggibile */
+div[data-testid="stCheckbox"],
+div[data-testid="stCheckbox"] *,
+div[data-testid="stCheckbox"] label,
+div[data-testid="stCheckbox"] p {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    font-weight:900!important;
+}
+
+/* Alert leggibili */
+div[data-testid="stAlert"],
+div[data-testid="stAlert"] * {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+/* Sidebar: testi blu, ma bottoni restano leggibili */
+section[data-testid="stSidebar"],
+section[data-testid="stSidebar"] *,
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] span {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+section[data-testid="stSidebar"] button,
+section[data-testid="stSidebar"] button * {
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+
+/* Selectbox menu dropdown */
+div[role="listbox"] *,
+ul[role="listbox"] *,
+li[role="option"] * {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+}
+
+/* Titoli principali più forti */
+h1, h2, h3 {
+    color:#003C96!important;
+    -webkit-text-fill-color:#003C96!important;
+    font-weight:1000!important;
+}
+
+</style>
     </head>
     <body>
     <button class="print-button" onclick="window.print()">STAMPA / SALVA PDF ORDINE</button>
@@ -3585,7 +3450,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1018 - CRM Admin visibile con eliminazione")
+st.caption("Versione V1019 - Scritte blu leggibili")
 
 st.markdown(f"""
 <div class="footer">
