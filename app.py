@@ -1582,21 +1582,21 @@ def render_dashboard_crm(preventivi):
     persi = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "perso")
     conversione = ((accettati + ordinati) / totale_preventivi * 100) if totale_preventivi else 0
 
-    v1035_css_pulito()
+    v1027_css_finale()
     c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.markdown(v1035_card("Preventivi", totale_preventivi), unsafe_allow_html=True)
-    c2.markdown(v1035_card("Valore totale", euro(valore_totale)), unsafe_allow_html=True)
-    c3.markdown(v1035_card("Utile lordo", euro(utile_totale)), unsafe_allow_html=True)
-    c4.markdown(v1035_card("Accettati/Ordinati", accettati + ordinati), unsafe_allow_html=True)
-    c5.markdown(v1035_card("Persi", persi), unsafe_allow_html=True)
-    c6.markdown(v1035_card("Conversione", f"{conversione:.1f}%"), unsafe_allow_html=True)
+    c1.markdown(v1027_card_metriche("Preventivi", totale_preventivi), unsafe_allow_html=True)
+    c2.markdown(v1027_card_metriche("Valore totale", euro(valore_totale)), unsafe_allow_html=True)
+    c3.markdown(v1027_card_metriche("Utile lordo", euro(utile_totale)), unsafe_allow_html=True)
+    c4.markdown(v1027_card_metriche("Accettati/Ordinati", accettati + ordinati), unsafe_allow_html=True)
+    c5.markdown(v1027_card_metriche("Persi", persi), unsafe_allow_html=True)
+    c6.markdown(v1027_card_metriche("Conversione", f"{conversione:.1f}%"), unsafe_allow_html=True)
 
 
 def render_stati_preventivi(stats):
-    v1035_css_pulito()
+    v1027_css_finale()
     cols = st.columns(len(STATI_PREVENTIVO))
     for col, stato in zip(cols, STATI_PREVENTIVO):
-        col.markdown(v1035_card(stato, stats.get(stato, 0)), unsafe_allow_html=True)
+        col.markdown(v1027_card_metriche(stato, stats.get(stato, 0)), unsafe_allow_html=True)
 
 
 def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
@@ -2469,7 +2469,7 @@ def v1027_elimina_riv_gros(username):
 
     return True, " | ".join([m for m in messaggi if m])
 
-def v1035_card(label, valore):
+def v1027_card_metriche(label, valore):
     return f"""
     <div class="v1027-metric-card">
         <div class="v1027-metric-label">{label}</div>
@@ -2477,75 +2477,73 @@ def v1035_card(label, valore):
     </div>
     """
 
-def v1035_css_pulito():
+
+def v1027_css_finale():
     st.markdown("""
 <style>
+/* V1036: CSS pulito, niente rosso globale */
+html, body, .stApp, .main, .main .block-container {
+    background:#ffffff!important;
+    color:#111827!important;
+}
+h1, h2, h3, h4 {
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+}
+p, span, small, label, div[data-testid="stMarkdownContainer"] * {
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+section[data-testid="stSidebar"], section[data-testid="stSidebar"] * {
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+}
+.stButton>button, .stButton>button * {
+    background:#06499b!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:900!important;
+}
+table, tbody, tr, td, td *, div[data-testid="stDataFrame"] * {
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    background:#ffffff!important;
+}
+th, th *, thead, thead * {
+    background:#06499b!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+input, textarea, div[data-testid="stTextInput"] *, div[data-testid="stNumberInput"] *, div[data-testid="stSelectbox"] * {
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    background:#ffffff!important;
+}
 .v1027-metric-card{
     background:#ffffff!important;
-    border:3px solid #D60000!important;
+    border:2px solid #06499b!important;
     border-radius:14px!important;
-    padding:16px!important;
-    min-height:96px!important;
-    box-shadow:0 6px 16px rgba(214,0,0,.12)!important;
+    padding:14px!important;
+    min-height:86px!important;
+    box-shadow:0 5px 14px rgba(6,73,155,.08)!important;
 }
 .v1027-metric-label{
-    color:#D60000!important;
-    -webkit-text-fill-color:#D60000!important;
-    font-size:14px!important;
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+    font-size:13px!important;
     font-weight:1000!important;
     text-transform:uppercase!important;
 }
 .v1027-metric-value{
-    color:#D60000!important;
-    -webkit-text-fill-color:#D60000!important;
-    font-size:28px!important;
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-size:25px!important;
     font-weight:1000!important;
-    margin-top:8px!important;
-}
-.admin-box, .admin-box *, 
-.v85-toggle-title, .v85-toggle-title *,
-div[data-testid="stMarkdownContainer"] *,
-div[data-testid="stCaptionContainer"] *,
-div[data-testid="stCheckbox"] *,
-div[data-testid="stSelectbox"] *,
-div[data-testid="stTextInput"] *,
-div[data-testid="stNumberInput"] *,
-label, p, span, small, h1, h2, h3, h4 {
-    color:#D60000!important;
-    -webkit-text-fill-color:#D60000!important;
-    opacity:1!important;
-    text-shadow:none!important;
-    font-weight:900!important;
-}
-div[data-baseweb="select"] *,
-div[data-baseweb="popover"] *,
-div[data-baseweb="menu"] *,
-ul[role="listbox"] *,
-li[role="option"] *,
-div[role="option"] * {
-    background:#ffffff!important;
-    color:#D60000!important;
-    -webkit-text-fill-color:#D60000!important;
-    font-weight:1000!important;
-}
-table, tbody, tr, td, td *, div[data-testid="stTable"] *, div[data-testid="stDataFrame"] * {
-    color:#D60000!important;
-    -webkit-text-fill-color:#D60000!important;
-    background:#ffffff!important;
-}
-th, th *, thead, thead * {
-    background:#003C96!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-}
-.stButton>button, .stButton>button *, button, button * {
-    background:#003C96!important;
-    color:#ffffff!important;
-    -webkit-text-fill-color:#ffffff!important;
-    font-weight:1000!important;
+    margin-top:7px!important;
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 
@@ -2840,10 +2838,10 @@ def render_dashboard_admin_v1034(profilo):
 
 
 # =========================
-# V1035 - CRM BLU/NERO + RICARICO VENDITA RIV/GROSS
+# V1036 - RICARICO VENDITA RIV/GROSS
 # =========================
 
-def v1035_float(v, default=0.0):
+def v1036_float(v, default=0.0):
     try:
         if v in [None, ""]:
             v = default
@@ -2851,22 +2849,23 @@ def v1035_float(v, default=0.0):
     except:
         return float(default or 0)
 
-def v1035_ricarico_cliente_target(ricarico_acquisto, target=60):
-    prezzo_riv = 100 * (1 + float(ricarico_acquisto or 0) / 100)
-    prezzo_target = 100 * (1 + float(target or 0) / 100)
-    if prezzo_riv <= 0:
+def v1036_ricarico_cliente_target(ricarico_acquisto, target_totale=60):
+    prezzo_acquisto = 100 * (1 + float(ricarico_acquisto or 0) / 100)
+    prezzo_target = 100 * (1 + float(target_totale or 0) / 100)
+    if prezzo_acquisto <= 0:
         return 0.0
-    return ((prezzo_target / prezzo_riv) - 1) * 100
+    return ((prezzo_target / prezzo_acquisto) - 1) * 100
 
-def v1035_prezzo_riv(costo, ricarico_acquisto):
+def v1036_prezzo_riv(costo, ricarico_acquisto):
     return float(costo or 0) * (1 + float(ricarico_acquisto or 0) / 100)
 
-def v1035_prezzo_cliente(costo, ricarico_acquisto, ricarico_cliente):
-    return v1035_prezzo_riv(costo, ricarico_acquisto) * (1 + float(ricarico_cliente or 0) / 100)
+def v1036_prezzo_cliente(costo, ricarico_acquisto, ricarico_cliente):
+    return v1036_prezzo_riv(costo, ricarico_acquisto) * (1 + float(ricarico_cliente or 0) / 100)
 
-def v1035_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente):
+def v1036_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente):
     username = str(username or "").strip().upper()
     path = Path(UTENTI_CSV)
+
     fieldnames = ["utente", "password", "profilo", "nome", "azienda", "telefono", "email", "ricarico", "ricarico_cliente", "data_creazione"]
     righe = []
 
@@ -2903,8 +2902,8 @@ def v1035_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente):
             "ricarico_cliente": str(ricarico_cliente),
             "data_creazione": datetime.now().strftime("%d/%m/%Y %H:%M")
         }
-        for c in fieldnames:
-            nuova.setdefault(c, "")
+        for campo in fieldnames:
+            nuova.setdefault(campo, "")
         righe.append(nuova)
 
     with open(path, "w", newline="", encoding="utf-8") as f:
@@ -2914,58 +2913,36 @@ def v1035_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente):
 
     return True, "CSV aggiornato"
 
-def v1035_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente):
+def v1036_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente):
     sb = supabase_client()
     if sb is None:
         return False, "Supabase non collegato"
+
     try:
-        user = str(username or "").strip().upper()
+        username = str(username or "").strip().upper()
         try:
             sb.table("utenti").update({
                 "ricarico": float(ricarico_acquisto or 0),
                 "ricarico_cliente": float(ricarico_cliente or 0)
-            }).eq("username", user).execute()
+            }).eq("username", username).execute()
         except Exception:
             sb.table("utenti").update({
                 "ricarico": float(ricarico_acquisto or 0)
-            }).eq("username", user).execute()
+            }).eq("username", username).execute()
         return True, "Supabase aggiornato"
     except Exception as e:
         return False, str(e)
 
-def v1035_salva_ricarichi_totale(username, ricarico_acquisto, ricarico_cliente):
+def v1036_salva_ricarichi_totale(username, ricarico_acquisto, ricarico_cliente):
     messaggi = []
-    ok_csv, msg_csv = v1035_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente)
+    ok_csv, msg_csv = v1036_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente)
     messaggi.append(msg_csv)
+
     if supabase_attivo():
-        ok_sb, msg_sb = v1035_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente)
+        ok_sb, msg_sb = v1036_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente)
         messaggi.append(msg_sb)
+
     return True, " | ".join([m for m in messaggi if m])
-
-def v1035_css_pulito():
-    st.markdown("""
-<style>
-html, body, .stApp, .main, .main .block-container {background:#ffffff!important;color:#111827!important;}
-h1, h2, h3, h4 {color:#06499b!important;-webkit-text-fill-color:#06499b!important;}
-p, span, small, label, div[data-testid="stMarkdownContainer"] * {color:#111827!important;-webkit-text-fill-color:#111827!important;}
-section[data-testid="stSidebar"], section[data-testid="stSidebar"] * {color:#06499b!important;-webkit-text-fill-color:#06499b!important;}
-.stButton>button, .stButton>button * {background:#06499b!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;font-weight:900!important;}
-table, tbody, tr, td, td *, div[data-testid="stDataFrame"] * {color:#111827!important;-webkit-text-fill-color:#111827!important;background:#ffffff!important;}
-th, th *, thead, thead * {background:#06499b!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;}
-input, textarea, div[data-testid="stTextInput"] *, div[data-testid="stNumberInput"] *, div[data-testid="stSelectbox"] * {color:#111827!important;-webkit-text-fill-color:#111827!important;background:#ffffff!important;}
-.v1035-card {background:#ffffff!important;border:2px solid #06499b!important;border-radius:14px!important;padding:14px!important;min-height:86px!important;box-shadow:0 5px 14px rgba(6,73,155,.08)!important;}
-.v1035-card-label {color:#06499b!important;-webkit-text-fill-color:#06499b!important;font-size:13px!important;font-weight:1000!important;text-transform:uppercase!important;}
-.v1035-card-value {color:#111827!important;-webkit-text-fill-color:#111827!important;font-size:25px!important;font-weight:1000!important;margin-top:7px!important;}
-</style>
-""", unsafe_allow_html=True)
-
-def v1035_card(label, valore):
-    return f"""
-    <div class="v1035-card">
-        <div class="v1035-card-label">{label}</div>
-        <div class="v1035-card-value">{valore}</div>
-    </div>
-    """
 
 
 # =========================
@@ -3625,7 +3602,7 @@ st.markdown(f"""
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
-v1035_css_pulito()
+v1027_css_finale()
 
 # Ricarico manuale solo per ADMIN SA-TEC
 if profilo == "SA-TEC":
@@ -3792,93 +3769,76 @@ if profilo == "SA-TEC":
         else:
             st.markdown(tabella_html_sicura(righe_riv), unsafe_allow_html=True)
 
-            v1035_css_pulito()
-            st.markdown("### Ricarichi Rivenditore / Grossista")
-            st.caption("Ricarico acquisto = quanto compra da SA-TEC. Ricarico vendita cliente = quanto applica al cliente finale.")
+            codici_riv = [r["utente"] for r in righe_riv]
+            utenti_edit = carica_tutti_utenti()
 
-            codici_riv_v1035 = [r["utente"] for r in righe_riv]
-            utenti_edit_v1035 = carica_tutti_utenti()
+            st.markdown("### Ricarichi Rivenditore / Grossista")
+            st.caption("Acquisto SA-TEC = prezzo a cui compra da te. Vendita cliente = aumento applicato dal rivenditore/grossista al cliente finale.")
 
             col_riv1, col_riv2, col_riv3, col_riv4 = st.columns([2, 1.2, 1.2, 1])
             with col_riv1:
-                utente_riv_mod = st.selectbox("Utente rivenditore/grossista", codici_riv_v1035, key="utente_riv_mod_v1035")
-                dati_riv = utenti_edit_v1035.get(utente_riv_mod, {})
+                utente_riv_mod = st.selectbox("Utente rivenditore/grossista", codici_riv, key="utente_riv_mod")
+                dati_riv = utenti_edit.get(utente_riv_mod, {})
                 prof_riv = str(dati_riv.get("profilo", "") or "").upper()
                 st.write(f"Profilo: **{prof_riv}**")
             with col_riv2:
-                ricarico_acq_attuale = v1035_float(dati_riv.get("ricarico", ricarico_default(prof_riv)), ricarico_default(prof_riv))
+                ricarico_acq_attuale = v1036_float(dati_riv.get("ricarico", ricarico_default(prof_riv)), ricarico_default(prof_riv))
                 nuovo_ricarico_riv = st.number_input(
                     "Ricarico acquisto SA-TEC %",
                     min_value=0.0,
                     max_value=200.0,
                     value=float(ricarico_acq_attuale),
                     step=1.0,
-                    key="nuovo_ricarico_riv_v1035"
+                    key="nuovo_ricarico_riv"
                 )
             with col_riv3:
                 ricarico_cliente_attuale = dati_riv.get("ricarico_cliente", "")
                 if ricarico_cliente_attuale in ["", None]:
-                    ricarico_cliente_attuale = v1035_ricarico_cliente_target(nuovo_ricarico_riv, 60)
+                    ricarico_cliente_attuale = v1036_ricarico_cliente_target(nuovo_ricarico_riv, 60)
                 nuovo_ricarico_cliente = st.number_input(
                     "Ricarico vendita cliente %",
                     min_value=0.0,
                     max_value=200.0,
-                    value=float(v1035_float(ricarico_cliente_attuale, 23.08)),
+                    value=float(v1036_float(ricarico_cliente_attuale, 23.08)),
                     step=0.5,
-                    key="nuovo_ricarico_cliente_riv_v1035"
+                    key="nuovo_ricarico_cliente_riv"
                 )
             with col_riv4:
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("SALVA RICARICHI", key="v1035_salva_ricarichi_riv"):
-                    ok_riv, msg_riv = v1035_salva_ricarichi_totale(
+                if st.button("SALVA RICARICHI", key="v1036_salva_ricarichi"):
+                    ok_riv, msg_riv = v1036_salva_ricarichi_totale(
                         utente_riv_mod,
                         nuovo_ricarico_riv,
                         nuovo_ricarico_cliente
                     )
-                    st.success(f"Ricarichi salvati per {utente_riv_mod}: acquisto {nuovo_ricarico_riv:.2f}% / cliente {nuovo_ricarico_cliente:.2f}%")
+                    st.success(f"Ricarichi salvati per {utente_riv_mod}: acquisto {nuovo_ricarico_riv:.2f}% / vendita cliente {nuovo_ricarico_cliente:.2f}%")
                     if msg_riv:
                         st.caption(msg_riv)
                     st.rerun()
 
             p1, p2, p3 = st.columns(3)
-            p1.markdown(v1035_card("Costo SA-TEC esempio", euro(100)), unsafe_allow_html=True)
-            p2.markdown(v1035_card("Prezzo Riv/Gross", euro(v1035_prezzo_riv(100, nuovo_ricarico_riv))), unsafe_allow_html=True)
-            p3.markdown(v1035_card("Prezzo Cliente Finale", euro(v1035_prezzo_cliente(100, nuovo_ricarico_riv, nuovo_ricarico_cliente))), unsafe_allow_html=True)
+            p1.markdown(v1027_card_metriche("Costo SA-TEC esempio", euro(100)), unsafe_allow_html=True)
+            p2.markdown(v1027_card_metriche("Prezzo Riv/Gross", euro(v1036_prezzo_riv(100, nuovo_ricarico_riv))), unsafe_allow_html=True)
+            p3.markdown(v1027_card_metriche("Prezzo Cliente Finale", euro(v1036_prezzo_cliente(100, nuovo_ricarico_riv, nuovo_ricarico_cliente))), unsafe_allow_html=True)
 
-            codici_riv = [r["utente"] for r in righe_riv]
-            col_riv1, col_riv2, col_riv3 = st.columns([2, 1, 1])
-            with col_riv1:
-                utente_riv_mod = st.selectbox("Utente rivenditore/grossista", codici_riv, key="utente_riv_mod")
-            with col_riv2:
-                nuovo_ricarico_riv = st.number_input("Nuovo ricarico %", min_value=0.0, max_value=200.0, value=30.0, step=1.0, key="nuovo_ricarico_riv")
-            with col_riv3:
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("AGGIORNA RICARICO"):
-                    ok_riv, err_riv = aggiorna_ricarico_utente_supabase(utente_riv_mod, nuovo_ricarico_riv)
-                    if ok_riv:
-                        st.success(f"Ricarico aggiornato per {utente_riv_mod}: {nuovo_ricarico_riv:.0f}%")
+            st.markdown("---")
+            st.markdown("### 🗑 Elimina rivenditore / grossista")
+            st.warning("Eliminazione definitiva: blocca l'accesso e lo nasconde dalla gestione.")
+            conferma_del_riv = st.checkbox(
+                f"Confermo eliminazione definitiva di {utente_riv_mod}",
+                key=f"v1027_conf_delete_riv_{utente_riv_mod}"
+            )
+            if st.button("🗑 ELIMINA RIVENDITORE / GROSSISTA", key=f"v1027_btn_delete_riv_{utente_riv_mod}"):
+                if not conferma_del_riv:
+                    st.warning("Spunta la conferma prima di eliminare.")
+                else:
+                    ok_del_riv, msg_del_riv = v1027_elimina_riv_gros(utente_riv_mod)
+                    if ok_del_riv:
+                        st.success(f"{utente_riv_mod} eliminato.")
+                        st.caption(msg_del_riv)
+                        st.rerun()
                     else:
-                        st.error(f"Ricarico non aggiornato: {err_riv}")
-
-                # V1027_DELETE_RIV_GROS_INSIDE_BLOCK
-                st.markdown("---")
-                st.markdown("### 🗑 Elimina rivenditore / grossista")
-                st.warning("Eliminazione definitiva: blocca l'accesso e lo nasconde dalla gestione.")
-                conferma_del_riv = st.checkbox(
-                    f"Confermo eliminazione definitiva di {utente_riv_mod}",
-                    key=f"v1027_conf_delete_riv_{utente_riv_mod}"
-                )
-                if st.button("🗑 ELIMINA RIVENDITORE / GROSSISTA", key=f"v1027_btn_delete_riv_{utente_riv_mod}"):
-                    if not conferma_del_riv:
-                        st.warning("Spunta la conferma prima di eliminare.")
-                    else:
-                        ok_del_riv, msg_del_riv = v1027_elimina_riv_gros(utente_riv_mod)
-                        if ok_del_riv:
-                            st.success(f"{utente_riv_mod} eliminato.")
-                            st.caption(msg_del_riv)
-                            st.rerun()
-                        else:
-                            st.error(msg_del_riv)
+                        st.error(msg_del_riv)
 
 
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -5201,7 +5161,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1035 - CRM blu e ricarico vendita Riv/Gross")
+st.caption("Versione V1036 - CRM pulito e ricarichi Riv/Gross")
 
 st.markdown(f"""
 <div class="footer">
