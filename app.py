@@ -250,6 +250,7 @@ def carica_utenti_supabase():
                 "telefono": r.get("telefono", ""),
                 "email": r.get("email", ""),
                 "ricarico": str(r.get("ricarico", "0") or "0"),
+                "ricarico_cliente": str(r.get("ricarico_cliente", "") or ""),
                 "logo_url": r.get("logo_url", "")
             }
         return utenti
@@ -583,7 +584,8 @@ def carica_utenti_csv():
                     "azienda": r.get("azienda", ""),
                     "telefono": r.get("telefono", ""),
                     "email": r.get("email", ""),
-                    "ricarico": r.get("ricarico", "")
+                    "ricarico": r.get("ricarico", ""),
+                    "ricarico_cliente": r.get("ricarico_cliente", "")
                 }
     return utenti
 
@@ -2545,6 +2547,294 @@ th, th *, thead, thead * {
 
 
 
+
+
+# =========================
+# V1034 - DASHBOARD ADMIN AUTONOMA SEMPRE VISIBILE
+# =========================
+
+def v1034_float(v, default=0.0):
+    try:
+        if v in [None, ""]:
+            v = default
+        return float(str(v).replace(",", "."))
+    except:
+        return float(default or 0)
+
+def v1034_ricarico_cliente_target(ricarico_acquisto, target=60):
+    prezzo_riv = 100 * (1 + float(ricarico_acquisto or 0) / 100)
+    prezzo_target = 100 * (1 + float(target or 0) / 100)
+    if prezzo_riv <= 0:
+        return 0.0
+    return ((prezzo_target / prezzo_riv) - 1) * 100
+
+def v1034_prezzo_riv(costo, ricarico_acquisto):
+    return float(costo or 0) * (1 + float(ricarico_acquisto or 0) / 100)
+
+def v1034_prezzo_cliente(costo, ricarico_acquisto, ricarico_cliente):
+    return v1034_prezzo_riv(costo, ricarico_acquisto) * (1 + float(ricarico_cliente or 0) / 100)
+
+def v1034_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente):
+    username = str(username or "").strip().upper()
+    path = Path(UTENTI_CSV)
+    fieldnames = ["utente", "password", "profilo", "nome", "azienda", "telefono", "email", "ricarico", "ricarico_cliente", "data_creazione"]
+    righe = []
+
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        if righe:
+            fieldnames = list(righe[0].keys())
+
+    for c in ["ricarico", "ricarico_cliente", "data_creazione"]:
+        if c not in fieldnames:
+            fieldnames.append(c)
+
+    utenti = carica_tutti_utenti()
+    dati = utenti.get(username, {})
+    trovato = False
+
+    for r in righe:
+        if str(r.get("utente", "") or "").strip().upper() == username:
+            r["ricarico"] = str(ricarico_acquisto)
+            r["ricarico_cliente"] = str(ricarico_cliente)
+            trovato = True
+
+    if not trovato:
+        nuova = {
+            "utente": username,
+            "password": dati.get("password", ""),
+            "profilo": dati.get("profilo", ""),
+            "nome": dati.get("nome", ""),
+            "azienda": dati.get("azienda", ""),
+            "telefono": dati.get("telefono", ""),
+            "email": dati.get("email", ""),
+            "ricarico": str(ricarico_acquisto),
+            "ricarico_cliente": str(ricarico_cliente),
+            "data_creazione": datetime.now().strftime("%d/%m/%Y %H:%M")
+        }
+        for c in fieldnames:
+            nuova.setdefault(c, "")
+        righe.append(nuova)
+
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(righe)
+
+    return True, "CSV aggiornato"
+
+def v1034_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente):
+    sb = supabase_client()
+    if sb is None:
+        return False, "Supabase non collegato"
+    try:
+        user = str(username or "").strip().upper()
+        try:
+            sb.table("utenti").update({
+                "ricarico": float(ricarico_acquisto or 0),
+                "ricarico_cliente": float(ricarico_cliente or 0)
+            }).eq("username", user).execute()
+        except Exception:
+            sb.table("utenti").update({
+                "ricarico": float(ricarico_acquisto or 0)
+            }).eq("username", user).execute()
+        return True, "Supabase aggiornato"
+    except Exception as e:
+        return False, str(e)
+
+def v1034_salva_ricarichi_totale(username, ricarico_acquisto, ricarico_cliente):
+    msg = []
+    ok_csv, msg_csv = v1034_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente)
+    msg.append(msg_csv)
+    if supabase_attivo():
+        ok_sb, msg_sb = v1034_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente)
+        msg.append(msg_sb)
+    return True, " | ".join([m for m in msg if m])
+
+def v1034_css():
+    st.markdown("""
+<style>
+.v1034-admin-box {
+    background:#f8fbff!important;
+    border:3px solid #06499b!important;
+    border-radius:18px!important;
+    padding:18px!important;
+    margin:18px 0!important;
+    box-shadow:0 8px 22px rgba(6,73,155,.10)!important;
+}
+.v1034-title {
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+    font-size:30px!important;
+    font-weight:1000!important;
+}
+.v1034-sub {
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-size:15px!important;
+    font-weight:800!important;
+}
+.v1034-card {
+    background:#ffffff!important;
+    border:2px solid #06499b!important;
+    border-radius:14px!important;
+    padding:14px!important;
+    min-height:86px!important;
+    box-shadow:0 5px 14px rgba(6,73,155,.08)!important;
+}
+.v1034-card-label {
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+    font-size:13px!important;
+    font-weight:1000!important;
+    text-transform:uppercase!important;
+}
+.v1034-card-value {
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-size:25px!important;
+    font-weight:1000!important;
+    margin-top:7px!important;
+}
+.stButton>button, .stButton>button * {
+    background:#06499b!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:900!important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+def v1034_card(label, valore):
+    return f"""
+    <div class="v1034-card">
+        <div class="v1034-card-label">{label}</div>
+        <div class="v1034-card-value">{valore}</div>
+    </div>
+    """
+
+def render_dashboard_admin_v1034(profilo):
+    if profilo != "SA-TEC":
+        return
+
+    v1034_css()
+
+    st.markdown('<div class="v1034-admin-box">', unsafe_allow_html=True)
+    st.markdown('<div class="v1034-title">🔵 DASHBOARD ADMIN SA-TEC</div>', unsafe_allow_html=True)
+    st.markdown('<div class="v1034-sub">Dashboard autonoma: CRM, clienti, preventivi e ricarichi rivenditori/grossisti.</div>', unsafe_allow_html=True)
+
+    tab1, tab2, tab3 = st.tabs(["CRM", "Ricarichi Riv/Gross", "Clienti"])
+
+    with tab1:
+        preventivi = carica_preventivi()
+        totale_preventivi = len(preventivi)
+        valore_totale = sum(crm_valore_float(p) for p in preventivi)
+        utile_totale = sum(crm_utile_float(p) for p in preventivi)
+
+        c1, c2, c3 = st.columns(3)
+        c1.markdown(v1034_card("Preventivi", totale_preventivi), unsafe_allow_html=True)
+        c2.markdown(v1034_card("Valore totale", euro(valore_totale)), unsafe_allow_html=True)
+        c3.markdown(v1034_card("Utile lordo", euro(utile_totale)), unsafe_allow_html=True)
+
+        cerca = st.text_input("Cerca preventivo / cliente / utente", key="v1034_cerca_prev")
+        stato = st.selectbox("Filtra stato", ["Tutti"] + STATI_PREVENTIVO, key="v1034_stato_prev")
+        prev_vis = filtra_preventivi_dashboard(preventivi, cerca, stato)
+
+        st.write(f"Preventivi visualizzati: **{len(prev_vis)}**")
+        if prev_vis:
+            st.markdown(tabella_html_sicura(prev_vis), unsafe_allow_html=True)
+
+            codici = [str(p.get("codice_preventivo", "") or "").strip() for p in prev_vis if str(p.get("codice_preventivo", "") or "").strip()]
+            if codici:
+                st.markdown("### Aggiorna stato / elimina preventivo")
+                a1, a2, a3 = st.columns([2, 1, 1])
+                with a1:
+                    cod = st.selectbox("Preventivo", codici, key="v1034_cod_prev")
+                with a2:
+                    nuovo = st.selectbox("Nuovo stato", STATI_PREVENTIVO, key="v1034_nuovo_stato")
+                with a3:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    if st.button("AGGIORNA", key="v1034_agg_prev"):
+                        if aggiorna_stato_preventivo_admin(cod, nuovo):
+                            st.success("Aggiornato.")
+                            st.rerun()
+                        else:
+                            st.error("Non aggiornato.")
+        else:
+            st.info("Nessun preventivo trovato.")
+
+    with tab2:
+        utenti = carica_tutti_utenti()
+        codici = []
+        for codice, d in utenti.items():
+            prof_u = str(d.get("profilo", "") or "").upper()
+            if prof_u in ["RIVENDITORE", "GROSSISTA"]:
+                codici.append(str(codice).strip().upper())
+
+        if not codici:
+            st.info("Nessun rivenditore/grossista presente.")
+        else:
+            c1, c2, c3, c4 = st.columns([2, 1.3, 1.3, 1])
+            with c1:
+                ut = st.selectbox("Utente Rivenditore/Grossista", codici, key="v1034_utente_riv_gros")
+                d = utenti.get(ut, {})
+                prof_u = str(d.get("profilo", "") or "").upper()
+                st.write(f"Profilo: **{prof_u}**")
+                st.caption(f"Azienda/Nome: {d.get('azienda','') or d.get('nome','')}")
+            with c2:
+                ric_acq_default = v1034_float(d.get("ricarico", ricarico_default(prof_u)), ricarico_default(prof_u))
+                ric_acq = st.number_input(
+                    "Ricarico acquisto SA-TEC %",
+                    min_value=0.0,
+                    max_value=200.0,
+                    value=float(ric_acq_default),
+                    step=1.0,
+                    key="v1034_ric_acq"
+                )
+            with c3:
+                ric_cli_default = d.get("ricarico_cliente", "")
+                if ric_cli_default in ["", None]:
+                    ric_cli_default = v1034_ricarico_cliente_target(ric_acq, 60)
+                ric_cli = st.number_input(
+                    "Ricarico vendita cliente %",
+                    min_value=0.0,
+                    max_value=200.0,
+                    value=float(v1034_float(ric_cli_default, 23.08)),
+                    step=0.5,
+                    key="v1034_ric_cli"
+                )
+            with c4:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("SALVA RICARICHI", key="v1034_salva_ric"):
+                    ok, msg = v1034_salva_ricarichi_totale(ut, ric_acq, ric_cli)
+                    st.success("Ricarichi salvati.")
+                    if msg:
+                        st.caption(msg)
+                    st.rerun()
+
+            p1, p2, p3 = st.columns(3)
+            p1.markdown(v1034_card("Costo SA-TEC esempio", euro(100)), unsafe_allow_html=True)
+            p2.markdown(v1034_card("Prezzo Riv/Gross", euro(v1034_prezzo_riv(100, ric_acq))), unsafe_allow_html=True)
+            p3.markdown(v1034_card("Prezzo Cliente Finale", euro(v1034_prezzo_cliente(100, ric_acq, ric_cli))), unsafe_allow_html=True)
+
+            st.markdown("---")
+            st.markdown("### Elimina Rivenditore / Grossista")
+            st.caption("La cancellazione definitiva resta nella sezione Gestione Rivenditori/Grossisti già presente.")
+
+    with tab3:
+        clienti = carica_clienti()
+        cerca_cli = st.text_input("Cerca cliente", key="v1034_cerca_cli")
+        clienti_vis = filtra_clienti_dashboard(clienti, cerca_cli)
+        st.write(f"Clienti visualizzati: **{len(clienti_vis)}**")
+        if clienti_vis:
+            st.markdown(tabella_html_sicura(righe_clienti_dashboard(clienti_vis)), unsafe_allow_html=True)
+        else:
+            st.info("Nessun cliente trovato.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
 # =========================
 # LOGIN + REGISTRAZIONE
 # =========================
@@ -3235,7 +3525,7 @@ else:
 if profilo == "SA-TEC":
     st.sidebar.success("AREA ADMIN ATTIVA")
     st.sidebar.markdown("---")
-    mostra_dashboard = st.sidebar.checkbox("Mostra dashboard SA-TEC", value=False)
+    mostra_dashboard = st.sidebar.checkbox("Mostra dashboard SA-TEC", value=True)
 
     with st.sidebar.expander("Crea utente manuale"):
         utenti_now = carica_tutti_utenti()
@@ -4725,7 +5015,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1027 - Elimina Riv/Gross nel blocco giusto + CRM rosso")
+st.caption("Versione V1034 - Dashboard Admin autonoma")
 
 st.markdown(f"""
 <div class="footer">
