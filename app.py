@@ -314,6 +314,7 @@ def utenti_rivenditori_grossisti():
                 "telefono": d.get("telefono", ""),
                 "email": d.get("email", ""),
                 "ricarico": d.get("ricarico", "0"),
+                "ricarico_cliente": d.get("ricarico_cliente", ""),
             })
     return righe
 
@@ -591,7 +592,7 @@ def carica_utenti_csv():
 
 def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email, ricarico="35"):
     file_exists = Path(UTENTI_CSV).exists()
-    campi = ["utente", "password", "profilo", "nome", "azienda", "telefono", "email", "ricarico", "data_creazione"]
+    campi = ["utente", "password", "profilo", "nome", "azienda", "telefono", "email", "ricarico", "ricarico_cliente", "data_creazione"]
 
     with open(UTENTI_CSV, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=campi)
@@ -606,6 +607,7 @@ def salva_utente_csv(utente, password, profilo, nome, azienda, telefono, email, 
             "telefono": telefono,
             "email": email,
             "ricarico": ricarico,
+            "ricarico_cliente": "",
             "data_creazione": datetime.now().strftime("%d/%m/%Y %H:%M")
         })
 
@@ -625,8 +627,9 @@ def carica_tutti_utenti():
         utenti_csv.pop("ADMIN", None)
     utenti.update(utenti_csv)
 
+    # V1027: nasconde davvero gli utenti eliminati, anche se presenti in UTENTI_BASE
     try:
-        eliminati = v1032_carica_eliminati()
+        eliminati = v1027_carica_utenti_eliminati()
         for codice in list(utenti.keys()):
             if str(codice).strip().upper() in eliminati and str(codice).strip().upper() != "ADMIN":
                 utenti.pop(codice, None)
@@ -1579,21 +1582,21 @@ def render_dashboard_crm(preventivi):
     persi = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "perso")
     conversione = ((accettati + ordinati) / totale_preventivi * 100) if totale_preventivi else 0
 
-    v1032_css()
+    v1033_css_pulito()
     c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.markdown(v1032_card("Preventivi", totale_preventivi), unsafe_allow_html=True)
-    c2.markdown(v1032_card("Valore totale", euro(valore_totale)), unsafe_allow_html=True)
-    c3.markdown(v1032_card("Utile lordo", euro(utile_totale)), unsafe_allow_html=True)
-    c4.markdown(v1032_card("Accettati/Ordinati", accettati + ordinati), unsafe_allow_html=True)
-    c5.markdown(v1032_card("Persi", persi), unsafe_allow_html=True)
-    c6.markdown(v1032_card("Conversione", f"{conversione:.1f}%"), unsafe_allow_html=True)
+    c1.markdown(v1033_card("Preventivi", totale_preventivi), unsafe_allow_html=True)
+    c2.markdown(v1033_card("Valore totale", euro(valore_totale)), unsafe_allow_html=True)
+    c3.markdown(v1033_card("Utile lordo", euro(utile_totale)), unsafe_allow_html=True)
+    c4.markdown(v1033_card("Accettati/Ordinati", accettati + ordinati), unsafe_allow_html=True)
+    c5.markdown(v1033_card("Persi", persi), unsafe_allow_html=True)
+    c6.markdown(v1033_card("Conversione", f"{conversione:.1f}%"), unsafe_allow_html=True)
 
 
 def render_stati_preventivi(stats):
-    v1032_css()
+    v1033_css_pulito()
     cols = st.columns(len(STATI_PREVENTIVO))
     for col, stato in zip(cols, STATI_PREVENTIVO):
-        col.markdown(v1032_card(stato, stats.get(stato, 0)), unsafe_allow_html=True)
+        col.markdown(v1033_card(stato, stats.get(stato, 0)), unsafe_allow_html=True)
 
 
 def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
@@ -2466,7 +2469,7 @@ def v1027_elimina_riv_gros(username):
 
     return True, " | ".join([m for m in messaggi if m])
 
-def v1032_card(label, valore):
+def v1033_card(label, valore):
     return f"""
     <div class="v1027-metric-card">
         <div class="v1027-metric-label">{label}</div>
@@ -2549,12 +2552,10 @@ th, th *, thead, thead * {
 
 
 # =========================
-# V1032 - ADMIN RAPIDO SEMPRE VISIBILE: CRM + RICARICHI RIV/GROSS
+# V1033 - ADMIN FUNZIONANTE + RICARICHI RIV/GROSS + COLORI PULITI
 # =========================
 
-UTENTI_ELIMINATI_CSV = "utenti_eliminati_satec.csv"
-
-def v1032_float(v, default=0.0):
+def v1033_float(v, default=0.0):
     try:
         if v in [None, ""]:
             v = default
@@ -2562,338 +2563,178 @@ def v1032_float(v, default=0.0):
     except:
         return float(default or 0)
 
-def v1032_carica_eliminati():
-    p = Path(UTENTI_ELIMINATI_CSV)
-    if not p.exists():
-        return set()
-    try:
-        with open(p, "r", encoding="utf-8") as f:
-            return {str(r.get("utente","")).strip().upper() for r in csv.DictReader(f) if r.get("utente")}
-    except:
-        return set()
+def v1033_ricarico_cliente_target(ricarico_acquisto, target=60):
+    prezzo_riv = 100 * (1 + float(ricarico_acquisto or 0) / 100)
+    prezzo_target = 100 * (1 + float(target or 0) / 100)
+    if prezzo_riv <= 0:
+        return 0.0
+    return ((prezzo_target / prezzo_riv) - 1) * 100
 
-def v1032_salva_eliminato(username, profilo="", azienda=""):
+def v1033_prezzo_riv(costo, ricarico_acquisto):
+    return float(costo or 0) * (1 + float(ricarico_acquisto or 0) / 100)
+
+def v1033_prezzo_cliente(costo, ricarico_acquisto, ricarico_cliente):
+    return v1033_prezzo_riv(costo, ricarico_acquisto) * (1 + float(ricarico_cliente or 0) / 100)
+
+def v1033_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente):
     username = str(username or "").strip().upper()
-    if not username or username == "ADMIN":
-        return False
-    if username in v1032_carica_eliminati():
-        return True
-    p = Path(UTENTI_ELIMINATI_CSV)
-    exists = p.exists()
-    with open(p, "a", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=["utente","profilo","azienda","data_eliminazione"])
-        if not exists:
-            w.writeheader()
-        w.writerow({
-            "utente": username,
-            "profilo": profilo,
-            "azienda": azienda,
-            "data_eliminazione": datetime.now().strftime("%d/%m/%Y %H:%M")
-        })
-    return True
+    path = Path(UTENTI_CSV)
 
-def v1032_elimina_utente_csv(username):
-    username = str(username or "").strip().upper()
-    p = Path(UTENTI_CSV)
-    if not p.exists():
-        return False, "CSV utenti non presente"
-    try:
-        with open(p, "r", encoding="utf-8") as f:
-            rows = list(csv.DictReader(f))
-        if not rows:
-            return False, "CSV utenti vuoto"
-        fieldnames = list(rows[0].keys())
-        new_rows = [r for r in rows if str(r.get("utente","")).strip().upper() != username]
-        with open(p, "w", newline="", encoding="utf-8") as f:
-            w = csv.DictWriter(f, fieldnames=fieldnames)
-            w.writeheader()
-            w.writerows(new_rows)
-        return len(new_rows) != len(rows), "CSV utenti aggiornato"
-    except Exception as e:
-        return False, str(e)
+    fieldnames = ["utente", "password", "profilo", "nome", "azienda", "telefono", "email", "ricarico", "ricarico_cliente", "data_creazione"]
+    righe = []
 
-def v1032_elimina_utente_supabase(username):
-    sb = supabase_client()
-    if sb is None:
-        return False, "Supabase non collegato"
-    try:
-        sb.table("utenti").delete().eq("username", str(username).strip().upper()).execute()
-        return True, "Supabase utenti aggiornato"
-    except Exception as e:
-        return False, str(e)
-
-def v1032_elimina_riv_gros(username):
-    username = str(username or "").strip().upper()
-    if not username:
-        return False, "Utente mancante"
-    if username == "ADMIN":
-        return False, "ADMIN non eliminabile"
-
-    utenti = carica_tutti_utenti()
-    d = utenti.get(username, {})
-    prof = str(d.get("profilo","")).upper()
-    azienda = d.get("azienda","") or d.get("nome","")
-
-    if prof not in ["RIVENDITORE", "GROSSISTA"]:
-        return False, "Seleziona un RIVENDITORE o GROSSISTA"
-
-    msg = []
-    v1032_salva_eliminato(username, prof, azienda)
-    msg.append("nascosto dall'app")
-
-    ok_csv, msg_csv = v1032_elimina_utente_csv(username)
-    msg.append(msg_csv)
-
-    if supabase_attivo():
-        ok_sb, msg_sb = v1032_elimina_utente_supabase(username)
-        msg.append(msg_sb)
-
-    return True, " | ".join(msg)
-
-def v1032_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente):
-    username = str(username or "").strip().upper()
-    p = Path(UTENTI_CSV)
-
-    fieldnames = ["utente","password","profilo","nome","azienda","telefono","email","ricarico","ricarico_cliente","data_creazione"]
-    rows = []
-
-    if p.exists():
-        with open(p, "r", encoding="utf-8") as f:
-            rows = list(csv.DictReader(f))
-        if rows:
-            fieldnames = list(rows[0].keys())
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            righe = list(csv.DictReader(f))
+        if righe:
+            fieldnames = list(righe[0].keys())
 
     for c in ["ricarico", "ricarico_cliente", "data_creazione"]:
         if c not in fieldnames:
             fieldnames.append(c)
 
     utenti = carica_tutti_utenti()
-    d = utenti.get(username, {})
-    found = False
+    dati = utenti.get(username, {})
+    trovato = False
 
-    for r in rows:
-        if str(r.get("utente","")).strip().upper() == username:
+    for r in righe:
+        if str(r.get("utente", "") or "").strip().upper() == username:
             r["ricarico"] = str(ricarico_acquisto)
             r["ricarico_cliente"] = str(ricarico_cliente)
-            found = True
+            trovato = True
 
-    if not found:
-        row = {
+    if not trovato:
+        nuova = {
             "utente": username,
-            "password": d.get("password",""),
-            "profilo": d.get("profilo",""),
-            "nome": d.get("nome",""),
-            "azienda": d.get("azienda",""),
-            "telefono": d.get("telefono",""),
-            "email": d.get("email",""),
+            "password": dati.get("password", ""),
+            "profilo": dati.get("profilo", ""),
+            "nome": dati.get("nome", ""),
+            "azienda": dati.get("azienda", ""),
+            "telefono": dati.get("telefono", ""),
+            "email": dati.get("email", ""),
             "ricarico": str(ricarico_acquisto),
             "ricarico_cliente": str(ricarico_cliente),
             "data_creazione": datetime.now().strftime("%d/%m/%Y %H:%M")
         }
         for c in fieldnames:
-            row.setdefault(c, "")
-        rows.append(row)
+            nuova.setdefault(c, "")
+        righe.append(nuova)
 
-    with open(p, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames)
-        w.writeheader()
-        w.writerows(rows)
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(righe)
 
-    return True
+    return True, "CSV aggiornato"
 
-def v1032_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente):
+def v1033_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente):
     sb = supabase_client()
     if sb is None:
         return False, "Supabase non collegato"
     try:
-        user = str(username).strip().upper()
+        user = str(username or "").strip().upper()
         try:
             sb.table("utenti").update({
                 "ricarico": float(ricarico_acquisto or 0),
                 "ricarico_cliente": float(ricarico_cliente or 0)
             }).eq("username", user).execute()
-        except:
+        except Exception:
             sb.table("utenti").update({
                 "ricarico": float(ricarico_acquisto or 0)
             }).eq("username", user).execute()
-        return True, ""
+        return True, "Supabase aggiornato"
     except Exception as e:
         return False, str(e)
 
-def v1032_salva_ricarichi(username, ricarico_acquisto, ricarico_cliente):
-    v1032_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente)
+def v1033_salva_ricarichi_totale(username, ricarico_acquisto, ricarico_cliente):
+    messaggi = []
+    ok_csv, msg_csv = v1033_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente)
+    messaggi.append(msg_csv)
     if supabase_attivo():
-        v1032_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente)
-    return True
+        ok_sb, msg_sb = v1033_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente)
+        messaggi.append(msg_sb)
+    return True, " | ".join([m for m in messaggi if m])
 
-def v1032_prezzo_riv(costo, ricarico_acquisto):
-    return float(costo or 0) * (1 + float(ricarico_acquisto or 0) / 100)
-
-def v1032_prezzo_cliente(costo, ricarico_acquisto, ricarico_cliente):
-    return v1032_prezzo_riv(costo, ricarico_acquisto) * (1 + float(ricarico_cliente or 0) / 100)
-
-def v1032_ricarico_cliente_target(ricarico_acquisto, target=60):
-    prezzo_riv = 100 * (1 + float(ricarico_acquisto or 0) / 100)
-    prezzo_target = 100 * (1 + float(target or 0) / 100)
-    if prezzo_riv <= 0:
-        return 0
-    return ((prezzo_target / prezzo_riv) - 1) * 100
-
-def v1032_css():
+def v1033_css_pulito():
     st.markdown("""
 <style>
-html, body, .stApp, .main, .main .block-container {background:#ffffff!important;color:#111827!important;}
-h1, h2, h3, h4 {color:#06499b!important;-webkit-text-fill-color:#06499b!important;}
-p, span, small, label, div[data-testid="stMarkdownContainer"] * {color:#111827!important;-webkit-text-fill-color:#111827!important;}
-section[data-testid="stSidebar"], section[data-testid="stSidebar"] * {color:#06499b!important;-webkit-text-fill-color:#06499b!important;}
-.stButton>button, .stButton>button * {background:#06499b!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;font-weight:900!important;}
-table, tbody, tr, td, td *, div[data-testid="stDataFrame"] * {color:#111827!important;-webkit-text-fill-color:#111827!important;background:#ffffff!important;}
-th, th *, thead, thead * {background:#06499b!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;}
-input, textarea, div[data-testid="stTextInput"] *, div[data-testid="stNumberInput"] *, div[data-testid="stSelectbox"] * {color:#111827!important;-webkit-text-fill-color:#111827!important;background:#ffffff!important;}
-.v1032-box{background:#f8fbff;border:3px solid #06499b;border-radius:16px;padding:18px;margin:18px 0;box-shadow:0 8px 22px rgba(6,73,155,.10);}
-.v1032-title{color:#06499b!important;-webkit-text-fill-color:#06499b!important;font-size:28px;font-weight:1000;margin-bottom:8px;}
-.v1032-sub{color:#111827!important;-webkit-text-fill-color:#111827!important;font-size:15px;font-weight:800;margin-bottom:12px;}
-.v1032-card{background:#fff;border:2px solid #06499b;border-radius:14px;padding:14px;min-height:88px;}
-.v1032-card .lab{color:#06499b!important;-webkit-text-fill-color:#06499b!important;font-weight:1000;font-size:13px;text-transform:uppercase;}
-.v1032-card .val{color:#111827!important;-webkit-text-fill-color:#111827!important;font-weight:1000;font-size:25px;margin-top:7px;}
+/* V1033 - colori puliti, niente rosso globale */
+html, body, .stApp, .main, .main .block-container {
+    background:#ffffff!important;
+    color:#111827!important;
+}
+h1, h2, h3, h4 {
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+}
+p, span, small, label, div[data-testid="stMarkdownContainer"] * {
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+}
+section[data-testid="stSidebar"], section[data-testid="stSidebar"] * {
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+}
+.stButton>button, .stButton>button * {
+    background:#06499b!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    font-weight:900!important;
+}
+table, tbody, tr, td, td *, div[data-testid="stDataFrame"] * {
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    background:#ffffff!important;
+}
+th, th *, thead, thead * {
+    background:#06499b!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+}
+input, textarea, div[data-testid="stTextInput"] *, div[data-testid="stNumberInput"] *, div[data-testid="stSelectbox"] * {
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    background:#ffffff!important;
+}
+.v1033-card {
+    background:#ffffff!important;
+    border:2px solid #06499b!important;
+    border-radius:14px!important;
+    padding:14px!important;
+    min-height:86px!important;
+    box-shadow:0 5px 14px rgba(6,73,155,.08)!important;
+}
+.v1033-card-label {
+    color:#06499b!important;
+    -webkit-text-fill-color:#06499b!important;
+    font-size:13px!important;
+    font-weight:1000!important;
+    text-transform:uppercase!important;
+}
+.v1033-card-value {
+    color:#111827!important;
+    -webkit-text-fill-color:#111827!important;
+    font-size:25px!important;
+    font-weight:1000!important;
+    margin-top:7px!important;
+}
+.v1033-ric-box {
+    background:#f8fbff!important;
+    border:2px solid #06499b!important;
+    border-radius:14px!important;
+    padding:14px!important;
+    margin-top:12px!important;
+}
 </style>
 """, unsafe_allow_html=True)
 
-def v1032_card(label, value):
-    return f'<div class="v1032-card"><div class="lab">{label}</div><div class="val">{value}</div></div>'
-
-def render_admin_visibile_v1032(profilo):
-    if profilo != "SA-TEC":
-        return
-
-    v1032_css()
-
-    st.markdown('<div class="v1032-box">', unsafe_allow_html=True)
-    st.markdown('<div class="v1032-title">🔵 ADMIN SA-TEC - CRM E RICARICHI</div>', unsafe_allow_html=True)
-    st.markdown('<div class="v1032-sub">Questo pannello è sempre visibile in Admin, senza spuntare “Mostra dashboard”.</div>', unsafe_allow_html=True)
-
-    tab_crm, tab_ric, tab_clienti = st.tabs(["CRM Admin", "Ricarichi Riv/Gross", "Clienti"])
-
-    with tab_crm:
-        preventivi = carica_preventivi()
-        totale_preventivi = len(preventivi)
-        valore_totale = sum(crm_valore_float(p) for p in preventivi)
-        utile_totale = sum(crm_utile_float(p) for p in preventivi)
-
-        c1, c2, c3 = st.columns(3)
-        c1.markdown(v1032_card("Preventivi", totale_preventivi), unsafe_allow_html=True)
-        c2.markdown(v1032_card("Valore totale", euro(valore_totale)), unsafe_allow_html=True)
-        c3.markdown(v1032_card("Utile lordo", euro(utile_totale)), unsafe_allow_html=True)
-
-        cerca = st.text_input("Cerca preventivo / cliente / utente", key="v1032_cerca_prev")
-        stato = st.selectbox("Filtra stato", ["Tutti"] + STATI_PREVENTIVO, key="v1032_stato_prev")
-        prev_vis = filtra_preventivi_dashboard(preventivi, cerca, stato)
-
-        st.write(f"Preventivi visualizzati: **{len(prev_vis)}**")
-        if prev_vis:
-            st.markdown(tabella_html_sicura(prev_vis), unsafe_allow_html=True)
-
-            codici = [p.get("codice_preventivo","") for p in prev_vis if p.get("codice_preventivo","")]
-            if codici:
-                st.markdown("### Aggiorna stato / elimina preventivo")
-                a1, a2, a3 = st.columns([2, 1, 1])
-                with a1:
-                    cod = st.selectbox("Preventivo", codici, key="v1032_cod_prev")
-                with a2:
-                    nuovo = st.selectbox("Nuovo stato", STATI_PREVENTIVO, key="v1032_nuovo_stato")
-                with a3:
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    if st.button("AGGIORNA", key="v1032_agg_prev"):
-                        if aggiorna_stato_preventivo_admin(cod, nuovo):
-                            st.success("Aggiornato.")
-                            st.rerun()
-                        else:
-                            st.error("Non aggiornato.")
-        else:
-            st.info("Nessun preventivo trovato.")
-
-    with tab_ric:
-        utenti = carica_tutti_utenti()
-        eliminati = v1032_carica_eliminati()
-        codici = []
-        for codice, d in utenti.items():
-            c = str(codice).strip().upper()
-            if c in eliminati:
-                continue
-            prof_u = str(d.get("profilo","")).upper()
-            if prof_u in ["RIVENDITORE", "GROSSISTA"]:
-                codici.append(c)
-
-        if not codici:
-            st.info("Nessun rivenditore/grossista presente.")
-        else:
-            c1, c2, c3, c4 = st.columns([2, 1.3, 1.3, 1])
-            with c1:
-                ut = st.selectbox("Utente Rivenditore/Grossista", codici, key="v1032_utente_riv_gros")
-                d = utenti.get(ut, {})
-                prof_u = str(d.get("profilo","")).upper()
-                st.write(f"Profilo: **{prof_u}**")
-                st.caption(f"Azienda/Nome: {d.get('azienda','') or d.get('nome','')}")
-            with c2:
-                ric_acq_default = v1032_float(d.get("ricarico", ricarico_default(prof_u)), ricarico_default(prof_u))
-                ric_acq = st.number_input(
-                    "Ricarico acquisto SA-TEC %",
-                    min_value=0.0,
-                    max_value=200.0,
-                    value=float(ric_acq_default),
-                    step=1.0,
-                    key="v1032_ric_acq"
-                )
-            with c3:
-                ric_cli_default = d.get("ricarico_cliente", "")
-                if ric_cli_default in ["", None]:
-                    ric_cli_default = v1032_ricarico_cliente_target(ric_acq, 60)
-                ric_cli = st.number_input(
-                    "Ricarico vendita cliente %",
-                    min_value=0.0,
-                    max_value=200.0,
-                    value=float(v1032_float(ric_cli_default, 23.08)),
-                    step=0.5,
-                    key="v1032_ric_cli"
-                )
-            with c4:
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("💾 SALVA RICARICHI", key="v1032_salva_ric"):
-                    v1032_salva_ricarichi(ut, ric_acq, ric_cli)
-                    st.success("Ricarichi salvati.")
-                    st.rerun()
-
-            p1, p2, p3 = st.columns(3)
-            p1.markdown(v1032_card("Costo SA-TEC esempio", euro(100)), unsafe_allow_html=True)
-            p2.markdown(v1032_card("Prezzo Riv/Gross", euro(v1032_prezzo_riv(100, ric_acq))), unsafe_allow_html=True)
-            p3.markdown(v1032_card("Prezzo Cliente finale", euro(v1032_prezzo_cliente(100, ric_acq, ric_cli))), unsafe_allow_html=True)
-
-            st.markdown("---")
-            st.markdown("### Elimina Rivenditore / Grossista")
-            conf = st.checkbox(f"Confermo eliminazione definitiva di {ut}", key=f"v1032_conf_del_{ut}")
-            if st.button("🗑 ELIMINA RIVENDITORE / GROSSISTA", key=f"v1032_del_{ut}"):
-                if not conf:
-                    st.warning("Spunta la conferma.")
-                else:
-                    ok, msg = v1032_elimina_riv_gros(ut)
-                    if ok:
-                        st.success(f"{ut} eliminato.")
-                        st.caption(msg)
-                        st.rerun()
-                    else:
-                        st.error(msg)
-
-    with tab_clienti:
-        clienti = carica_clienti()
-        cerca_cli = st.text_input("Cerca cliente", key="v1032_cerca_cli")
-        clienti_vis = filtra_clienti_dashboard(clienti, cerca_cli)
-        st.write(f"Clienti visualizzati: **{len(clienti_vis)}**")
-        if clienti_vis:
-            st.markdown(tabella_html_sicura(righe_clienti_dashboard(clienti_vis)), unsafe_allow_html=True)
-        else:
-            st.info("Nessun cliente trovato.")
-
-    st.markdown('</div>', unsafe_allow_html=True)
+def v1033_card(label, valore):
+    return f"""
+    <div class="v1033-card">
+        <div class="v1033-card-label">{label}</div>
+        <div class="v1033-card-value">{valore}</div>
+    </div>
+    """
 
 
 # =========================
@@ -3553,7 +3394,7 @@ st.markdown(f"""
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
-v1032_css()
+v1033_css_pulito()
 # Ricarico manuale solo per ADMIN SA-TEC
 if profilo == "SA-TEC":
     st.sidebar.markdown("---")
@@ -3720,39 +3561,77 @@ if profilo == "SA-TEC":
             st.markdown(tabella_html_sicura(righe_riv), unsafe_allow_html=True)
 
             codici_riv = [r["utente"] for r in righe_riv]
-            col_riv1, col_riv2, col_riv3 = st.columns([2, 1, 1])
+            utenti_edit = carica_tutti_utenti()
+
+            st.markdown('<div class="v1033-ric-box">', unsafe_allow_html=True)
+            st.markdown("### Ricarichi Rivenditore / Grossista")
+            st.caption("Ricarico acquisto = quanto il rivenditore/grossista compra da SA-TEC. Ricarico vendita cliente = percentuale che applica al cliente finale.")
+
+            col_riv1, col_riv2, col_riv3, col_riv4 = st.columns([2, 1.2, 1.2, 1])
             with col_riv1:
                 utente_riv_mod = st.selectbox("Utente rivenditore/grossista", codici_riv, key="utente_riv_mod")
+                dati_riv = utenti_edit.get(utente_riv_mod, {})
+                prof_riv = str(dati_riv.get("profilo", "") or "").upper()
+                st.write(f"Profilo: **{prof_riv}**")
             with col_riv2:
-                nuovo_ricarico_riv = st.number_input("Nuovo ricarico %", min_value=0.0, max_value=200.0, value=30.0, step=1.0, key="nuovo_ricarico_riv")
-            with col_riv3:
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("AGGIORNA RICARICO"):
-                    ok_riv, err_riv = aggiorna_ricarico_utente_supabase(utente_riv_mod, nuovo_ricarico_riv)
-                    if ok_riv:
-                        st.success(f"Ricarico aggiornato per {utente_riv_mod}: {nuovo_ricarico_riv:.0f}%")
-                    else:
-                        st.error(f"Ricarico non aggiornato: {err_riv}")
-
-                # V1027_DELETE_RIV_GROS_INSIDE_BLOCK
-                st.markdown("---")
-                st.markdown("### 🗑 Elimina rivenditore / grossista")
-                st.warning("Eliminazione definitiva: blocca l'accesso e lo nasconde dalla gestione.")
-                conferma_del_riv = st.checkbox(
-                    f"Confermo eliminazione definitiva di {utente_riv_mod}",
-                    key=f"v1027_conf_delete_riv_{utente_riv_mod}"
+                ricarico_acq_attuale = v1033_float(dati_riv.get("ricarico", ricarico_default(prof_riv)), ricarico_default(prof_riv))
+                nuovo_ricarico_riv = st.number_input(
+                    "Ricarico acquisto SA-TEC %",
+                    min_value=0.0,
+                    max_value=200.0,
+                    value=float(ricarico_acq_attuale),
+                    step=1.0,
+                    key="nuovo_ricarico_riv"
                 )
-                if st.button("🗑 ELIMINA RIVENDITORE / GROSSISTA", key=f"v1027_btn_delete_riv_{utente_riv_mod}"):
-                    if not conferma_del_riv:
-                        st.warning("Spunta la conferma prima di eliminare.")
+            with col_riv3:
+                ricarico_cliente_attuale = dati_riv.get("ricarico_cliente", "")
+                if ricarico_cliente_attuale in ["", None]:
+                    ricarico_cliente_attuale = v1033_ricarico_cliente_target(nuovo_ricarico_riv, 60)
+                nuovo_ricarico_cliente = st.number_input(
+                    "Ricarico vendita cliente %",
+                    min_value=0.0,
+                    max_value=200.0,
+                    value=float(v1033_float(ricarico_cliente_attuale, 23.08)),
+                    step=0.5,
+                    key="nuovo_ricarico_cliente_riv"
+                )
+            with col_riv4:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("SALVA RICARICHI", key="v1033_salva_ricarichi_riv"):
+                    ok_riv, msg_riv = v1033_salva_ricarichi_totale(
+                        utente_riv_mod,
+                        nuovo_ricarico_riv,
+                        nuovo_ricarico_cliente
+                    )
+                    st.success(f"Ricarichi salvati per {utente_riv_mod}: acquisto {nuovo_ricarico_riv:.2f}% / cliente {nuovo_ricarico_cliente:.2f}%")
+                    if msg_riv:
+                        st.caption(msg_riv)
+                    st.rerun()
+
+            p1, p2, p3 = st.columns(3)
+            p1.markdown(v1033_card("Costo SA-TEC esempio", euro(100)), unsafe_allow_html=True)
+            p2.markdown(v1033_card("Prezzo Riv/Gross", euro(v1033_prezzo_riv(100, nuovo_ricarico_riv))), unsafe_allow_html=True)
+            p3.markdown(v1033_card("Prezzo Cliente Finale", euro(v1033_prezzo_cliente(100, nuovo_ricarico_riv, nuovo_ricarico_cliente))), unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            st.markdown("---")
+            st.markdown("### 🗑 Elimina rivenditore / grossista")
+            st.warning("Eliminazione definitiva: blocca l'accesso e lo nasconde dalla gestione.")
+            conferma_del_riv = st.checkbox(
+                f"Confermo eliminazione definitiva di {utente_riv_mod}",
+                key=f"v1033_conf_delete_riv_{utente_riv_mod}"
+            )
+            if st.button("🗑 ELIMINA RIVENDITORE / GROSSISTA", key=f"v1033_btn_delete_riv_{utente_riv_mod}"):
+                if not conferma_del_riv:
+                    st.warning("Spunta la conferma prima di eliminare.")
+                else:
+                    ok_del_riv, msg_del_riv = v1027_elimina_riv_gros(utente_riv_mod)
+                    if ok_del_riv:
+                        st.success(f"{utente_riv_mod} eliminato.")
+                        st.caption(msg_del_riv)
+                        st.rerun()
                     else:
-                        ok_del_riv, msg_del_riv = v1027_elimina_riv_gros(utente_riv_mod)
-                        if ok_del_riv:
-                            st.success(f"{utente_riv_mod} eliminato.")
-                            st.caption(msg_del_riv)
-                            st.rerun()
-                        else:
-                            st.error(msg_del_riv)
+                        st.error(msg_del_riv)
 
 
         st.markdown("<hr>", unsafe_allow_html=True)
@@ -5075,7 +4954,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1032 - Admin visibile CRM e Ricarichi")
+st.caption("Versione V1033 - Admin ripristinato e ricarichi Riv/Gross")
 
 st.markdown(f"""
 <div class="footer">
