@@ -626,7 +626,7 @@ def carica_tutti_utenti():
     utenti.update(utenti_csv)
 
     try:
-        eliminati = v1030_carica_eliminati()
+        eliminati = v1031_carica_eliminati()
         for codice in list(utenti.keys()):
             if str(codice).strip().upper() in eliminati and str(codice).strip().upper() != "ADMIN":
                 utenti.pop(codice, None)
@@ -1579,21 +1579,19 @@ def render_dashboard_crm(preventivi):
     persi = sum(1 for p in preventivi if str(p.get("stato", "")).lower() == "perso")
     conversione = ((accettati + ordinati) / totale_preventivi * 100) if totale_preventivi else 0
 
-    v1027_css_finale()
     c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.markdown(v1027_card_metriche("Preventivi", totale_preventivi), unsafe_allow_html=True)
-    c2.markdown(v1027_card_metriche("Valore totale", euro(valore_totale)), unsafe_allow_html=True)
-    c3.markdown(v1027_card_metriche("Utile lordo", euro(utile_totale)), unsafe_allow_html=True)
-    c4.markdown(v1027_card_metriche("Accettati/Ordinati", accettati + ordinati), unsafe_allow_html=True)
-    c5.markdown(v1027_card_metriche("Persi", persi), unsafe_allow_html=True)
-    c6.markdown(v1027_card_metriche("Conversione", f"{conversione:.1f}%"), unsafe_allow_html=True)
+    c1.markdown(v1031_card("Preventivi", totale_preventivi), unsafe_allow_html=True)
+    c2.markdown(v1031_card("Valore totale", euro(valore_totale)), unsafe_allow_html=True)
+    c3.markdown(v1031_card("Utile lordo", euro(utile_totale)), unsafe_allow_html=True)
+    c4.markdown(v1031_card("Accettati/Ordinati", accettati + ordinati), unsafe_allow_html=True)
+    c5.markdown(v1031_card("Persi", persi), unsafe_allow_html=True)
+    c6.markdown(v1031_card("Conversione", f"{conversione:.1f}%"), unsafe_allow_html=True)
 
 
 def render_stati_preventivi(stats):
-    v1027_css_finale()
     cols = st.columns(len(STATI_PREVENTIVO))
     for col, stato in zip(cols, STATI_PREVENTIVO):
-        col.markdown(v1027_card_metriche(stato, stats.get(stato, 0)), unsafe_allow_html=True)
+        col.markdown(v1031_card(stato, stats.get(stato, 0)), unsafe_allow_html=True)
 
 
 def filtra_preventivi_dashboard(preventivi, cerca="", stato="Tutti"):
@@ -2466,7 +2464,7 @@ def v1027_elimina_riv_gros(username):
 
     return True, " | ".join([m for m in messaggi if m])
 
-def v1027_card_metriche(label, valore):
+def v1031_card(label, valore):
     return f"""
     <div class="v1027-metric-card">
         <div class="v1027-metric-label">{label}</div>
@@ -2474,7 +2472,7 @@ def v1027_card_metriche(label, valore):
     </div>
     """
 
-def v1027_css_finale():
+def v1031_css():
     st.markdown("""
 <style>
 .v1027-metric-card{
@@ -2549,12 +2547,12 @@ th, th *, thead, thead * {
 
 
 # =========================
-# V1030 - BLOCCO VISIBILE RICARICHI RIVENDITORI/GROSSISTI
+# V1031 - RICARICHI VISIBILI ADMIN + COLORI PULITI
 # =========================
 
 UTENTI_ELIMINATI_CSV = "utenti_eliminati_satec.csv"
 
-def v1030_float(v, default=0.0):
+def v1031_float(v, default=0.0):
     try:
         if v in [None, ""]:
             v = default
@@ -2562,7 +2560,7 @@ def v1030_float(v, default=0.0):
     except:
         return float(default or 0)
 
-def v1030_carica_eliminati():
+def v1031_carica_eliminati():
     p = Path(UTENTI_ELIMINATI_CSV)
     if not p.exists():
         return set()
@@ -2572,11 +2570,11 @@ def v1030_carica_eliminati():
     except:
         return set()
 
-def v1030_salva_eliminato(username, profilo="", azienda=""):
+def v1031_salva_eliminato(username, profilo="", azienda=""):
     username = str(username or "").strip().upper()
     if not username or username == "ADMIN":
         return False
-    if username in v1030_carica_eliminati():
+    if username in v1031_carica_eliminati():
         return True
     p = Path(UTENTI_ELIMINATI_CSV)
     exists = p.exists()
@@ -2592,7 +2590,7 @@ def v1030_salva_eliminato(username, profilo="", azienda=""):
         })
     return True
 
-def v1030_elimina_utente_csv(username):
+def v1031_elimina_utente_csv(username):
     username = str(username or "").strip().upper()
     p = Path(UTENTI_CSV)
     if not p.exists():
@@ -2612,7 +2610,7 @@ def v1030_elimina_utente_csv(username):
     except Exception as e:
         return False, str(e)
 
-def v1030_elimina_utente_supabase(username):
+def v1031_elimina_utente_supabase(username):
     sb = supabase_client()
     if sb is None:
         return False, "Supabase non collegato"
@@ -2622,49 +2620,61 @@ def v1030_elimina_utente_supabase(username):
     except Exception as e:
         return False, str(e)
 
-def v1030_elimina_riv_gros(username):
+def v1031_elimina_riv_gros(username):
     username = str(username or "").strip().upper()
     if not username:
         return False, "Utente mancante"
     if username == "ADMIN":
         return False, "ADMIN non eliminabile"
+
     utenti = carica_tutti_utenti()
     d = utenti.get(username, {})
     prof = str(d.get("profilo","")).upper()
     azienda = d.get("azienda","") or d.get("nome","")
+
     if prof not in ["RIVENDITORE", "GROSSISTA"]:
         return False, "Seleziona un RIVENDITORE o GROSSISTA"
-    msgs = []
-    v1030_salva_eliminato(username, prof, azienda)
-    msgs.append("nascosto dall'app")
-    ok_csv, msg_csv = v1030_elimina_utente_csv(username)
-    msgs.append(msg_csv)
-    if supabase_attivo():
-        ok_sb, msg_sb = v1030_elimina_utente_supabase(username)
-        msgs.append(msg_sb)
-    return True, " | ".join(msgs)
 
-def v1030_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente):
+    msg = []
+    v1031_salva_eliminato(username, prof, azienda)
+    msg.append("nascosto dall'app")
+
+    ok_csv, msg_csv = v1031_elimina_utente_csv(username)
+    msg.append(msg_csv)
+
+    if supabase_attivo():
+        ok_sb, msg_sb = v1031_elimina_utente_supabase(username)
+        msg.append(msg_sb)
+
+    return True, " | ".join(msg)
+
+def v1031_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente):
     username = str(username or "").strip().upper()
     p = Path(UTENTI_CSV)
+
     fieldnames = ["utente","password","profilo","nome","azienda","telefono","email","ricarico","ricarico_cliente","data_creazione"]
     rows = []
+
     if p.exists():
         with open(p, "r", encoding="utf-8") as f:
             rows = list(csv.DictReader(f))
         if rows:
             fieldnames = list(rows[0].keys())
+
     for c in ["ricarico", "ricarico_cliente", "data_creazione"]:
         if c not in fieldnames:
             fieldnames.append(c)
+
     utenti = carica_tutti_utenti()
     d = utenti.get(username, {})
     found = False
+
     for r in rows:
         if str(r.get("utente","")).strip().upper() == username:
             r["ricarico"] = str(ricarico_acquisto)
             r["ricarico_cliente"] = str(ricarico_cliente)
             found = True
+
     if not found:
         row = {
             "utente": username,
@@ -2681,81 +2691,95 @@ def v1030_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente):
         for c in fieldnames:
             row.setdefault(c, "")
         rows.append(row)
+
     with open(p, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
         w.writerows(rows)
+
     return True
 
-def v1030_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente):
+def v1031_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente):
     sb = supabase_client()
     if sb is None:
         return False, "Supabase non collegato"
     try:
-        payload = {"ricarico": float(ricarico_acquisto or 0)}
-        # Se in Supabase esiste la colonna ricarico_cliente, viene salvata.
-        # Se non esiste, aggiorna comunque il ricarico acquisto.
+        user = str(username).strip().upper()
         try:
-            payload["ricarico_cliente"] = float(ricarico_cliente or 0)
-            sb.table("utenti").update(payload).eq("username", str(username).strip().upper()).execute()
+            sb.table("utenti").update({
+                "ricarico": float(ricarico_acquisto or 0),
+                "ricarico_cliente": float(ricarico_cliente or 0)
+            }).eq("username", user).execute()
         except:
-            sb.table("utenti").update({"ricarico": float(ricarico_acquisto or 0)}).eq("username", str(username).strip().upper()).execute()
+            sb.table("utenti").update({
+                "ricarico": float(ricarico_acquisto or 0)
+            }).eq("username", user).execute()
         return True, ""
     except Exception as e:
         return False, str(e)
 
-def v1030_salva_ricarichi(username, ricarico_acquisto, ricarico_cliente):
-    v1030_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente)
+def v1031_salva_ricarichi(username, ricarico_acquisto, ricarico_cliente):
+    v1031_salva_ricarichi_csv(username, ricarico_acquisto, ricarico_cliente)
     if supabase_attivo():
-        v1030_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente)
+        v1031_salva_ricarichi_supabase(username, ricarico_acquisto, ricarico_cliente)
     return True
 
-def v1030_prezzo_riv(costo, ricarico_acquisto):
+def v1031_prezzo_riv(costo, ricarico_acquisto):
     return float(costo or 0) * (1 + float(ricarico_acquisto or 0) / 100)
 
-def v1030_prezzo_cliente(costo, ricarico_acquisto, ricarico_cliente):
-    return v1030_prezzo_riv(costo, ricarico_acquisto) * (1 + float(ricarico_cliente or 0) / 100)
+def v1031_prezzo_cliente(costo, ricarico_acquisto, ricarico_cliente):
+    return v1031_prezzo_riv(costo, ricarico_acquisto) * (1 + float(ricarico_cliente or 0) / 100)
 
-def v1030_ricarico_cliente_target(ricarico_acquisto, target=60):
+def v1031_ricarico_cliente_target(ricarico_acquisto, target=60):
     prezzo_riv = 100 * (1 + float(ricarico_acquisto or 0) / 100)
     prezzo_target = 100 * (1 + float(target or 0) / 100)
     if prezzo_riv <= 0:
         return 0
     return ((prezzo_target / prezzo_riv) - 1) * 100
 
-def v1030_css():
+def v1031_css():
     st.markdown("""
 <style>
-.v1030-box{background:#f8fbff;border:3px solid #06499b;border-radius:16px;padding:18px;margin:18px 0;box-shadow:0 8px 22px rgba(6,73,155,.10)}
-.v1030-title{color:#06499b!important;-webkit-text-fill-color:#06499b!important;font-size:28px;font-weight:1000;margin-bottom:8px}
-.v1030-sub{color:#111827!important;-webkit-text-fill-color:#111827!important;font-size:15px;font-weight:800;margin-bottom:12px}
-.v1030-redcard{background:#fff;border:3px solid #D60000;border-radius:14px;padding:14px;min-height:90px}
-.v1030-redcard .lab{color:#D60000!important;-webkit-text-fill-color:#D60000!important;font-weight:1000;font-size:13px;text-transform:uppercase}
-.v1030-redcard .val{color:#D60000!important;-webkit-text-fill-color:#D60000!important;font-weight:1000;font-size:25px;margin-top:7px}
-.stButton>button{background:#06499b!important;color:white!important;-webkit-text-fill-color:white!important;font-weight:900!important}
+/* V1031: colori puliti */
+html, body, .stApp, .main, .main .block-container {background:#ffffff!important;color:#111827!important;}
+h1, h2, h3, h4 {color:#06499b!important;-webkit-text-fill-color:#06499b!important;}
+p, span, small, label, div[data-testid="stMarkdownContainer"] * {color:#111827!important;-webkit-text-fill-color:#111827!important;}
+section[data-testid="stSidebar"], section[data-testid="stSidebar"] * {color:#06499b!important;-webkit-text-fill-color:#06499b!important;}
+.stButton>button, .stButton>button * {background:#06499b!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;font-weight:900!important;}
+table, tbody, tr, td, td *, div[data-testid="stDataFrame"] * {color:#111827!important;-webkit-text-fill-color:#111827!important;background:#ffffff!important;}
+th, th *, thead, thead * {background:#06499b!important;color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;}
+input, textarea, div[data-testid="stTextInput"] *, div[data-testid="stNumberInput"] *, div[data-testid="stSelectbox"] * {color:#111827!important;-webkit-text-fill-color:#111827!important;background:#ffffff!important;}
+.v1031-box{background:#f8fbff;border:3px solid #06499b;border-radius:16px;padding:18px;margin:18px 0;box-shadow:0 8px 22px rgba(6,73,155,.10);}
+.v1031-title{color:#06499b!important;-webkit-text-fill-color:#06499b!important;font-size:28px;font-weight:1000;margin-bottom:8px;}
+.v1031-sub{color:#111827!important;-webkit-text-fill-color:#111827!important;font-size:15px;font-weight:800;margin-bottom:12px;}
+.v1031-redcard{background:#fff;border:3px solid #D60000;border-radius:14px;padding:14px;min-height:90px;}
+.v1031-redcard .lab{color:#D60000!important;-webkit-text-fill-color:#D60000!important;font-weight:1000;font-size:13px;text-transform:uppercase;}
+.v1031-redcard .val{color:#D60000!important;-webkit-text-fill-color:#D60000!important;font-weight:1000;font-size:25px;margin-top:7px;}
 </style>
 """, unsafe_allow_html=True)
 
-def v1030_card(label, value):
-    return f'<div class="v1030-redcard"><div class="lab">{label}</div><div class="val">{value}</div></div>'
+def v1031_card(label, value):
+    return f'<div class="v1031-redcard"><div class="lab">{label}</div><div class="val">{value}</div></div>'
 
-def render_ricarichi_riv_gros_v1030(profilo):
+def render_ricarichi_riv_gros_v1031(profilo):
     if profilo != "SA-TEC":
         return
-    v1030_css()
-    st.markdown('<div class="v1030-box">', unsafe_allow_html=True)
-    st.markdown('<div class="v1030-title">🏪 Ricarichi Rivenditori / Grossisti</div>', unsafe_allow_html=True)
-    st.markdown('<div class="v1030-sub">Qui imposti il prezzo a cui il rivenditore compra da SA-TEC e il ricarico che applica al cliente finale.</div>', unsafe_allow_html=True)
+
+    v1031_css()
+
+    st.markdown('<div class="v1031-box">', unsafe_allow_html=True)
+    st.markdown('<div class="v1031-title">🏪 RICARICO RIVENDITORI / GROSSISTI</div>', unsafe_allow_html=True)
+    st.markdown('<div class="v1031-sub">Sezione sempre visibile in Admin. Qui imposti acquisto da SA-TEC e vendita al cliente finale.</div>', unsafe_allow_html=True)
 
     utenti = carica_tutti_utenti()
-    eliminati = v1030_carica_eliminati()
+    eliminati = v1031_carica_eliminati()
     codici = []
     for codice, d in utenti.items():
         c = str(codice).strip().upper()
         if c in eliminati:
             continue
-        prof = str(d.get("profilo","")).upper()
-        if prof in ["RIVENDITORE", "GROSSISTA"]:
+        prof_u = str(d.get("profilo","")).upper()
+        if prof_u in ["RIVENDITORE", "GROSSISTA"]:
             codici.append(c)
 
     if not codici:
@@ -2763,47 +2787,62 @@ def render_ricarichi_riv_gros_v1030(profilo):
         st.markdown('</div>', unsafe_allow_html=True)
         return
 
-    c1, c2, c3, c4 = st.columns([2,1.2,1.2,1])
+    c1, c2, c3, c4 = st.columns([2, 1.3, 1.3, 1])
     with c1:
-        ut = st.selectbox("Utente", codici, key="v1030_utente_riv_gros")
+        ut = st.selectbox("Utente Rivenditore/Grossista", codici, key="v1031_utente_riv_gros")
         d = utenti.get(ut, {})
-        prof = str(d.get("profilo","")).upper()
-        st.write(f"Profilo: **{prof}**")
+        prof_u = str(d.get("profilo","")).upper()
+        st.write(f"Profilo: **{prof_u}**")
         st.caption(f"Azienda/Nome: {d.get('azienda','') or d.get('nome','')}")
     with c2:
-        ric_acq_default = v1030_float(d.get("ricarico", ricarico_default(prof)), ricarico_default(prof))
-        ric_acq = st.number_input("Ricarico acquisto SA-TEC %", min_value=0.0, max_value=200.0, value=float(ric_acq_default), step=1.0, key="v1030_ric_acq")
+        ric_acq_default = v1031_float(d.get("ricarico", ricarico_default(prof_u)), ricarico_default(prof_u))
+        ric_acq = st.number_input(
+            "Ricarico acquisto SA-TEC %",
+            min_value=0.0,
+            max_value=200.0,
+            value=float(ric_acq_default),
+            step=1.0,
+            key="v1031_ric_acq"
+        )
     with c3:
         ric_cli_default = d.get("ricarico_cliente", "")
         if ric_cli_default in ["", None]:
-            ric_cli_default = v1030_ricarico_cliente_target(ric_acq, 60)
-        ric_cli = st.number_input("Ricarico vendita cliente %", min_value=0.0, max_value=200.0, value=float(v1030_float(ric_cli_default, 23.08)), step=0.5, key="v1030_ric_cli")
+            ric_cli_default = v1031_ricarico_cliente_target(ric_acq, 60)
+        ric_cli = st.number_input(
+            "Ricarico vendita cliente %",
+            min_value=0.0,
+            max_value=200.0,
+            value=float(v1031_float(ric_cli_default, 23.08)),
+            step=0.5,
+            key="v1031_ric_cli"
+        )
     with c4:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("💾 SALVA", key="v1030_salva_ric"):
-            v1030_salva_ricarichi(ut, ric_acq, ric_cli)
+        if st.button("💾 SALVA RICARICHI", key="v1031_salva_ric"):
+            v1031_salva_ricarichi(ut, ric_acq, ric_cli)
             st.success("Ricarichi salvati.")
             st.rerun()
 
     p1, p2, p3 = st.columns(3)
-    p1.markdown(v1030_card("Costo SA-TEC esempio", euro(100)), unsafe_allow_html=True)
-    p2.markdown(v1030_card("Prezzo Riv/Gross", euro(v1030_prezzo_riv(100, ric_acq))), unsafe_allow_html=True)
-    p3.markdown(v1030_card("Prezzo Cliente finale", euro(v1030_prezzo_cliente(100, ric_acq, ric_cli))), unsafe_allow_html=True)
+    p1.markdown(v1031_card("Costo SA-TEC esempio", euro(100)), unsafe_allow_html=True)
+    p2.markdown(v1031_card("Prezzo Riv/Gross", euro(v1031_prezzo_riv(100, ric_acq))), unsafe_allow_html=True)
+    p3.markdown(v1031_card("Prezzo Cliente finale", euro(v1031_prezzo_cliente(100, ric_acq, ric_cli))), unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("### 🗑 Elimina Rivenditore / Grossista")
-    conf = st.checkbox(f"Confermo eliminazione definitiva di {ut}", key=f"v1030_conf_del_{ut}")
-    if st.button("🗑 ELIMINA RIVENDITORE / GROSSISTA", key=f"v1030_del_{ut}"):
+    conf = st.checkbox(f"Confermo eliminazione definitiva di {ut}", key=f"v1031_conf_del_{ut}")
+    if st.button("🗑 ELIMINA RIVENDITORE / GROSSISTA", key=f"v1031_del_{ut}"):
         if not conf:
             st.warning("Spunta la conferma.")
         else:
-            ok, msg = v1030_elimina_riv_gros(ut)
+            ok, msg = v1031_elimina_riv_gros(ut)
             if ok:
                 st.success(f"{ut} eliminato.")
                 st.caption(msg)
                 st.rerun()
             else:
                 st.error(msg)
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -3464,7 +3503,6 @@ st.markdown(f"""
 
 profilo, nome_utente, utente_codice, dati_utente, ricarico_effettivo = login_box()
 
-v1027_css_finale()
 
 # Ricarico manuale solo per ADMIN SA-TEC
 if profilo == "SA-TEC":
@@ -4987,7 +5025,7 @@ if profilo in ["SA-TEC", "RIVENDITORE", "GROSSISTA"]:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.caption("Versione V1030 - Ricarichi Riv/Gross visibili")
+st.caption("Versione V1031 - Ricarichi visibili e colori puliti")
 
 st.markdown(f"""
 <div class="footer">
